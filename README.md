@@ -36,6 +36,8 @@
 ---
 
 ## 🔁 전체 구조
+
+```text
 [ Browser (PC / Mobile) ]
           ↓
 [ Cloudflare Pages (Frontend) ]
@@ -43,7 +45,7 @@
 [ Cloudflare Workers (Backend API) ]
           ↓  SQL
 [ Cloudflare D1 (Database) ]
-
+```
 
 ## 🆓 무료 플랜 기준 사용 정책
 
