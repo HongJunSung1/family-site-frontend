@@ -96,3 +96,10 @@
 > DB에 직접 저장하지 않고 별도 스토리지 사용을 검토
 
 
+
+## 프론트엔드
+🔀 SPA Routing 설정 (중요)
+
+React SPA 특성상 새로고침 시 404 오류를 방지하기 위해  
+Cloudflare Pages용 `_redirects` 파일을 설정.
+ - 모든 경로 요청을 `index.html`로 전달하여 React Router가 정상적으로 동작하도록 만들기 위함
