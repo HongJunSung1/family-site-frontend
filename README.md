@@ -98,8 +98,24 @@
 
 
 ## 프론트엔드
-🔀 SPA Routing 설정 (중요)
+### SPA Routing 설정 (중요)
 
 React SPA 특성상 새로고침 시 404 오류를 방지하기 위해  
 Cloudflare Pages용 `_redirects` 파일을 설정.
  - 모든 경로 요청을 `index.html`로 전달하여 React Router가 정상적으로 동작하도록 만들기 위함
+
+### 화면 구조
+### 라우팅
+### 상태 관리
+### API 연동
+
+## 백엔드
+### API 목록
+### 인증 방식
+### Workers 구조
+
+## 데이터베이스
+### 테이블 설계
+### ERD
+### 주요 쿼리
+
