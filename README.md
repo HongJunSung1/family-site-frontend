@@ -35,9 +35,12 @@
 - SQLite 기반 관계형 DB
 - SQL 쿼리 기반 CRUD / JOIN / 집계 가능
 - 실서버 테이블 생성/수정은 반드시 wrangler 커맨드로 실행
-> schema.sql 파일에 최종 수정내역을 항상 추가/저장한다.
->> DB 수정사항이 있을 때 
->> wrangler d1 execute family-site-db --remote --file=schema.sql
+- schema.sql 파일에 최종 수정내역을 항상 추가/저장한다.
+- DB 신규/수정사항이 있을 때 배포  
+  1) **로컬**  
+  - npx wrangler d1 execute family-site-db --file=schema.sql  
+  2) **운영(로컬에서 문제 없으면)**  
+  - npx wrangler d1 execute family-site-db --remote --file=schema.sql
 
 ---
 
