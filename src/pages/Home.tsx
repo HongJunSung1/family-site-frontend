@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 
 export default function Home() {
+  const API_BASE = import.meta.env.VITE_API_BASE || "";
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -8,7 +9,7 @@ export default function Home() {
 
     try {
       if (token) {
-        await fetch("/api/auth/logout", {
+        await fetch(`${API_BASE}/api/auth/logout`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,

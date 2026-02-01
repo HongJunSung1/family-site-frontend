@@ -7,6 +7,8 @@ type LoginResponse = {
 };
 
 export default function Login() {
+  const API_BASE = import.meta.env.VITE_API_BASE || "";
+
   const navigate = useNavigate();
   const location = useLocation() as any;
 
@@ -29,7 +31,7 @@ export default function Login() {
 
       // ✅ 백엔드 로그인 API 호출 (URL은 본인 환경에 맞게)
       // 예: Vite proxy면 "/api/login" 가능
-      const res = await fetch("/api/auth/login", {
+      const res = await fetch(`${API_BASE}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim(), 

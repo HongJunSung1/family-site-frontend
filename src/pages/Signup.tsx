@@ -2,8 +2,8 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 export default function Signup() {
+  const API_BASE = import.meta.env.VITE_API_BASE || "";
   const navigate = useNavigate();
-  const API = import.meta.env.VITE_API_URL as string;
 
   const [form, setForm] = useState({
     name: "",
@@ -35,13 +35,13 @@ export default function Signup() {
         alert("비밀번호는 8자 이상 입력해주세요.");
         return;
       }
-      if (!API) {
+      if (!API_BASE) {
         alert("API 주소가 설정되지 않았습니다. (.env.local의 VITE_API_URL 확인)");
         return;
       }
 
       // Workers API 호출
-      const res = await fetch(`${API}/api/auth/signup`, {
+      const res = await fetch(`${API_BASE}/api/auth/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         // 서버는 name/email/password만 받음 (familyCode는 아직 저장 안 함)
