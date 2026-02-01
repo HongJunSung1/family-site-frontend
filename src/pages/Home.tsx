@@ -1,8 +1,31 @@
+import { useNavigate } from "react-router-dom";
+
 export default function Home() {
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    const token = localStorage.getItem("accessToken");
+
+    try {
+      if (token) {
+        await fetch("/api/auth/logout", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      }
+    } finally {
+      // ✅ 프론트 토큰 제거(서버 성공/실패와 무관하게 로그아웃 처리)
+      localStorage.removeItem("accessToken");
+      navigate("/login", { replace: true });
+    }
+  };
+
   return (
     <div style={{ padding: 24 }}>
-      <h1>홍준성-하정윤 가족 사이트</h1>
-      <p>Home 화면입니다.</p>
+      <h1>홈</h1>
+      <button onClick={handleLogout}>로그아웃</button>
     </div>
   );
 }
