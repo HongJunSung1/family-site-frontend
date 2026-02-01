@@ -72,7 +72,7 @@ export default function App() {
           }
         />
 
-        <Route path="/login" element={<Login />} />
+        <Route path="/login" element={<Login onLogin={() => setIsLoggedIn(true)} />} />
         <Route path="/signup" element={<Signup />} />
 
         {/* 보호 라우트 */}

@@ -5,10 +5,14 @@ type LoginResponse = {
   accessToken: string;
   // 필요하면 user 정보도 같이 내려주기: userId, name 등
 };
+const API_BASE = import.meta.env.VITE_API_URL || "";
 
-export default function Login() {
-  const API_BASE = import.meta.env.VITE_API_URL || "";
-  
+type Props = {
+  onLogin: () => void;
+};
+
+export default function Login({ onLogin }: Props) {
+
   const navigate = useNavigate();
   const location = useLocation() as any;
 
@@ -52,10 +56,13 @@ export default function Login() {
 
       const data = (await res.json()) as LoginResponse;
 
-      // ✅ 토큰 저장
+      // 토큰 저장
       localStorage.setItem("accessToken", data.accessToken);
 
-      // ✅ 원래 가려던 페이지가 있으면 복귀, 없으면 /home
+      // App 상태 갱신
+      onLogin();
+
+      // 원래 가려던 페이지가 있으면 복귀, 없으면 /home
       const to = location.state?.from || "/home";
       navigate(to, { replace: true });
     } catch (e) {
