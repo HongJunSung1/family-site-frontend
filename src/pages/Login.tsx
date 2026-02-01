@@ -2,14 +2,18 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 type LoginResponse = {
-  accessToken: string;
-  // 필요하면 user 정보도 같이 내려주기: userId, name 등
+  ok: boolean;
+  accessToken?: string;
+  user?: { id: number; email: string; name: string | null };
+  message?: string;
 };
+
 const API_BASE = import.meta.env.VITE_API_URL || "";
 
 type Props = {
   onLogin: () => void;
 };
+
 
 export default function Login({ onLogin }: Props) {
 
@@ -43,18 +47,24 @@ export default function Login({ onLogin }: Props) {
                             }),
       });
 
+      const data = (await res.json().catch(() => null)) as LoginResponse | null;
+
+      if (!res.ok) {
+        // 401이면 백엔드가 message를 주고 있으니 그걸 사용
+        setErrorMsg(data?.message ?? "로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+        return;
+      }
+      
+      if (!data?.ok || !data.accessToken) {
+        setErrorMsg(data?.message ?? "로그인 응답이 올바르지 않습니다.");
+        return;
+      }
+
       if (res.status === 401) {
-        // ✅ 아이디/비번 불일치
+        // 아이디/비번 불일치
         setErrorMsg("아이디 또는 비밀번호가 다릅니다.");
         return;
       }
-
-      if (!res.ok) {
-        setErrorMsg("로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
-        return;
-      }
-
-      const data = (await res.json()) as LoginResponse;
 
       // 토큰 저장
       localStorage.setItem("accessToken", data.accessToken);
