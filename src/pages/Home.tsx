@@ -1,7 +1,12 @@
 import { useNavigate } from "react-router-dom";
 
-export default function Home() {
-  const API_BASE = import.meta.env.VITE_API_URL || "";
+const API_BASE = import.meta.env.VITE_API_URL;
+
+type Props = {
+  onLogout: () => void;
+};
+
+export default function Home({ onLogout }: Props) {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -17,8 +22,9 @@ export default function Home() {
         });
       }
     } finally {
-      // ✅ 프론트 토큰 제거(서버 성공/실패와 무관하게 로그아웃 처리)
+      // ✅ 프론트 토큰 제거 + App 상태 갱신
       localStorage.removeItem("accessToken");
+      onLogout();
       navigate("/login", { replace: true });
     }
   };
