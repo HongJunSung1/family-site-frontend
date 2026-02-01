@@ -50,7 +50,8 @@ npx wrangler deploy
 - SQL 쿼리 기반 CRUD / JOIN / 집계 가능
 - 실서버 테이블 생성/수정은 반드시 wrangler 커맨드로 실행
 - schema.sql 파일에 최종 수정내역을 항상 추가/저장한다.
-- DB 신규/수정사항이 있을 때 배포  
+- DB 신규/수정사항이 있을 때 배포
+  -> schema.sql에 SQL문 작성한다.
   1) **로컬**  
   ```bash
   npx wrangler d1 execute family-site-db --file=schema.sql
@@ -59,7 +60,13 @@ npx wrangler deploy
   ```bash
   npx wrangler d1 execute family-site-db --remote --file=schema.sql
   ```
-
+- DB 내 테이블을 삭제할 때
+  -> schema.sql에 작성하지 않고 직접 터미널에서 코드 실행한다.
+  -> 로컬은 터미널에서 해도 되고 DBEAVER에서 SQL문 작성해도 되지만 실서버는 아래와 같이 진행한다.
+  ```bash
+  npx wrangler d1 execute family-site-db --remote --command "DROP TABLE 테이블명;"
+  ```
+  
 ---
 
 ## 🚀 Frontend Deployment
