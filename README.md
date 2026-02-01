@@ -21,7 +21,7 @@
 
 > 2026-01-25. 초기 배포 단계로, 화면 파일이 없어 404 페이지가 보일 수 있습니다.  
 > 2026-01-28. 리액트 + Vite 연동 완료
-> 2026.02.01. DB 연동 완료(테스트 데이터 넣기 완료)
+> 2026-02-01. DB 연동 완료(테스트 데이터 넣기 완료)
 
 ---
 
@@ -39,7 +39,10 @@
 - **Cloudflare Workers**
 - REST API (JSON 기반)
 - 서버리스 구조
-> 백엔드 배포 : npx wrangler deploy
+**백엔드 배포**
+```bash
+npx wrangler deploy
+```
 
 ### Database
 - **Cloudflare D1 SQL Database**
