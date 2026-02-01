@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 export default function Signup() {
   const navigate = useNavigate();
+  const API = import.meta.env.VITE_API_URL as string;
 
   const [form, setForm] = useState({
     name: "",
@@ -30,30 +31,49 @@ export default function Signup() {
         alert("이메일과 비밀번호는 필수입니다.");
         return;
       }
+      if (form.password.length < 8) {
+        alert("비밀번호는 8자 이상 입력해주세요.");
+        return;
+      }
+      if (!API) {
+        alert("API 주소가 설정되지 않았습니다. (.env.local의 VITE_API_URL 확인)");
+        return;
+      }
 
-      alert(
-        [
-          "✅ (임시) 회원가입 제출됨",
-          `이름: ${form.name}`,
-          `이메일: ${form.email}`,
-          `가족코드: ${form.familyCode || "(없음)"}`,
-          "",
-          "다음 단계에서 Workers API로 실제 가입 처리 연결 예정",
-        ].join("\n")
-      );
+      // Workers API 호출
+      const res = await fetch(`${API}/api/auth/signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        // 서버는 name/email/password만 받음 (familyCode는 아직 저장 안 함)
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          password: form.password,
+        }),
+      });
 
-      // 가입 후 로그인 화면으로 이동 (일반적인 UX)
+      const data = (await res.json().catch(() => ({}))) as any;
+
+      if (!res.ok) {
+        // 서버에서 내려주는 메시지 사용
+        alert(data?.message ?? "회원가입 실패");
+        return;
+      }
+
+      alert("✅ 회원가입 성공! 로그인 화면으로 이동합니다.");
       navigate("/login");
+    } catch (err: any) {
+      alert(`네트워크 오류: ${String(err?.message ?? err)}`);
     } finally {
       setSubmitting(false);
     }
   };
 
-  return (
+   return (
     <div style={{ padding: 24, maxWidth: 520 }}>
       <h1>회원가입</h1>
       <p style={{ opacity: 0.8 }}>
-        가족 사이트 계정을 생성합니다. (현재는 UI만 대충 구현)
+        가족 사이트 계정을 생성합니다.
       </p>
 
       <form onSubmit={onSubmit} style={{ marginTop: 16 }}>
@@ -90,7 +110,7 @@ export default function Signup() {
             type="password"
             value={form.password}
             onChange={onChange}
-            placeholder="8자 이상 권장"
+            placeholder="8자 이상"
             style={{ width: "100%", padding: 10 }}
             required
           />
@@ -107,6 +127,9 @@ export default function Signup() {
             placeholder="예: ABCD-1234"
             style={{ width: "100%", padding: 10 }}
           />
+          <div style={{ fontSize: 12, opacity: 0.7, marginTop: 6 }}>
+            * 현재는 서버 저장을 아직 안 합니다(다음 단계에서 추가)
+          </div>
         </div>
 
         <button
