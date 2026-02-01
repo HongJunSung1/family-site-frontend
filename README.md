@@ -54,7 +54,7 @@ npx wrangler deploy
   -> schema.sql에 SQL문 작성한다.
   1) **로컬**  
   ```bash
-  npx wrangler d1 execute family-site-db --file=schema.sql
+  npx wrangler d1 execute family-site-db --local --file=schema.sql
   ``` 
   2) **운영(로컬에서 문제 없으면)**  
   ```bash
