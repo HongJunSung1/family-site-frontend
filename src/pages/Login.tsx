@@ -7,7 +7,7 @@ type LoginResponse = {
 };
 
 export default function Login() {
-  const API_BASE = import.meta.env.VITE_API_BASE || "";
+  const API_BASE = import.meta.env.VITE_API_URL || "";
   console.log("VITE_API_BASE =", import.meta.env.VITE_API_BASE);
   const navigate = useNavigate();
   const location = useLocation() as any;
