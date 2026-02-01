@@ -4,6 +4,16 @@
 
 ---
 
+## 운영 요약
+
+- 프론트 수정 → GitHub push → Pages 자동 배포
+- 백엔드 수정 → npx wrangler deploy
+- DB 구조 변경
+  - schema.sql 수정
+  - 로컬 execute → 운영 execute
+
+---
+
 ## 🌐 사이트 주소
 
 - **Frontend (Cloudflare Pages)**  
@@ -12,6 +22,7 @@
 > 2026-01-25. 초기 배포 단계로, 화면 파일이 없어 404 페이지가 보일 수 있습니다.  
 > 2026-01-28. 리액트 + Vite 연동 완료
 > 2026.02.01. DB 연동 완료(테스트 데이터 넣기 완료)
+
 ---
 
 ## 🧱 기술 스택
@@ -38,9 +49,13 @@
 - schema.sql 파일에 최종 수정내역을 항상 추가/저장한다.
 - DB 신규/수정사항이 있을 때 배포  
   1) **로컬**  
-  - npx wrangler d1 execute family-site-db --file=schema.sql  
+  ```bash
+  npx wrangler d1 execute family-site-db --file=schema.sql
+  ``` 
   2) **운영(로컬에서 문제 없으면)**  
-  - npx wrangler d1 execute family-site-db --remote --file=schema.sql
+  ```bash
+  npx wrangler d1 execute family-site-db --remote --file=schema.sql
+  ```
 
 ---
 
