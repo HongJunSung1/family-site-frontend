@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Link, Navigate } from "react-router-dom";
-import Home from "./pages/Home";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
+import Home from "./pages/home/Home";
+import Login from "./pages/home/Login";
+import Signup from "./pages/home/Signup";
 import ProtectedRoute from "./routes/ProtectedRoute";
 
 const API_BASE = import.meta.env.VITE_API_URL;

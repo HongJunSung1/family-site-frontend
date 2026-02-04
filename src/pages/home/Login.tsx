@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 type LoginResponse = {
@@ -25,7 +25,17 @@ export default function Login({ onLogin }: Props) {
 
   const [errorMsg, setErrorMsg] = useState<string>("");
   const [loading, setLoading] = useState(false);
-  
+  const [rememberId, setRememberId] = useState(false);
+
+  // 아이디 저장하기
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("rememberEmail");
+    if (savedEmail) {
+      setEmail(savedEmail);
+      setRememberId(true);
+    }
+  }, []);
+
   const handleLogin = async () => {
     setErrorMsg("");
 
@@ -49,8 +59,14 @@ export default function Login({ onLogin }: Props) {
 
       const data = (await res.json().catch(() => null)) as LoginResponse | null;
 
+      // 백엔드가 메세지를 주고 있으니 그걸 사용
       if (!res.ok) {
-        // 401이면 백엔드가 message를 주고 있으니 그걸 사용
+        if (res.status === 401) {
+          // 아이디/비번 불일치
+          setErrorMsg("아이디 또는 비밀번호가 다릅니다.");
+          return;
+        }
+                
         setErrorMsg(data?.message ?? "로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
         return;
       }
@@ -60,14 +76,17 @@ export default function Login({ onLogin }: Props) {
         return;
       }
 
-      if (res.status === 401) {
-        // 아이디/비번 불일치
-        setErrorMsg("아이디 또는 비밀번호가 다릅니다.");
-        return;
-      }
+
 
       // 토큰 저장
       localStorage.setItem("accessToken", data.accessToken);
+
+      // ID 저장
+      if (rememberId) {
+        localStorage.setItem("rememberEmail", email.trim());
+      } else {
+        localStorage.removeItem("rememberEmail");
+      }
 
       // App 상태 갱신
       onLogin();
@@ -117,7 +136,14 @@ export default function Login({ onLogin }: Props) {
             style={{ width: "100%", padding: 10, marginTop: 6 }}
           />
         </label>
-
+        <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <input
+            type="checkbox"
+            checked={rememberId}
+            onChange={(e) => setRememberId(e.target.checked)}
+          />
+          ID 저장
+        </label>
         {errorMsg && (
           <div style={{ color: "crimson", fontSize: 14 }}>
             {errorMsg}
