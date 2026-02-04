@@ -63,11 +63,14 @@ const Calendar: React.FC = () => {
     repeat: "none" as RepeatType,
     color: "#1e2a78",
     createdBy: "",
+    allDay: false, // 하루종일 체크
+    prevStartTime: "09:00",
+    prevEndTime: "10:00",
   });
 
   const calendarHeight = useMemo(() => "auto", []);
 
-  // ✅ 날짜 1칸 클릭 → 생성(하루 일정)
+  // 날짜 1칸 클릭 → 생성(하루 일정)
   const onDateClick = (info: any) => {
     setForm({
       id: "",
@@ -78,14 +81,18 @@ const Calendar: React.FC = () => {
       repeat: "none",
       color: "#1e2a78",
       createdBy: currentUserId,
+      allDay: false,
+      prevStartTime: "09:00",
+      prevEndTime: "10:00",
     });
     setMode("create");
   };
 
-
   // 이벤트 클릭 → 상세/수정 모달
   const onEventClick = (info: any) => {
     const e = info.event;
+    const s = splitDateTime(e.startStr || "");
+    const ed = splitDateTime(e.endStr || e.startStr || "");
     setForm({
       id: e.id,
       title: e.title || "",
@@ -95,17 +102,56 @@ const Calendar: React.FC = () => {
       repeat: (e.extendedProps?.repeat as RepeatType) || "none",
       color: e.backgroundColor || "#1e2a78",
       createdBy: e.extendedProps?.createdBy || "",
+      allDay: !!e.allDay,
+      prevStartTime: safeTime(s.time, "09:00"), 
+      prevEndTime: safeTime(ed.time, "10:00"),  
     });
     setMode("detail");
   };
 
   const closeModal = () => setMode("none");
 
+  // 종료가 시작보다 "날짜가 빠르면" 종료 날짜를 시작 날짜로 맞춤
+  const normalizeEndByStartDate = (startStr: string, endStr: string) => {
+    const s = splitDateTime(startStr);
+    const e = splitDateTime(endStr);
+  
+    if (!s.date || !e.date) return endStr;
+  
+    // 종료 날짜가 더 빠르면 -> 날짜만 시작 날짜로 맞춤(시간은 유지)
+    if (e.date < s.date) {
+      return joinDateTime(s.date, safeTime(e.time, "10:00"));
+    }
+    return endStr;
+  };
+
+  // end가 start보다 이르면(날짜/시간 포함) end를 start로 보정
+  const normalizeEndByStart = (startStr: string, endStr: string) => {
+    if (!startStr || !endStr) return endStr;
+  
+    const s = splitDateTime(startStr);
+    const e = splitDateTime(endStr);
+    if (!s.date || !e.date) return endStr;
+  
+    // time이 없을 수 있으니 기본값 부여
+    const sTime = safeTime(s.time, "00:00");
+    const eTime = safeTime(e.time, "00:00");
+  
+    const sKey = `${s.date}T${sTime}`;
+    const eKey = `${e.date}T${eTime}`;
+  
+    // end가 start보다 빠르면 end를 start로 맞춤 (요구사항에 맞게)
+    if (eKey < sKey) {
+      return joinDateTime(s.date, sTime);
+    }
+    return endStr;
+  };
+
   const saveNew = () => {
     const t = form.title.trim();
     if (!t) return;
     if (form.end && form.start && form.end < form.start) return;
-    
+
     setEvents((prev) => [
       ...prev,
       {
@@ -113,7 +159,7 @@ const Calendar: React.FC = () => {
         title: t,
         start: form.start,
         end: form.end,
-        allDay: false,
+        allDay: form.allDay,
         memo: form.memo,
         repeat: form.repeat,
         color: form.color,
@@ -134,8 +180,9 @@ const Calendar: React.FC = () => {
           ? {
               ...ev,
               title: t,
-              start: form.start,
-              end: form.end,
+              start: form.start,     
+              end: form.end,         
+              allDay: form.allDay,  
               memo: form.memo,
               repeat: form.repeat,
               color: form.color,
@@ -165,18 +212,18 @@ const Calendar: React.FC = () => {
         }}
       >
         <FullCalendar
-        plugins={[dayGridPlugin, interactionPlugin]}
-        initialView="dayGridMonth"
-        height={calendarHeight}
-        locale="ko"
-        headerToolbar={{
+          plugins={[dayGridPlugin, interactionPlugin]}
+          initialView="dayGridMonth"
+          height={calendarHeight}
+          locale="ko"
+          headerToolbar={{
             left: "prev,next today",
             center: "title",   // 월/연도 타이틀 표시
             right: "",
-        }}
-        dateClick={onDateClick} // 하루 클릭 → 생성 모달
-        eventClick={onEventClick} // 이벤트 클릭 → 상세 모달
-        events={events.map((e) => ({
+          }}
+          dateClick={onDateClick} // 하루 클릭 → 생성 모달
+          eventClick={onEventClick} // 이벤트 클릭 → 상세 모달
+          events={events.map((e) => ({
             id: e.id,
             title: e.title,
             start: e.start,
@@ -189,9 +236,9 @@ const Calendar: React.FC = () => {
             repeat: e.repeat,
             createdBy: e.createdBy,
             },
-        }))}
-        dayMaxEvents={2}
-        moreLinkClick="popover"
+          }))}
+          dayMaxEvents={2}
+          moreLinkClick="popover"
         />
       </div>
 
@@ -230,7 +277,58 @@ const Calendar: React.FC = () => {
                   const e = splitDateTime(form.end);
                 
                   return (
+                    
                     <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                        <label style={{ fontSize: 12, opacity: 0.75 }}>
+                          <input
+                            type="checkbox"
+                            checked={form.allDay}
+                            onChange={(ev) => {
+                              const checked = ev.target.checked;
+                            
+                              setForm((p) => {
+                                const s0 = splitDateTime(p.start);
+                                const e0 = splitDateTime(p.end);
+                                const baseDate = s0.date || e0.date;
+                                if (!baseDate) return p;
+                            
+                                if (checked) {
+                                  // ✅ 체크 ON: 기존 시간을 백업해두고 00:00~23:59로 덮어쓰기
+                                  const backupStart = safeTime(s0.time, p.prevStartTime || "09:00");
+                                  const backupEnd = safeTime(e0.time, p.prevEndTime || "10:00");
+                            
+                                  return {
+                                    ...p,
+                                    allDay: true,
+                                    prevStartTime: backupStart,
+                                    prevEndTime: backupEnd,
+                                    start: joinDateTime(baseDate, "00:00"),
+                                    end: joinDateTime(baseDate, "23:59"),
+                                  };
+                                } else {
+                                  // ✅ 체크 OFF: 백업했던 시간을 복원
+                                  const restoreStart = safeTime(p.prevStartTime, "09:00");
+                                  const restoreEnd = safeTime(p.prevEndTime, "10:00");
+                            
+                                  const nextStart = joinDateTime(baseDate, restoreStart);
+                                  let nextEnd = joinDateTime(baseDate, restoreEnd);
+                                  nextEnd = normalizeEndByStartDate(nextStart, nextEnd);
+                            
+                                  return {
+                                    ...p,
+                                    allDay: false,
+                                    start: nextStart,
+                                    end: nextEnd,
+                                  };
+                                }
+                              });
+                            }}
+                            style={{ marginRight: 6 }}
+                          />
+                          하루종일
+                        </label>
+                      </div>
                       {/* 시작 */}
                       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                         <span style={{ width: 44, fontSize: 12, opacity: 0.7 }}>시작</span>
@@ -239,18 +337,40 @@ const Calendar: React.FC = () => {
                           value={s.date}
                           onChange={(ev) => {
                             const nextDate = ev.target.value;
-                            const next = joinDateTime(nextDate, safeTime(s.time, "09:00"));
-                            setForm((p) => ({ ...p, start: next }));
+
+                            setForm((p) => {
+                              const sTime = p.allDay ? "00:00" : safeTime(s.time, "09:00");
+                              const nextStart = joinDateTime(nextDate, sTime);
+                          
+                              let nextEnd = p.end || joinDateTime(nextDate, p.allDay ? "23:59" : "10:00");
+                          
+                              // allDay면 종료도 같은 날짜 23:59로 고정
+                              if (p.allDay) nextEnd = joinDateTime(nextDate, "23:59");
+                          
+                              // ✅ 종료 날짜가 시작보다 빠르면 날짜 맞추기
+                              nextEnd = normalizeEndByStartDate(nextStart, nextEnd);
+                          
+                              return { ...p, start: nextStart, end: nextEnd};
+                            });
                           }}
                         />
                         <input
                           type="time"
                           value={safeTime(s.time, "09:00")}
+                          disabled={form.allDay}  // ✅ 하루종일이면 시간 변경 막기(추천)
                           onChange={(ev) => {
                             const nextTime = ev.target.value;
-                            const baseDate = s.date || splitDateTime(form.start).date; // date만
-                            const next = joinDateTime(baseDate, nextTime);
-                            setForm((p) => ({ ...p, start: next }));
+                        
+                            setForm((p) => {
+                              const baseDate = s.date || splitDateTime(p.start).date;
+                              const nextStart = joinDateTime(baseDate, nextTime);
+                        
+                              let nextEnd = p.end;
+                              // ✅ 종료 날짜가 시작보다 빠르면 날짜 맞추기
+                              nextEnd = normalizeEndByStartDate(nextStart, nextEnd);
+                              nextEnd = normalizeEndByStart(nextStart, nextEnd);
+                              return { ...p, start: nextStart, end: nextEnd, prevStartTime: nextTime };
+                            });
                           }}
                         />
                       </div>
@@ -262,19 +382,42 @@ const Calendar: React.FC = () => {
                           type="date"
                           value={e.date}
                           onChange={(ev) => {
-                            const nextTime = ev.target.value;
-                            const baseDate = e.date || splitDateTime(form.end).date; // date만
-                            const next = joinDateTime(baseDate, nextTime);
-                            setForm((p) => ({ ...p, end: next }));
+                            const nextDate = ev.target.value;
+                          
+                            setForm((p) => {
+                              const eTime = p.allDay ? "23:59" : safeTime(e.time, "10:00");
+                              let nextEnd = joinDateTime(nextDate, eTime);
+
+
+                              // ✅ 종료 날짜가 시작보다 빠르면 날짜를 시작 날짜로 맞춤
+                              nextEnd = normalizeEndByStartDate(p.start, nextEnd);
+                          
+                              // allDay면 종료는 시작 날짜와 동일하게 23:59로 유지하는 게 자연스러움
+                              if (p.allDay) {
+                                const s0 = splitDateTime(p.start);
+                                nextEnd = joinDateTime(s0.date, "23:59");
+                              }
+                          
+                              return { ...p, end: nextEnd };
+                            });
                           }}
                         />
                         <input
                           type="time"
                           value={safeTime(e.time, "10:00")}
+                          disabled={form.allDay} // ✅
                           onChange={(ev) => {
                             const nextTime = ev.target.value;
-                            const next = joinDateTime(e.date || form.end, nextTime);
-                            setForm((p) => ({ ...p, end: next }));
+                        
+                            setForm((p) => {
+                              const baseDate = e.date || splitDateTime(p.end).date;
+                              let nextEnd = joinDateTime(baseDate, nextTime);
+                        
+                              // ✅ 종료 날짜가 시작보다 빠르면 날짜 맞추기
+                              nextEnd = normalizeEndByStartDate(p.start, nextEnd);
+                              nextEnd = normalizeEndByStart(p.start, nextEnd); 
+                              return { ...p, end: nextEnd, prevEndTime: nextTime };
+                            });
                           }}
                         />
                       </div>
