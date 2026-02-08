@@ -1,5 +1,5 @@
 // Calendar.tsx
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useEffect, useState } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
@@ -10,8 +10,11 @@ import "dayjs/locale/ko";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
-
 import Switch from "@mui/material/Switch";
+import { PickersDay } from "@mui/x-date-pickers/PickersDay";
+import type { PickersDayProps } from "@mui/x-date-pickers/PickersDay";
+const API_BASE = import.meta.env.VITE_API_URL || "";
+
 
 dayjs.locale("ko");
 
@@ -84,8 +87,38 @@ function textPillBtnStyle(active: boolean): React.CSSProperties {
     cursor: "pointer",
     lineHeight: 1.1,
   };
+}    
+
+type CustomDayProps = PickersDayProps & {
+  holidaySet: Set<string>;
+};
+
+function CustomDay(props: CustomDayProps) {
+  const { day, outsideCurrentMonth, holidaySet, ...other } = props;
+
+  // ✅ PickersDayProps의 day가 Dayjs로 잡히지 않는 버전이 있어서 캐스팅
+  const d = day as unknown as Dayjs;
+
+  const isHol = holidaySet.has(d.format("YYYY-MM-DD"));
+  const dow = d.day(); // 0=일, 6=토
+
+  const isRed = isHol || dow === 0;
+  const isBlue = dow === 6;
+
+  return (
+    <PickersDay
+      day={day}
+      outsideCurrentMonth={outsideCurrentMonth}
+      {...other}
+      sx={{
+        ...(isRed && { color: "#dc2626" }),
+        ...(isBlue && { color: "#2563eb" }),
+      }}
+    />
+  );
 }
 
+    
 /* =============================================================================
    WheelTimePicker (모달에서만 사용)
    - 컴포넌트 밖에 선언: 리렌더 시 언마운트 방지
@@ -321,6 +354,62 @@ const Calendar: React.FC = () => {
     },
   ]);
 
+    // 주말, 공휴일 API
+    const [holidaySet, setHolidaySet] = useState<Set<string>>(new Set());
+    const [holidayMap, setHolidayMap] = useState<Map<string, string>>(new Map()); // (옵션) date -> name
+    const [holidayYear, setHolidayYear] = useState<number>(dayjs().year());
+
+    useEffect(() => {
+      let alive = true;
+    
+      (async () => {
+        try {
+          const res = await fetch(`${API_BASE}/api/holidays?year=${holidayYear}`);
+          const data = await res.json();
+    
+          if (!alive) return;
+    
+          if (!res.ok || !data?.ok) {
+            setHolidaySet(new Set());
+            setHolidayMap(new Map());
+            return;
+          }
+    
+          const s = new Set<string>();
+          const m = new Map<string, string>();
+    
+          for (const h of data.holidays ?? []) {
+            if (!h?.date) continue;
+            s.add(h.date);
+            if (h?.name) m.set(h.date, h.name);
+          }
+    
+          setHolidaySet(s);
+          setHolidayMap(m);
+        } catch {
+          if (!alive) return;
+          setHolidaySet(new Set());
+          setHolidayMap(new Map());
+        }
+      })();
+    
+      return () => {
+        alive = false;
+      };
+    }, [holidayYear]);
+
+    const getDayType = React.useCallback(
+      (d: Dayjs) => {
+        const dow = d.day(); // 0=일, 6=토
+        const isHol = holidaySet.has(d.format("YYYY-MM-DD"));
+    
+        if (isHol || dow === 0) return "red";   // 일/공휴일
+        if (dow === 6) return "blue";           // 토
+        return "black";
+      },
+      [holidaySet]
+    );
+
   const [mode, setMode] = useState<ModalMode>("none");
   const [picker, setPicker] = useState<PickerTarget>("none");
 
@@ -530,6 +619,14 @@ const Calendar: React.FC = () => {
     });
   };
 
+  // 날짜 색상 
+  const dateTextColor = (d: Dayjs) => {
+    const t = getDayType(d);
+    if (t === "red") return "#dc2626";
+    if (t === "blue") return "#2563eb";
+    return "rgba(0,0,0,0.90)";
+  };
+
   // 종료 시간 변경
   const onPickEndTime = (t: Dayjs) => {
     setForm((p) => {
@@ -550,7 +647,11 @@ const Calendar: React.FC = () => {
 
   // 모달 상단 텍스트 버튼
   const StartDateBtn = (
-    <button type="button" onClick={() => setPicker((p) => (p === "startDate" ? "none" : "startDate"))} style={textPillBtnStyle(picker === "startDate")}>
+    <button
+      type="button"
+      onClick={() => setPicker((p) => (p === "startDate" ? "none" : "startDate"))}
+      style={{ ...textPillBtnStyle(picker === "startDate"), color: dateTextColor(startD) }}
+    >
       {formatKoreanDateLabel(startD)}
     </button>
   );
@@ -567,7 +668,11 @@ const Calendar: React.FC = () => {
   );
 
   const EndDateBtn = (
-    <button type="button" onClick={() => setPicker((p) => (p === "endDate" ? "none" : "endDate"))} style={textPillBtnStyle(picker === "endDate")}>
+    <button
+      type="button"
+      onClick={() => setPicker((p) => (p === "endDate" ? "none" : "endDate"))}
+      style={{ ...textPillBtnStyle(picker === "endDate"), color: dateTextColor(endD) }}
+    >
       {formatKoreanDateLabel(endD)}
     </button>
   );
@@ -611,6 +716,53 @@ const Calendar: React.FC = () => {
           color: var(--fc-event-text-color, #fff);
           font-weight: 700;
         }
+        /* 날짜 숫자 색 */
+        .fc .pz-day-red  .fc-daygrid-day-number { color: #dc2626 !important; } /* 빨강 */
+        .fc .pz-day-blue .fc-daygrid-day-number { color: #2563eb !important; } /* 파랑 */
+      
+        /* 요일 헤더(S M T W...) 색 */
+        .fc .pz-dow-red  .fc-col-header-cell-cushion { color: #dc2626 !important; }
+        .fc .pz-dow-blue .fc-col-header-cell-cushion { color: #2563eb !important; }  
+        
+        /* 공휴일 툴팁 대상(숫자 wrapper) */
+        .fc .pz-holiday-tip .pz-daycell {
+          position: relative;
+          display: inline-block;
+        }        
+
+        /* tooltip 박스 */
+        .fc .pz-holiday-tip .pz-daycell:hover::after {
+          content: attr(data-holiday);
+          position: absolute;
+          left: 50%;
+          top: 18px;               /* 숫자 아래로 살짝 */
+          transform: translateX(-50%);
+          z-index: 999999;        
+          padding: 6px 8px;
+          border-radius: 8px;
+          border: 1px solid rgba(0,0,0,0.12);
+          background: rgba(0,0,0,0.85);
+          color: #fff;
+          font-size: 12px;
+          font-weight: 700;
+          white-space: nowrap;
+          pointer-events: none;
+        }       
+
+        /* tooltip 화살표 */
+        .fc .pz-holiday-tip .pz-daycell:hover::before {
+          content: "";
+          position: absolute;
+          left: 50%;
+          top: 10px;
+          transform: translateX(-50%);
+          z-index: 999999;        
+          border: 6px solid transparent;
+          border-bottom-color: rgba(0,0,0,0.85);
+          pointer-events: none;
+        }
+        .fc .fc-daygrid-day-frame { overflow: visible; }
+        .fc .fc-scrollgrid-section-liquid { overflow: visible; }
       `}</style>
 
       <div
@@ -627,11 +779,51 @@ const Calendar: React.FC = () => {
           height={calendarHeight}
           locale="ko"
           headerToolbar={{ left: "prev,next today", center: "title", right: "" }}
+
+          /* 현재 보고 있는 연도 추적 */
+          datesSet={(arg) => {
+              const y = dayjs(arg.start).add(10, "day").year();
+              setHolidayYear(y);
+          }}
+
+          /* 공휴일 이름 tooltip */
           dateClick={onDateClick}
           eventClick={onEventClick}
           displayEventTime={false}
           displayEventEnd={false}
-          /* ✅ 핵심: dayGridMonth에서 점(dot) 대신 블록 형태 우선 */
+          dayCellClassNames={(arg) => {
+            const d = dayjs(arg.date);
+            const ymd = d.format("YYYY-MM-DD");
+          
+            const t = getDayType(d);
+            const classes: string[] = [];
+          
+            if (t === "red") classes.push("pz-day-red");
+            if (t === "blue") classes.push("pz-day-blue");
+          
+            if (holidayMap.has(ymd)) classes.push("pz-holiday-tip"); // ✅ 공휴일이면 툴팁 클래스
+            return classes;
+          }}
+          dayCellContent={(arg) => {
+            const ymd = dayjs(arg.date).format("YYYY-MM-DD");
+            const name = holidayMap.get(ymd);
+          
+            // 기본 숫자 렌더는 유지하면서, wrapper에 dataset을 심어주는 방식
+            return (
+              <div className="pz-daycell" data-holiday={name ?? ""}>
+                {arg.dayNumberText}
+              </div>
+            );
+          }}
+          dayHeaderClassNames={(arg) => {
+            const d = dayjs(arg.date);
+            const dow = d.day();
+            if (dow === 0) return ["pz-dow-red"];  // 요일 헤더(일)
+            if (dow === 6) return ["pz-dow-blue"]; // 요일 헤더(토)
+            return [];
+          }}
+
+          /* 핵심: dayGridMonth에서 점(dot) 대신 블록 형태 우선 */
           eventDisplay="block"
           events={events.map((e) => ({
             id: e.id,
@@ -730,6 +922,15 @@ const Calendar: React.FC = () => {
                           if (!d) return;
                           if (picker === "startDate") onPickStartDate(d);
                           else onPickEndDate(d);
+                        }}
+                          slots={{ day: CustomDay as any }}
+                          slotProps={{
+                              day: { holidaySet } as any,
+                          }}
+                          sx={{
+                              /* 요일 헤더 색 */
+                              "& .MuiDayCalendar-weekDayLabel:first-of-type": { color: "#dc2626" }, // 일
+                              "& .MuiDayCalendar-weekDayLabel:last-of-type": { color: "#2563eb" }, // 토
                         }}
                       />
                     </div>
