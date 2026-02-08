@@ -1,5 +1,5 @@
 // Calendar.tsx
-import React, { useMemo, useEffect, useState } from "react";
+import React, { useMemo, useEffect, useState, useRef } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
@@ -13,9 +13,8 @@ import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
 import Switch from "@mui/material/Switch";
 import { PickersDay } from "@mui/x-date-pickers/PickersDay";
 import type { PickersDayProps } from "@mui/x-date-pickers/PickersDay";
+
 const API_BASE = import.meta.env.VITE_API_URL || "";
-
-
 dayjs.locale("ko");
 
 type RepeatType = "none" | "daily" | "weekly" | "monthly" | "yearly";
@@ -73,7 +72,6 @@ const formatKoreanTimeLabel = (d: Dayjs) => {
 
 // "2월 12일 (목)" 표시용
 const formatKoreanDateLabel = (d: Dayjs) => d.format("M월 D일 (ddd)");
-
 const addHours = (d: Dayjs, hours: number) => d.add(hours, "hour");
 
 function textPillBtnStyle(active: boolean): React.CSSProperties {
@@ -87,18 +85,16 @@ function textPillBtnStyle(active: boolean): React.CSSProperties {
     cursor: "pointer",
     lineHeight: 1.1,
   };
-}    
+}
 
+/** MUI DateCalendar Day 커스텀(색상) */
 type CustomDayProps = PickersDayProps & {
   holidaySet: Set<string>;
 };
-
 function CustomDay(props: CustomDayProps) {
   const { day, outsideCurrentMonth, holidaySet, ...other } = props;
 
-  // ✅ PickersDayProps의 day가 Dayjs로 잡히지 않는 버전이 있어서 캐스팅
   const d = day as unknown as Dayjs;
-
   const isHol = holidaySet.has(d.format("YYYY-MM-DD"));
   const dow = d.day(); // 0=일, 6=토
 
@@ -118,12 +114,8 @@ function CustomDay(props: CustomDayProps) {
   );
 }
 
-    
 /* =============================================================================
    WheelTimePicker (모달에서만 사용)
-   - 컴포넌트 밖에 선언: 리렌더 시 언마운트 방지
-   - 클릭 시 선택값 하이라이트 + 해당 컬럼만 중앙 정렬(smooth)
-   - 외부 value 변경(시작/종료 전환 등) 시: scrollTop을 "동기"로만 맞춰 깜빡임 최소화
 ============================================================================= */
 type WheelTimePickerProps = {
   value: Dayjs;
@@ -135,8 +127,8 @@ const WheelTimePicker: React.FC<WheelTimePickerProps> = React.memo(
   ({ value, onChange, minutesStep = 5 }) => {
     const ITEM_H = 44;
     const VISIBLE = 5;
-    const PAD = ((VISIBLE - 1) / 2) * ITEM_H; // 위/아래 여백
-    const CENTER_OFFSET = Math.floor(VISIBLE / 2) * ITEM_H; // 중앙 오프셋(5칸이면 2칸)
+    const PAD = ((VISIBLE - 1) / 2) * ITEM_H;
+    const CENTER_OFFSET = Math.floor(VISIBLE / 2) * ITEM_H;
 
     const minuteOptions = React.useMemo(() => {
       const arr: number[] = [];
@@ -144,7 +136,6 @@ const WheelTimePicker: React.FC<WheelTimePickerProps> = React.memo(
       return arr;
     }, [minutesStep]);
 
-    // value(24h) -> (오전/오후, 1~12, minute(step))
     const derived = React.useMemo(() => {
       const h24 = value.hour();
       const m = value.minute();
@@ -171,8 +162,8 @@ const WheelTimePicker: React.FC<WheelTimePickerProps> = React.memo(
 
     const setScrollTopIfNeeded = (el: HTMLDivElement | null, targetTop: number) => {
       if (!el) return;
-      if (Math.abs(el.scrollTop - targetTop) < 0.5) return; // 불필요한 미세 갱신 방지
-      el.scrollTop = targetTop; // 동기 적용(깜빡임 최소화)
+      if (Math.abs(el.scrollTop - targetTop) < 0.5) return;
+      el.scrollTop = targetTop;
     };
 
     const scrollToCenter = React.useCallback(
@@ -187,7 +178,6 @@ const WheelTimePicker: React.FC<WheelTimePickerProps> = React.memo(
       [PAD, ITEM_H, CENTER_OFFSET]
     );
 
-    // 외부 value 변경 시: 값 + 스크롤(동기)만 맞춤
     React.useLayoutEffect(() => {
       setMer(derived.mer);
       setH12(derived.h12);
@@ -216,7 +206,6 @@ const WheelTimePicker: React.FC<WheelTimePickerProps> = React.memo(
       onChange(value.hour(h24).minute(nextMin).second(0));
     };
 
-    // 11 <-> 12 넘어갈 때 오전/오후 자동 토글(클릭 기반)
     const autoFlipMerIfNeeded = (prevH: number, nextH: number, curMer: "오전" | "오후") => {
       if ((prevH === 11 && nextH === 12) || (prevH === 12 && nextH === 11)) {
         return curMer === "오전" ? "오후" : "오전";
@@ -261,9 +250,7 @@ const WheelTimePicker: React.FC<WheelTimePickerProps> = React.memo(
 
     return (
       <div style={{ display: "flex", gap: 14, justifyContent: "center", padding: "10px 0" }}>
-        <style>{`
-          .wtp-col::-webkit-scrollbar { display: none; }
-        `}</style>
+        <style>{`.wtp-col::-webkit-scrollbar { display: none; }`}</style>
 
         {/* 오전/오후 */}
         <div className="wtp-col" ref={merRef} style={colStyle}>
@@ -277,7 +264,7 @@ const WheelTimePicker: React.FC<WheelTimePickerProps> = React.memo(
                 onClick={() => {
                   setMer(v);
                   commit(v, h12, min);
-                  scrollToCenter(merRef.current, idx, true); // 이 컬럼만 중앙
+                  scrollToCenter(merRef.current, idx, true);
                 }}
               >
                 {v}
@@ -287,7 +274,7 @@ const WheelTimePicker: React.FC<WheelTimePickerProps> = React.memo(
           <div style={spacer} />
         </div>
 
-        {/* 시(1~12) */}
+        {/* 시 */}
         <div className="wtp-col" ref={hourRef} style={colStyle}>
           <div style={spacer} />
           {Array.from({ length: 12 }, (_, i) => i + 1).map((v, idx) => {
@@ -302,7 +289,7 @@ const WheelTimePicker: React.FC<WheelTimePickerProps> = React.memo(
                   setH12(nextH12);
                   if (nextMer !== mer) setMer(nextMer);
                   commit(nextMer, nextH12, min);
-                  scrollToCenter(hourRef.current, idx, true); // 이 컬럼만 중앙
+                  scrollToCenter(hourRef.current, idx, true);
                 }}
               >
                 {pad2(v)}
@@ -324,7 +311,7 @@ const WheelTimePicker: React.FC<WheelTimePickerProps> = React.memo(
                 onClick={() => {
                   setMin(v);
                   commit(mer, h12, v);
-                  scrollToCenter(minRef.current, idx, true); // 이 컬럼만 중앙
+                  scrollToCenter(minRef.current, idx, true);
                 }}
               >
                 {pad2(v)}
@@ -342,6 +329,9 @@ const Calendar: React.FC = () => {
   // 로그인 붙기 전 임시 유저
   const currentUserId = "userA";
 
+  // ✅ FullCalendar API 접근(ref)
+  const calRef = useRef<FullCalendar | null>(null);
+
   const [events, setEvents] = useState<CalEvent[]>([
     {
       id: "e1",
@@ -354,61 +344,62 @@ const Calendar: React.FC = () => {
     },
   ]);
 
-    // 주말, 공휴일 API
-    const [holidaySet, setHolidaySet] = useState<Set<string>>(new Set());
-    const [holidayMap, setHolidayMap] = useState<Map<string, string>>(new Map()); // (옵션) date -> name
-    const [holidayYear, setHolidayYear] = useState<number>(dayjs().year());
+  // ✅ 주말/공휴일 API
+  const [holidaySet, setHolidaySet] = useState<Set<string>>(new Set());
+  const [holidayMap, setHolidayMap] = useState<Map<string, string>>(new Map()); // date -> name
+  const [holidayYear, setHolidayYear] = useState<number>(dayjs().year());
 
-    useEffect(() => {
-      let alive = true;
-    
-      (async () => {
-        try {
-          const res = await fetch(`${API_BASE}/api/holidays?year=${holidayYear}`);
-          const data = await res.json();
-    
-          if (!alive) return;
-    
-          if (!res.ok || !data?.ok) {
-            setHolidaySet(new Set());
-            setHolidayMap(new Map());
-            return;
-          }
-    
-          const s = new Set<string>();
-          const m = new Map<string, string>();
-    
-          for (const h of data.holidays ?? []) {
-            if (!h?.date) continue;
-            s.add(h.date);
-            if (h?.name) m.set(h.date, h.name);
-          }
-    
-          setHolidaySet(s);
-          setHolidayMap(m);
-        } catch {
-          if (!alive) return;
+  useEffect(() => {
+    let alive = true;
+
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/holidays?year=${holidayYear}`);
+        const data = await res.json();
+
+        if (!alive) return;
+
+        if (!res.ok || !data?.ok) {
           setHolidaySet(new Set());
           setHolidayMap(new Map());
+          return;
         }
-      })();
-    
-      return () => {
-        alive = false;
-      };
-    }, [holidayYear]);
 
-    const getDayType = React.useCallback(
-      (d: Dayjs) => {
-        const dow = d.day(); // 0=일, 6=토
-        const isHol = holidaySet.has(d.format("YYYY-MM-DD"));
-    
-        if (isHol || dow === 0) return "red";   // 일/공휴일
-        if (dow === 6) return "blue";           // 토
-        return "black";
-      },
-      [holidaySet]
-    );
+        const s = new Set<string>();
+        const m = new Map<string, string>();
+
+        for (const h of data.holidays ?? []) {
+          if (!h?.date) continue;
+          s.add(h.date);
+          if (h?.name) m.set(h.date, h.name);
+        }
+
+        setHolidaySet(s);
+        setHolidayMap(m);
+      } catch {
+        if (!alive) return;
+        setHolidaySet(new Set());
+        setHolidayMap(new Map());
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [holidayYear]);
+
+
+
+  const getDayType = React.useCallback(
+    (d: Dayjs) => {
+      const dow = d.day(); // 0=일, 6=토
+      const isHol = holidaySet.has(d.format("YYYY-MM-DD"));
+      if (isHol || dow === 0) return "red";
+      if (dow === 6) return "blue";
+      return "black";
+    },
+    [holidaySet]
+  );
 
   const [mode, setMode] = useState<ModalMode>("none");
   const [picker, setPicker] = useState<PickerTarget>("none");
@@ -434,9 +425,6 @@ const Calendar: React.FC = () => {
     setMode("none");
   };
 
-  // start/end 역전 보정 규칙
-  // - start 변경 후 start > end이면 end = start + 1h
-  // - end 변경 후 end < start이면 start = end - 1h
   const ensureOrderAfterStartChange = (nextStart: Dayjs, currentEnd: Dayjs) => {
     if (nextStart.isAfter(currentEnd)) return { start: nextStart, end: addHours(nextStart, 1) };
     return { start: nextStart, end: currentEnd };
@@ -447,7 +435,6 @@ const Calendar: React.FC = () => {
     return { start: currentStart, end: nextEnd };
   };
 
-  // 날짜 1칸 클릭 → 생성(기본 09:00~10:00)
   const onDateClick = (info: any) => {
     const base = dayjs(`${info.dateStr}T09:00`);
     const start = base;
@@ -471,7 +458,6 @@ const Calendar: React.FC = () => {
     setMode("create");
   };
 
-  // 이벤트 클릭 → 상세/수정 모달
   const onEventClick = (info: any) => {
     const e = info.event;
     const startD = toDayjs(e.startStr || "");
@@ -525,7 +511,16 @@ const Calendar: React.FC = () => {
     setEvents((prev) =>
       prev.map((ev) =>
         ev.id === form.id
-          ? { ...ev, title: t, start: form.start, end: form.end, allDay: form.allDay, memo: form.memo, repeat: form.repeat, color: form.color }
+          ? {
+              ...ev,
+              title: t,
+              start: form.start,
+              end: form.end,
+              allDay: form.allDay,
+              memo: form.memo,
+              repeat: form.repeat,
+              color: form.color,
+            }
           : ev
       )
     );
@@ -540,7 +535,6 @@ const Calendar: React.FC = () => {
   const startD = toDayjs(form.start);
   const endD = toDayjs(form.end);
 
-  // allDay 토글
   const onToggleAllDay = (checked: boolean) => {
     setForm((p) => {
       const s = toDayjs(p.start);
@@ -554,7 +548,14 @@ const Calendar: React.FC = () => {
         const nextEnd = e.hour(23).minute(59);
         const fixed = ensureOrderAfterStartChange(nextStart, nextEnd);
 
-        return { ...p, allDay: true, prevStartTime: backupStart, prevEndTime: backupEnd, start: formatISO(fixed.start), end: formatISO(fixed.end) };
+        return {
+          ...p,
+          allDay: true,
+          prevStartTime: backupStart,
+          prevEndTime: backupEnd,
+          start: formatISO(fixed.start),
+          end: formatISO(fixed.end),
+        };
       } else {
         const sDate = s.format("YYYY-MM-DD");
         const eDate = e.format("YYYY-MM-DD");
@@ -571,7 +572,6 @@ const Calendar: React.FC = () => {
     });
   };
 
-  // 시작 날짜 변경
   const onPickStartDate = (d: Dayjs) => {
     setForm((p) => {
       const curStart = toDayjs(p.start);
@@ -586,7 +586,6 @@ const Calendar: React.FC = () => {
     });
   };
 
-  // 종료 날짜 변경
   const onPickEndDate = (d: Dayjs) => {
     setForm((p) => {
       const curStart = toDayjs(p.start);
@@ -601,7 +600,6 @@ const Calendar: React.FC = () => {
     });
   };
 
-  // 시작 시간 변경
   const onPickStartTime = (t: Dayjs) => {
     setForm((p) => {
       const curStart = toDayjs(p.start);
@@ -619,15 +617,6 @@ const Calendar: React.FC = () => {
     });
   };
 
-  // 날짜 색상 
-  const dateTextColor = (d: Dayjs) => {
-    const t = getDayType(d);
-    if (t === "red") return "#dc2626";
-    if (t === "blue") return "#2563eb";
-    return "rgba(0,0,0,0.90)";
-  };
-
-  // 종료 시간 변경
   const onPickEndTime = (t: Dayjs) => {
     setForm((p) => {
       const curStart = toDayjs(p.start);
@@ -645,7 +634,13 @@ const Calendar: React.FC = () => {
     });
   };
 
-  // 모달 상단 텍스트 버튼
+  const dateTextColor = (d: Dayjs) => {
+    const t = getDayType(d);
+    if (t === "red") return "#dc2626";
+    if (t === "blue") return "#2563eb";
+    return "rgba(0,0,0,0.90)";
+  };
+
   const StartDateBtn = (
     <button
       type="button"
@@ -660,7 +655,11 @@ const Calendar: React.FC = () => {
     <button
       type="button"
       onClick={() => setPicker((p) => (p === "startTime" ? "none" : "startTime"))}
-      style={{ ...textPillBtnStyle(picker === "startTime"), opacity: form.allDay ? 0.5 : 1, cursor: form.allDay ? "not-allowed" : "pointer" }}
+      style={{
+        ...textPillBtnStyle(picker === "startTime"),
+        opacity: form.allDay ? 0.5 : 1,
+        cursor: form.allDay ? "not-allowed" : "pointer",
+      }}
       disabled={form.allDay}
     >
       {formatKoreanTimeLabel(startD)}
@@ -681,7 +680,11 @@ const Calendar: React.FC = () => {
     <button
       type="button"
       onClick={() => setPicker((p) => (p === "endTime" ? "none" : "endTime"))}
-      style={{ ...textPillBtnStyle(picker === "endTime"), opacity: form.allDay ? 0.5 : 1, cursor: form.allDay ? "not-allowed" : "pointer" }}
+      style={{
+        ...textPillBtnStyle(picker === "endTime"),
+        opacity: form.allDay ? 0.5 : 1,
+        cursor: form.allDay ? "not-allowed" : "pointer",
+      }}
       disabled={form.allDay}
     >
       {formatKoreanTimeLabel(endD)}
@@ -693,51 +696,36 @@ const Calendar: React.FC = () => {
 
   return (
     <div style={{ width: "100%" }}>
-      {/* ✅ FullCalendar 이벤트 “dot” 제거 + 블록 형태 통일 */}
       <style>{`
-        /* 기본: 월뷰에서 이벤트를 블록처럼 보이게 */
-        .fc .fc-daygrid-event {
-          border-radius: 8px;
-          padding: 2px 6px;
-        }
+        .fc .fc-daygrid-event { border-radius: 8px; padding: 2px 6px; }
 
-        /* 혹시 남는 dot-event(점 형태)를 블록처럼 강제 */
         .fc .fc-daygrid-dot-event {
           border-radius: 8px;
           padding: 2px 6px;
           background: var(--fc-event-bg-color, rgba(30,42,120,0.2));
           border: 1px solid var(--fc-event-border-color, rgba(30,42,120,0.35));
         }
-        .fc .fc-daygrid-dot-event .fc-daygrid-event-dot {
-          display: none; /* 왼쪽 동그라미 제거 */
-        }
+        .fc .fc-daygrid-dot-event .fc-daygrid-event-dot { display: none; }
         .fc .fc-daygrid-dot-event .fc-event-title,
-        .fc .fc-daygrid-dot-event .fc-event-time {
-          color: var(--fc-event-text-color, #fff);
-          font-weight: 700;
-        }
-        /* 날짜 숫자 색 */
-        .fc .pz-day-red  .fc-daygrid-day-number { color: #dc2626 !important; } /* 빨강 */
-        .fc .pz-day-blue .fc-daygrid-day-number { color: #2563eb !important; } /* 파랑 */
-      
-        /* 요일 헤더(S M T W...) 색 */
-        .fc .pz-dow-red  .fc-col-header-cell-cushion { color: #dc2626 !important; }
-        .fc .pz-dow-blue .fc-col-header-cell-cushion { color: #2563eb !important; }  
-        
-        /* 공휴일 툴팁 대상(숫자 wrapper) */
-        .fc .pz-holiday-tip .pz-daycell {
-          position: relative;
-          display: inline-block;
-        }        
+        .fc .fc-daygrid-dot-event .fc-event-time { color: var(--fc-event-text-color, #fff); font-weight: 700; }
 
-        /* tooltip 박스 */
-        .fc .pz-holiday-tip .pz-daycell:hover::after {
+        /* 날짜 숫자 색 */
+        .fc .pz-day-red  .fc-daygrid-day-number { color: #dc2626 !important; }
+        .fc .pz-day-blue .fc-daygrid-day-number { color: #2563eb !important; }
+
+        /* 요일 헤더 색 */
+        .fc .pz-dow-red  .fc-col-header-cell-cushion { color: #dc2626 !important; }
+        .fc .pz-dow-blue .fc-col-header-cell-cushion { color: #2563eb !important; }
+
+        /* 공휴일 tooltip(브라우저 기본 title이 아니라 커스텀) */
+        .fc .pz-holiday-tip { position: relative; }
+        .fc .pz-holiday-tip:hover::after {
           content: attr(data-holiday);
           position: absolute;
           left: 50%;
-          top: 18px;               /* 숫자 아래로 살짝 */
+          top: 4px;
           transform: translateX(-50%);
-          z-index: 999999;        
+          z-index: 999999;
           padding: 6px 8px;
           border-radius: 8px;
           border: 1px solid rgba(0,0,0,0.12);
@@ -747,22 +735,18 @@ const Calendar: React.FC = () => {
           font-weight: 700;
           white-space: nowrap;
           pointer-events: none;
-        }       
-
-        /* tooltip 화살표 */
-        .fc .pz-holiday-tip .pz-daycell:hover::before {
+        }
+        .fc .pz-holiday-tip:hover::before {
           content: "";
           position: absolute;
           left: 50%;
-          top: 10px;
+          top: 0px;
           transform: translateX(-50%);
-          z-index: 999999;        
+          z-index: 999999;
           border: 6px solid transparent;
           border-bottom-color: rgba(0,0,0,0.85);
           pointer-events: none;
         }
-        .fc .fc-daygrid-day-frame { overflow: visible; }
-        .fc .fc-scrollgrid-section-liquid { overflow: visible; }
       `}</style>
 
       <div
@@ -774,56 +758,51 @@ const Calendar: React.FC = () => {
         }}
       >
         <FullCalendar
+          key={holidayMap.size} 
+          ref={calRef}
           plugins={[dayGridPlugin, interactionPlugin]}
           initialView="dayGridMonth"
           height={calendarHeight}
           locale="ko"
           headerToolbar={{ left: "prev,next today", center: "title", right: "" }}
-
-          /* 현재 보고 있는 연도 추적 */
           datesSet={(arg) => {
-              const y = dayjs(arg.start).add(10, "day").year();
-              setHolidayYear(y);
+            const y = dayjs(arg.start).add(10, "day").year();
+            setHolidayYear(y);
           }}
+          dayCellDidMount={(arg) => {
+            // ✅ 공휴일 이름 tooltip(커스텀)
+            const ymd = dayjs(arg.date).format("YYYY-MM-DD");
+            const name = holidayMap.get(ymd);
 
-          /* 공휴일 이름 tooltip */
+            const frame = arg.el.querySelector(".fc-daygrid-day-frame") as HTMLElement | null;
+            const target = frame ?? (arg.el as HTMLElement);
+
+            if (name) {
+              target.dataset.holiday = name;
+              target.classList.add("pz-holiday-tip");
+            } else {
+              delete target.dataset.holiday;
+              target.classList.remove("pz-holiday-tip");
+            }
+          }}
           dateClick={onDateClick}
           eventClick={onEventClick}
           displayEventTime={false}
           displayEventEnd={false}
           dayCellClassNames={(arg) => {
             const d = dayjs(arg.date);
-            const ymd = d.format("YYYY-MM-DD");
-          
             const t = getDayType(d);
-            const classes: string[] = [];
-          
-            if (t === "red") classes.push("pz-day-red");
-            if (t === "blue") classes.push("pz-day-blue");
-          
-            if (holidayMap.has(ymd)) classes.push("pz-holiday-tip"); // ✅ 공휴일이면 툴팁 클래스
-            return classes;
-          }}
-          dayCellContent={(arg) => {
-            const ymd = dayjs(arg.date).format("YYYY-MM-DD");
-            const name = holidayMap.get(ymd);
-          
-            // 기본 숫자 렌더는 유지하면서, wrapper에 dataset을 심어주는 방식
-            return (
-              <div className="pz-daycell" data-holiday={name ?? ""}>
-                {arg.dayNumberText}
-              </div>
-            );
+            if (t === "red") return ["pz-day-red"];
+            if (t === "blue") return ["pz-day-blue"];
+            return [];
           }}
           dayHeaderClassNames={(arg) => {
             const d = dayjs(arg.date);
             const dow = d.day();
-            if (dow === 0) return ["pz-dow-red"];  // 요일 헤더(일)
-            if (dow === 6) return ["pz-dow-blue"]; // 요일 헤더(토)
+            if (dow === 0) return ["pz-dow-red"];
+            if (dow === 6) return ["pz-dow-blue"];
             return [];
           }}
-
-          /* 핵심: dayGridMonth에서 점(dot) 대신 블록 형태 우선 */
           eventDisplay="block"
           events={events.map((e) => ({
             id: e.id,
@@ -868,12 +847,18 @@ const Calendar: React.FC = () => {
             {/* 헤더 */}
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
               <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 700, fontSize: 16 }}>{mode === "create" ? "일정 추가" : "일정 상세"}</div>
+                <div style={{ fontWeight: 700, fontSize: 16 }}>
+                  {mode === "create" ? "일정 추가" : "일정 상세"}
+                </div>
 
                 {/* 하루종일 토글 */}
                 <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 10 }}>
                   <span style={{ fontSize: 14, fontWeight: 600 }}>하루 종일</span>
-                  <Switch checked={form.allDay} onChange={(e) => onToggleAllDay(e.target.checked)} inputProps={{ "aria-label": "all day" }} />
+                  <Switch
+                    checked={form.allDay}
+                    onChange={(e) => onToggleAllDay(e.target.checked)}
+                    inputProps={{ "aria-label": "all day" }}
+                  />
                 </div>
 
                 {/* 시작/종료 텍스트 버튼 */}
@@ -915,7 +900,9 @@ const Calendar: React.FC = () => {
                 <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="ko">
                   {(picker === "startDate" || picker === "endDate") && (
                     <div>
-                      <div style={{ fontWeight: 700, marginBottom: 10 }}>{picker === "startDate" ? "시작 날짜 선택" : "종료 날짜 선택"}</div>
+                      <div style={{ fontWeight: 700, marginBottom: 10 }}>
+                        {picker === "startDate" ? "시작 날짜 선택" : "종료 날짜 선택"}
+                      </div>
                       <DateCalendar
                         value={picker === "startDate" ? startD : endD}
                         onChange={(d) => {
@@ -923,14 +910,13 @@ const Calendar: React.FC = () => {
                           if (picker === "startDate") onPickStartDate(d);
                           else onPickEndDate(d);
                         }}
-                          slots={{ day: CustomDay as any }}
-                          slotProps={{
-                              day: { holidaySet } as any,
-                          }}
-                          sx={{
-                              /* 요일 헤더 색 */
-                              "& .MuiDayCalendar-weekDayLabel:first-of-type": { color: "#dc2626" }, // 일
-                              "& .MuiDayCalendar-weekDayLabel:last-of-type": { color: "#2563eb" }, // 토
+                        slots={{ day: CustomDay as any }}
+                        slotProps={{
+                          day: { holidaySet } as any,
+                        }}
+                        sx={{
+                          "& .MuiDayCalendar-weekDayLabel:first-of-type": { color: "#dc2626" },
+                          "& .MuiDayCalendar-weekDayLabel:last-of-type": { color: "#2563eb" },
                         }}
                       />
                     </div>
@@ -938,7 +924,9 @@ const Calendar: React.FC = () => {
 
                   {isTimeOpen && (
                     <div>
-                      <div style={{ fontWeight: 700, marginBottom: 10 }}>{picker === "startTime" ? "시작 시간 선택" : "종료 시간 선택"}</div>
+                      <div style={{ fontWeight: 700, marginBottom: 10 }}>
+                        {picker === "startTime" ? "시작 시간 선택" : "종료 시간 선택"}
+                      </div>
 
                       <div style={{ opacity: form.allDay ? 0.5 : 1, pointerEvents: form.allDay ? "none" : "auto" }}>
                         <WheelTimePicker
@@ -952,7 +940,9 @@ const Calendar: React.FC = () => {
                       </div>
 
                       {form.allDay && (
-                        <div style={{ marginTop: 8, fontSize: 12, opacity: 0.65 }}>* 하루 종일이 켜져있어서 시간 변경은 비활성화됩니다.</div>
+                        <div style={{ marginTop: 8, fontSize: 12, opacity: 0.65 }}>
+                          * 하루 종일이 켜져있어서 시간 변경은 비활성화됩니다.
+                        </div>
                       )}
                     </div>
                   )}
@@ -967,7 +957,13 @@ const Calendar: React.FC = () => {
                 value={form.title}
                 onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
                 placeholder="예: 생일, 여행, 병원"
-                style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: "1px solid rgba(0,0,0,0.15)", outline: "none" }}
+                style={{
+                  width: "100%",
+                  padding: "10px 12px",
+                  borderRadius: 10,
+                  border: "1px solid rgba(0,0,0,0.15)",
+                  outline: "none",
+                }}
                 autoFocus
               />
             </div>
@@ -980,7 +976,14 @@ const Calendar: React.FC = () => {
                 onChange={(e) => setForm((p) => ({ ...p, memo: e.target.value }))}
                 rows={3}
                 placeholder="한두 줄 메모"
-                style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: "1px solid rgba(0,0,0,0.15)", outline: "none", resize: "vertical" }}
+                style={{
+                  width: "100%",
+                  padding: "10px 12px",
+                  borderRadius: 10,
+                  border: "1px solid rgba(0,0,0,0.15)",
+                  outline: "none",
+                  resize: "vertical",
+                }}
               />
             </div>
 
@@ -990,7 +993,13 @@ const Calendar: React.FC = () => {
               <select
                 value={form.repeat}
                 onChange={(e) => setForm((p) => ({ ...p, repeat: e.target.value as RepeatType }))}
-                style={{ flex: 1, padding: "10px 12px", borderRadius: 10, border: "1px solid rgba(0,0,0,0.15)", outline: "none" }}
+                style={{
+                  flex: 1,
+                  padding: "10px 12px",
+                  borderRadius: 10,
+                  border: "1px solid rgba(0,0,0,0.15)",
+                  outline: "none",
+                }}
               >
                 <option value="none">반복 안함</option>
                 <option value="daily">매일</option>
@@ -1016,7 +1025,13 @@ const Calendar: React.FC = () => {
             <div style={{ display: "flex", gap: 10, marginTop: 14, justifyContent: "flex-end" }}>
               <button
                 onClick={closeModal}
-                style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid rgba(0,0,0,0.15)", background: "#fff", cursor: "pointer" }}
+                style={{
+                  padding: "10px 12px",
+                  borderRadius: 10,
+                  border: "1px solid rgba(0,0,0,0.15)",
+                  background: "#fff",
+                  cursor: "pointer",
+                }}
               >
                 취소
               </button>
@@ -1024,7 +1039,14 @@ const Calendar: React.FC = () => {
               {mode === "create" ? (
                 <button
                   onClick={saveNew}
-                  style={{ padding: "10px 12px", borderRadius: 10, border: "none", background: "#1e2a78", color: "#fff", cursor: "pointer" }}
+                  style={{
+                    padding: "10px 12px",
+                    borderRadius: 10,
+                    border: "none",
+                    background: "#1e2a78",
+                    color: "#fff",
+                    cursor: "pointer",
+                  }}
                 >
                   저장
                 </button>
@@ -1063,7 +1085,9 @@ const Calendar: React.FC = () => {
             </div>
 
             {!canEdit && mode === "detail" && (
-              <div style={{ marginTop: 10, fontSize: 12, opacity: 0.65 }}>* 다른 사람이 만든 일정은 수정/삭제할 수 없습니다.</div>
+              <div style={{ marginTop: 10, fontSize: 12, opacity: 0.65 }}>
+                * 다른 사람이 만든 일정은 수정/삭제할 수 없습니다.
+              </div>
             )}
           </div>
         </div>
