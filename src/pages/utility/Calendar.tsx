@@ -1,408 +1,43 @@
-// Calendar.tsx
-import React, { useMemo, useEffect, useState, useRef } from "react";
+import React, { useMemo, useRef, useState, useEffect } from "react";
 import FullCalendar from "@fullcalendar/react";
-import dayGridPlugin from "@fullcalendar/daygrid";
-import interactionPlugin from "@fullcalendar/interaction";
-
 import dayjs, { Dayjs } from "dayjs";
 import "dayjs/locale/ko";
 
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
-import Switch from "@mui/material/Switch";
-import { PickersDay } from "@mui/x-date-pickers/PickersDay";
-import type { PickersDayProps } from "@mui/x-date-pickers/PickersDay";
+import type { CalEvent, FormState, ModalMode, PickerTarget } from "./calendar/types";
+import { useHolidays } from "./calendar/hooks/useHolidays";
+import { CalendarView } from "./calendar/components/CalendarView";
+import { EventModal } from "./calendar/components/EventModal";
+
+import { addHours, formatISO, pad2, toDayjs } from "./calendar/utils/date";
+import { expandRecurringEvents } from "./calendar/utils/recurrence";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
 dayjs.locale("ko");
 
-type RepeatType = "none" | "daily" | "weekly" | "monthly" | "yearly";
-
-type CalEvent = {
-  id: string;
-  title: string;
-  start: string; // ISO (YYYY-MM-DDTHH:mm)
-  end?: string; // ISO
-  allDay: boolean;
-  memo?: string;
-  repeat?: RepeatType;
-  color?: string;
-  createdBy: string;
+type MeResponse = {
+  ok: boolean;
+  user?: { id: number; email: string; name: string | null };
+  defaultCalendarId?: number | null;
+  calendarRole?: string | null;
+  message?: string;
 };
-
-type ModalMode = "none" | "create" | "detail";
-type PickerTarget = "none" | "startDate" | "startTime" | "endDate" | "endTime";
-
-type FormState = {
-  id: string;
-  title: string;
-  start: string; // YYYY-MM-DDTHH:mm
-  end: string; // YYYY-MM-DDTHH:mm
-  memo: string;
-  repeat: RepeatType;
-  color: string;
-  createdBy: string;
-  allDay: boolean;
-  prevStartTime: string; // allDay 토글 OFF 시 복원용
-  prevEndTime: string; // allDay 토글 OFF 시 복원용
-};
-
-const pad2 = (n: number) => String(n).padStart(2, "0");
-
-// ISO(YYYY-MM-DD or YYYY-MM-DDTHH:mm(:ss)) -> Dayjs
-const toDayjs = (iso: string): Dayjs => {
-  if (!iso) return dayjs();
-  if (iso.includes("T")) return dayjs(iso);
-  return dayjs(`${iso}T00:00`);
-};
-
-const formatISO = (d: Dayjs) => d.format("YYYY-MM-DDTHH:mm");
-
-// "오전/오후 h:mm" 표시용
-const formatKoreanTimeLabel = (d: Dayjs) => {
-  const h24 = d.hour();
-  const m = d.minute();
-  const isPM = h24 >= 12;
-  const meridiem = isPM ? "오후" : "오전";
-  let h12 = h24 % 12;
-  if (h12 === 0) h12 = 12;
-  return `${meridiem} ${h12}:${pad2(m)}`;
-};
-
-// "2월 12일 (목)" 표시용
-const formatKoreanDateLabel = (d: Dayjs) => d.format("M월 D일 (ddd)");
-const addHours = (d: Dayjs, hours: number) => d.add(hours, "hour");
-
-function textPillBtnStyle(active: boolean): React.CSSProperties {
-  return {
-    border: "1px solid rgba(0,0,0,0.10)",
-    background: active ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.03)",
-    padding: "10px 12px",
-    borderRadius: 999,
-    fontSize: 18,
-    fontWeight: 700,
-    cursor: "pointer",
-    lineHeight: 1.1,
-  };
-}
-
-/** MUI DateCalendar Day 커스텀(색상) */
-type CustomDayProps = PickersDayProps & {
-  holidaySet: Set<string>;
-};
-function CustomDay(props: CustomDayProps) {
-  const { day, outsideCurrentMonth, holidaySet, ...other } = props;
-
-  const d = day as unknown as Dayjs;
-  const isHol = holidaySet.has(d.format("YYYY-MM-DD"));
-  const dow = d.day(); // 0=일, 6=토
-
-  const isRed = isHol || dow === 0;
-  const isBlue = dow === 6;
-
-  return (
-    <PickersDay
-      day={day}
-      outsideCurrentMonth={outsideCurrentMonth}
-      {...other}
-      sx={{
-        ...(isRed && { color: "#dc2626" }),
-        ...(isBlue && { color: "#2563eb" }),
-      }}
-    />
-  );
-}
-
-/* =============================================================================
-   WheelTimePicker (모달에서만 사용)
-============================================================================= */
-type WheelTimePickerProps = {
-  value: Dayjs;
-  onChange: (next: Dayjs) => void;
-  minutesStep?: number;
-};
-
-const WheelTimePicker: React.FC<WheelTimePickerProps> = React.memo(
-  ({ value, onChange, minutesStep = 5 }) => {
-    const ITEM_H = 44;
-    const VISIBLE = 5;
-    const PAD = ((VISIBLE - 1) / 2) * ITEM_H;
-    const CENTER_OFFSET = Math.floor(VISIBLE / 2) * ITEM_H;
-
-    const minuteOptions = React.useMemo(() => {
-      const arr: number[] = [];
-      for (let m = 0; m < 60; m += minutesStep) arr.push(m);
-      return arr;
-    }, [minutesStep]);
-
-    const derived = React.useMemo(() => {
-      const h24 = value.hour();
-      const m = value.minute();
-
-      const mer: "오전" | "오후" = h24 >= 12 ? "오후" : "오전";
-      let h12 = h24 % 12;
-      if (h12 === 0) h12 = 12;
-
-      const nearestMin = minuteOptions.reduce(
-        (best, cur) => (Math.abs(cur - m) < Math.abs(best - m) ? cur : best),
-        minuteOptions[0]
-      );
-
-      return { mer, h12, min: nearestMin };
-    }, [value, minuteOptions]);
-
-    const [mer, setMer] = React.useState<"오전" | "오후">(derived.mer);
-    const [h12, setH12] = React.useState<number>(derived.h12);
-    const [min, setMin] = React.useState<number>(derived.min);
-
-    const merRef = React.useRef<HTMLDivElement | null>(null);
-    const hourRef = React.useRef<HTMLDivElement | null>(null);
-    const minRef = React.useRef<HTMLDivElement | null>(null);
-
-    const setScrollTopIfNeeded = (el: HTMLDivElement | null, targetTop: number) => {
-      if (!el) return;
-      if (Math.abs(el.scrollTop - targetTop) < 0.5) return;
-      el.scrollTop = targetTop;
-    };
-
-    const scrollToCenter = React.useCallback(
-      (el: HTMLDivElement | null, idx: number, smooth: boolean) => {
-        if (!el) return;
-        const target = PAD + idx * ITEM_H - CENTER_OFFSET;
-        el.scrollTo({
-          top: Math.max(0, target),
-          behavior: smooth ? "smooth" : "auto",
-        });
-      },
-      [PAD, ITEM_H, CENTER_OFFSET]
-    );
-
-    React.useLayoutEffect(() => {
-      setMer(derived.mer);
-      setH12(derived.h12);
-      setMin(derived.min);
-
-      const merIdx = derived.mer === "오전" ? 0 : 1;
-      const hourIdx = derived.h12 - 1;
-      const minIdx = Math.max(0, minuteOptions.indexOf(derived.min));
-
-      const merTop = Math.max(0, PAD + merIdx * ITEM_H - CENTER_OFFSET);
-      const hourTop = Math.max(0, PAD + hourIdx * ITEM_H - CENTER_OFFSET);
-      const minTop = Math.max(0, PAD + minIdx * ITEM_H - CENTER_OFFSET);
-
-      setScrollTopIfNeeded(merRef.current, merTop);
-      setScrollTopIfNeeded(hourRef.current, hourTop);
-      setScrollTopIfNeeded(minRef.current, minTop);
-    }, [derived.mer, derived.h12, derived.min, minuteOptions, PAD, ITEM_H, CENTER_OFFSET]);
-
-    const to24h = (m_: "오전" | "오후", h12_: number) => {
-      if (m_ === "오전") return h12_ === 12 ? 0 : h12_;
-      return h12_ === 12 ? 12 : h12_ + 12;
-    };
-
-    const commit = (nextMer: "오전" | "오후", nextH12: number, nextMin: number) => {
-      const h24 = to24h(nextMer, nextH12);
-      onChange(value.hour(h24).minute(nextMin).second(0));
-    };
-
-    const autoFlipMerIfNeeded = (prevH: number, nextH: number, curMer: "오전" | "오후") => {
-      if ((prevH === 11 && nextH === 12) || (prevH === 12 && nextH === 11)) {
-        return curMer === "오전" ? "오후" : "오전";
-      }
-      return curMer;
-    };
-
-    const colStyle: React.CSSProperties = {
-      height: ITEM_H * VISIBLE,
-      width: 110,
-      overflowY: "auto",
-      borderRadius: 12,
-      background: "rgba(0,0,0,0.03)",
-      scrollbarWidth: "none",
-      msOverflowStyle: "none",
-      WebkitOverflowScrolling: "touch",
-    };
-
-    const itemBase: React.CSSProperties = {
-      height: ITEM_H,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontSize: 34,
-      fontWeight: 700,
-      color: "rgba(0,0,0,0.35)",
-      userSelect: "none",
-      cursor: "pointer",
-      borderRadius: 12,
-      margin: "0 10px",
-      background: "transparent",
-      border: "none",
-      outline: "none",
-    };
-
-    const itemSelected: React.CSSProperties = {
-      color: "rgba(0,0,0,0.90)",
-      background: "rgba(30,42,120,0.12)",
-    };
-
-    const spacer: React.CSSProperties = { height: PAD };
-
-    return (
-      <div style={{ display: "flex", gap: 14, justifyContent: "center", padding: "10px 0" }}>
-        <style>{`.wtp-col::-webkit-scrollbar { display: none; }`}</style>
-
-        {/* 오전/오후 */}
-        <div className="wtp-col" ref={merRef} style={colStyle}>
-          <div style={spacer} />
-          {(["오전", "오후"] as const).map((v, idx) => {
-            const isSelected = v === mer;
-            return (
-              <div
-                key={v}
-                style={{ ...itemBase, ...(isSelected ? itemSelected : {}) }}
-                onClick={() => {
-                  setMer(v);
-                  commit(v, h12, min);
-                  scrollToCenter(merRef.current, idx, true);
-                }}
-              >
-                {v}
-              </div>
-            );
-          })}
-          <div style={spacer} />
-        </div>
-
-        {/* 시 */}
-        <div className="wtp-col" ref={hourRef} style={colStyle}>
-          <div style={spacer} />
-          {Array.from({ length: 12 }, (_, i) => i + 1).map((v, idx) => {
-            const isSelected = v === h12;
-            return (
-              <div
-                key={v}
-                style={{ ...itemBase, ...(isSelected ? itemSelected : {}) }}
-                onClick={() => {
-                  const nextH12 = v;
-                  const nextMer = autoFlipMerIfNeeded(h12, nextH12, mer);
-                  setH12(nextH12);
-                  if (nextMer !== mer) setMer(nextMer);
-                  commit(nextMer, nextH12, min);
-                  scrollToCenter(hourRef.current, idx, true);
-                }}
-              >
-                {pad2(v)}
-              </div>
-            );
-          })}
-          <div style={spacer} />
-        </div>
-
-        {/* 분 */}
-        <div className="wtp-col" ref={minRef} style={colStyle}>
-          <div style={spacer} />
-          {minuteOptions.map((v, idx) => {
-            const isSelected = v === min;
-            return (
-              <div
-                key={v}
-                style={{ ...itemBase, ...(isSelected ? itemSelected : {}) }}
-                onClick={() => {
-                  setMin(v);
-                  commit(mer, h12, v);
-                  scrollToCenter(minRef.current, idx, true);
-                }}
-              >
-                {pad2(v)}
-              </div>
-            );
-          })}
-          <div style={spacer} />
-        </div>
-      </div>
-    );
-  }
-);
 
 const Calendar: React.FC = () => {
-  // 로그인 붙기 전 임시 유저
-  const currentUserId = "userA";
-
-  // ✅ FullCalendar API 접근(ref)
   const calRef = useRef<FullCalendar | null>(null);
 
-  const [events, setEvents] = useState<CalEvent[]>([
-    {
-      id: "e1",
-      title: "가족 모임",
-      start: "2026-02-07T09:00",
-      end: "2026-02-07T10:00",
-      allDay: false,
-      createdBy: "userA",
-      color: "#3b82f6",
-    },
-  ]);
+  const [formError, setFormError] = useState<string>("");
 
-  // ✅ 주말/공휴일 API
-  const [holidaySet, setHolidaySet] = useState<Set<string>>(new Set());
-  const [holidayMap, setHolidayMap] = useState<Map<string, string>>(new Map()); // date -> name
   const [holidayYear, setHolidayYear] = useState<number>(dayjs().year());
+  const { holidaySet, holidayMap } = useHolidays(API_BASE, holidayYear);
 
-  useEffect(() => {
-    let alive = true;
-
-    (async () => {
-      try {
-        const res = await fetch(`${API_BASE}/api/holidays?year=${holidayYear}`);
-        const data = await res.json();
-
-        if (!alive) return;
-
-        if (!res.ok || !data?.ok) {
-          setHolidaySet(new Set());
-          setHolidayMap(new Map());
-          return;
-        }
-
-        const s = new Set<string>();
-        const m = new Map<string, string>();
-
-        for (const h of data.holidays ?? []) {
-          if (!h?.date) continue;
-          s.add(h.date);
-          if (h?.name) m.set(h.date, h.name);
-        }
-
-        setHolidaySet(s);
-        setHolidayMap(m);
-      } catch {
-        if (!alive) return;
-        setHolidaySet(new Set());
-        setHolidayMap(new Map());
-      }
-    })();
-
-    return () => {
-      alive = false;
-    };
-  }, [holidayYear]);
-
-
-
-  const getDayType = React.useCallback(
-    (d: Dayjs) => {
-      const dow = d.day(); // 0=일, 6=토
-      const isHol = holidaySet.has(d.format("YYYY-MM-DD"));
-      if (isHol || dow === 0) return "red";
-      if (dow === 6) return "blue";
-      return "black";
-    },
-    [holidaySet]
-  );
+  const [events, setEvents] = useState<CalEvent[]>([]);
 
   const [mode, setMode] = useState<ModalMode>("none");
   const [picker, setPicker] = useState<PickerTarget>("none");
+
+  // ✅ 로그인/캘린더 정보
+  const [userId, setUserId] = useState<string>("");                 // createdBy 비교용
+  const [calendarId, setCalendarId] = useState<number | null>(null); // 이제 여기서만 관리
 
   const [form, setForm] = useState<FormState>({
     id: "",
@@ -411,16 +46,143 @@ const Calendar: React.FC = () => {
     end: "",
     memo: "",
     repeat: "none",
+    repeatInterval: 1,
+    repeatRangeStart: "",
+    repeatRangeEnd: "",
+    repeatSnap: { repeat: "none", repeatInterval: 1, repeatRangeStart: "", repeatRangeEnd: "" },
+    multiDates: [],
     color: "#1e2a78",
     createdBy: "",
     allDay: false,
     prevStartTime: "09:00",
     prevEndTime: "10:00",
+    clickedOccKey: "",
+    applyScope: "this",
   });
 
-  const calendarHeight = useMemo(() => "auto", []);
+  const [viewRange, setViewRange] = useState<{ start: Dayjs; end: Dayjs }>(() => {
+    const now = dayjs();
+    return { start: now.startOf("month"), end: now.endOf("month").add(1, "day") };
+  });
+
+  // ✅ /api/auth/me 로 userId + defaultCalendarId 가져오기
+  useEffect(() => {
+    console.log("✅ [ME] effect mounted");
+    (async () => {
+      const token = localStorage.getItem("accessToken");
+      console.log("✅ [ME] token exists?", !!token); // (2)
+      if (!token) {
+        setFormError("로그인이 필요합니다.");
+        return;
+      }
+
+      const res = await fetch(`${API_BASE}/api/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+       console.log("✅ [ME] status:", res.status); // (3)
+      const data = (await res.json().catch(() => null)) as MeResponse | null;
+       console.log("📦 [ME] raw:", data); // (4) 제일 중요
+      if (!res.ok || !data?.ok) {
+        setFormError(data?.message ?? "로그인 정보를 불러오지 못했습니다.");
+        return;
+      }
+
+      const uid = String(data.user?.id ?? "");
+      setUserId(uid);
+      
+      const cid = data.defaultCalendarId ?? null;
+      setCalendarId(cid);
+      console.log("📅 [ME] parsed calendarId:", cid, "typeof:", typeof cid); // (5)
+
+      if (!cid) {
+        setFormError("이 계정은 가입된 캘린더가 없습니다. (calendar_members 확인 필요)");
+      }
+    })();
+  }, []);
+
+  const loadEvents = React.useCallback(async () => {
+    const token = localStorage.getItem("accessToken");
+    if (!token) return;
+    if (!calendarId) return;
+
+    const res = await fetch(`${API_BASE}/api/calendar/events?calendarId=${calendarId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data?.ok) {
+      // 403이면 멤버십 문제
+      if (res.status === 403) setFormError("이 캘린더에 대한 권한이 없습니다. (calendar_members 확인)");
+      return;
+    }
+
+    const exceptionsById: Record<number, string[]> = {};
+    for (const ex of data.exceptions ?? []) {
+      (exceptionsById[ex.event_id] ||= []).push(ex.occ_key);
+    }
+
+    const overridesById: Record<number, any[]> = {};
+    for (const ov of data.overrides ?? []) {
+      (overridesById[ov.event_id] ||= []).push(ov);
+    }
+
+    const next: CalEvent[] = (data.events ?? []).map((e: any) => ({
+      id: String(e.id),
+      title: e.title,
+      start: e.start_at,
+      end: e.end_at,
+      allDay: !!e.all_day,
+      memo: e.memo ?? "",
+      color: e.color ?? "#1e2a78",
+      createdBy: String(e.created_by),
+
+      repeat: e.repeat_type ?? "none",
+      repeatInterval: e.repeat_interval ?? 1,
+      repeatRangeStart: e.repeat_range_start ?? "",
+      repeatRangeEnd: e.repeat_range_end ?? "",
+      repeatAnchorDom: e.repeat_anchor_dom ?? null,
+
+      repeatExceptions: exceptionsById[e.id] ?? [],
+      repeatOverrides: Object.fromEntries(
+        (overridesById[e.id] ?? []).map((o: any) => [
+          o.occ_key,
+          {
+            title: o.title ?? undefined,
+            memo: o.memo ?? undefined,
+            color: o.color ?? undefined,
+            allDay: o.all_day == null ? undefined : !!o.all_day,
+            start: o.start_at ?? undefined,
+            end: o.end_at ?? undefined,
+          },
+        ])
+      ),
+    }));
+
+    setEvents(next);
+  }, [calendarId]);
+
+  useEffect(() => {
+    // calendarId가 세팅된 뒤에만 호출
+    if (calendarId) loadEvents();
+  }, [calendarId, loadEvents]);
+
+  const expandedEvents = useMemo(
+    () => expandRecurringEvents(events, viewRange.start, viewRange.end),
+    [events, viewRange.start, viewRange.end]
+  );
+
+  const getDayType = React.useCallback(
+    (d: Dayjs) => {
+      const dow = d.day();
+      const isHol = holidaySet.has(d.format("YYYY-MM-DD"));
+      if (isHol || dow === 0) return "red";
+      if (dow === 6) return "blue";
+      return "black";
+    },
+    [holidaySet]
+  );
 
   const closeModal = () => {
+    setFormError("");
     setPicker("none");
     setMode("none");
   };
@@ -435,7 +197,43 @@ const Calendar: React.FC = () => {
     return { start: currentStart, end: nextEnd };
   };
 
+  const clampFollowingStart = (p: FormState, nextStart: Dayjs) => {
+    if (p.applyScope !== "following" || !p.clickedOccKey) return nextStart;
+
+    const min = toDayjs(p.clickedOccKey);
+    if (nextStart.isBefore(min, "day")) {
+      setFormError("‘이 일정과 이후’에서는 선택한 날짜보다 이전으로 시작할 수 없습니다.");
+      return min.hour(nextStart.hour()).minute(nextStart.minute()).second(0);
+    }
+    return nextStart;
+  };
+
+  const clampFollowingRepeatStartYmd = (p: FormState, ymd: string) => {
+    if (p.applyScope !== "following" || !p.clickedOccKey) return ymd;
+
+    const minYmd = toDayjs(p.clickedOccKey).format("YYYY-MM-DD");
+    if (dayjs(ymd).isBefore(dayjs(minYmd), "day")) {
+      setFormError("‘이 일정과 이후’에서는 반복 시작일을 선택한 날짜보다 이전으로 설정할 수 없습니다.");
+      return minYmd;
+    }
+    return ymd;
+  };
+
+  const toggleMultiDate = (ymd: string) => {
+    setForm((p) => {
+      const set = new Set(p.multiDates ?? []);
+      if (set.has(ymd)) set.delete(ymd);
+      else set.add(ymd);
+      return { ...p, multiDates: Array.from(set).sort() };
+    });
+  };
+
+  const clearMultiDates = () => {
+    setForm((p) => ({ ...p, multiDates: [] }));
+  };
+
   const onDateClick = (info: any) => {
+    setFormError("");
     const base = dayjs(`${info.dateStr}T09:00`);
     const start = base;
     const end = base.add(1, "hour");
@@ -447,11 +245,18 @@ const Calendar: React.FC = () => {
       end: formatISO(end),
       memo: "",
       repeat: "none",
+      repeatInterval: 1,
+      repeatRangeStart: "",
+      repeatRangeEnd: "",
+      repeatSnap: { repeat: "none", repeatInterval: 1, repeatRangeStart: "", repeatRangeEnd: "" },
+      multiDates: [info.dateStr],
       color: "#1e2a78",
-      createdBy: currentUserId,
+      createdBy: userId, // ✅ currentUserId 대신
       allDay: false,
       prevStartTime: "09:00",
       prevEndTime: "10:00",
+      clickedOccKey: "",
+      applyScope: "this",
     });
 
     setPicker("none");
@@ -459,81 +264,224 @@ const Calendar: React.FC = () => {
   };
 
   const onEventClick = (info: any) => {
+    setFormError("");
     const e = info.event;
+
     const startD = toDayjs(e.startStr || "");
     const endD = toDayjs(e.endStr || e.startStr || "");
 
+    const masterId = e.extendedProps?.masterId || e.id;
+    const occKey = e.extendedProps?.occKey || "";
+
+    const master = events.find((x) => x.id === masterId);
+
+    const snapRepeat = (master?.repeat ?? e.extendedProps?.repeat ?? "none") as any;
+    const snapInterval = Math.max(1, master?.repeatInterval ?? 1);
+    const snapRS = master?.repeatRangeStart ?? "";
+    const snapRE = master?.repeatRangeEnd ?? "";
+
     setForm({
-      id: e.id,
-      title: e.title || "",
+      id: masterId,
+      title: master?.title ?? e.title ?? "",
       start: formatISO(startD),
       end: formatISO(endD),
-      memo: e.extendedProps?.memo || "",
-      repeat: (e.extendedProps?.repeat as RepeatType) || "none",
-      color: e.backgroundColor || "#1e2a78",
-      createdBy: e.extendedProps?.createdBy || "",
-      allDay: !!e.allDay,
+      memo: master?.memo ?? e.extendedProps?.memo ?? "",
+      repeat: snapRepeat,
+      repeatInterval: snapInterval,
+      repeatRangeStart: snapRS,
+      repeatRangeEnd: snapRE,
+      repeatSnap: { repeat: snapRepeat, repeatInterval: snapInterval, repeatRangeStart: snapRS, repeatRangeEnd: snapRE },
+      multiDates: [],
+      color: master?.color ?? e.backgroundColor ?? "#1e2a78",
+      createdBy: master?.createdBy ?? e.extendedProps?.createdBy ?? "",
+      allDay: !!(master?.allDay ?? e.allDay),
       prevStartTime: startD.format("HH:mm"),
       prevEndTime: endD.format("HH:mm"),
+      clickedOccKey: occKey,
+      applyScope: "this",
     });
 
     setPicker("none");
     setMode("detail");
   };
 
-  const canEdit = form.createdBy === currentUserId;
+  const canEdit = form.createdBy === userId;
 
-  const saveNew = () => {
+  const isEditingRecurringOccurrence =
+    mode === "detail" && !!form.clickedOccKey && (form.repeatSnap.repeat ?? "none") !== "none";
+  const lockRepeatControls = isEditingRecurringOccurrence && form.applyScope === "this";
+
+  const saveNew = async () => {
+    
     const t = form.title.trim();
     if (!t) return;
 
-    setEvents((prev) => [
-      ...prev,
-      {
-        id: crypto.randomUUID(),
-        title: t,
-        start: form.start,
-        end: form.end,
-        allDay: form.allDay,
-        memo: form.memo,
-        repeat: form.repeat,
-        color: form.color,
-        createdBy: currentUserId,
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      setFormError("로그인이 필요합니다.");
+      return;
+    }
+    if (!calendarId) {
+      setFormError("캘린더 정보가 없습니다. (me에서 defaultCalendarId 확인)");
+      return;
+    }
+
+    const res = await fetch(`${API_BASE}/api/calendar/events`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
       },
-    ]);
+      body: JSON.stringify({
+        calendarId, // ✅ 하드코딩 제거
+        title: t,
+        memo: form.memo,
+        color: form.color,
+        allDay: form.allDay,
+        startAt: form.start,
+        endAt: form.end,
+
+        repeatType: form.repeat,
+        repeatInterval: form.repeatInterval,
+        repeatRangeStart: form.repeatRangeStart,
+        repeatRangeEnd: form.repeatRangeEnd,
+
+        multiDates: form.multiDates ?? [],
+
+        // monthly anchor: 시작일의 일자
+        repeatAnchorDom: form.repeat === "monthly" ? Number(form.start.slice(8, 10)) : null,
+      }),
+    });
+
+    
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok || !data?.ok) {
+      if (res.status === 403) setFormError("저장 권한이 없습니다. (calendar_members role 확인)");
+      else setFormError(data?.message ?? "저장 중 오류가 발생했습니다.");
+      return;
+    }
+
     closeModal();
+    await loadEvents();
   };
 
-  const updateEvent = () => {
+  // 아래 updateEvent/deleteEvent는 지금처럼 프론트 상태로만 바꾸고 있어서
+  // 백엔드 PUT/DELETE 붙이기 전이라면 그대로 두셔도 됩니다.
+  // (원하시면 PUT/DELETE까지 “완성본”으로 맞춰드릴게요.)
+  const updateEvent = async () => {
     const t = form.title.trim();
     if (!t) return;
 
-    setEvents((prev) =>
-      prev.map((ev) =>
-        ev.id === form.id
-          ? {
-              ...ev,
-              title: t,
-              start: form.start,
-              end: form.end,
-              allDay: form.allDay,
-              memo: form.memo,
-              repeat: form.repeat,
-              color: form.color,
-            }
-          : ev
-      )
-    );
-    closeModal();
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      setFormError("로그인이 필요합니다.");
+      return;
+    }
+
+    // form.id = masterId (events.id)
+    if (!form.id) {
+      setFormError("수정할 이벤트 id가 없습니다.");
+      return;
+    }
+
+    // 반복 일정일 때만 scope/occKey 의미가 있음
+    const isRecurringMaster = (form.repeatSnap?.repeat ?? "none") !== "none";
+    const scope =
+      isRecurringMaster && form.clickedOccKey
+        ? (form.applyScope ?? "this")
+        : "all";
+
+    const occKey = scope === "all" ? "" : (form.clickedOccKey ?? "");
+
+    try {
+      const res = await fetch(`${API_BASE}/api/calendar/events/${Number(form.id)}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          scope,     // "all" | "this" | "following"
+          occKey,    // scope가 this/following일 때 필요
+
+          title: t,
+          memo: form.memo,
+          color: form.color,
+          allDay: form.allDay,
+          startAt: form.start,
+          endAt: form.end,
+
+          // 반복 저장(backend updateEvent가 받는 필드들)
+          repeatType: form.repeat,
+          repeatInterval: form.repeatInterval,
+          repeatRangeStart: form.repeatRangeStart,
+          repeatRangeEnd: form.repeatRangeEnd,
+          repeatAnchorDom: form.repeat === "monthly" ? Number(form.start.slice(8, 10)) : null,
+        }),
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok || !data?.ok) {
+        if (res.status === 403) setFormError("수정 권한이 없습니다. (calendar_members role 확인)");
+        else setFormError(data?.message ?? "수정 중 오류가 발생했습니다.");
+        return;
+      }
+
+      closeModal();
+      await loadEvents();
+    } catch (e) {
+      setFormError("수정 요청 중 네트워크 오류가 발생했습니다.");
+    }
   };
 
-  const deleteEvent = () => {
-    setEvents((prev) => prev.filter((ev) => ev.id !== form.id));
-    closeModal();
-  };
+  const deleteEvent = async () => {
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      setFormError("로그인이 필요합니다.");
+      return;
+    }
+    if (!form.id) {
+      setFormError("삭제할 이벤트 id가 없습니다.");
+      return;
+    }
 
-  const startD = toDayjs(form.start);
-  const endD = toDayjs(form.end);
+    const isRecurringMaster = (form.repeatSnap?.repeat ?? "none") !== "none";
+    const scope =
+      isRecurringMaster && form.clickedOccKey
+        ? (form.applyScope ?? "this")
+        : "all";
+
+    const occKey = scope === "all" ? "" : (form.clickedOccKey ?? "");
+
+    try {
+      const res = await fetch(`${API_BASE}/api/calendar/events/${Number(form.id)}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          scope,   // "all" | "this" | "following"
+          occKey,  // scope가 this/following일 때 필요
+        }),
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok || !data?.ok) {
+        if (res.status === 403) setFormError("삭제 권한이 없습니다. (calendar_members role 확인)");
+        else setFormError(data?.message ?? "삭제 중 오류가 발생했습니다.");
+        return;
+      }
+
+      closeModal();
+      await loadEvents();
+    } catch (e) {
+      setFormError("삭제 요청 중 네트워크 오류가 발생했습니다.");
+    }
+  };
 
   const onToggleAllDay = (checked: boolean) => {
     setForm((p) => {
@@ -573,11 +521,14 @@ const Calendar: React.FC = () => {
   };
 
   const onPickStartDate = (d: Dayjs) => {
+    setFormError("");
     setForm((p) => {
       const curStart = toDayjs(p.start);
       const curEnd = toDayjs(p.end);
 
-      const nextStart = d.hour(curStart.hour()).minute(curStart.minute());
+      let nextStart = d.hour(curStart.hour()).minute(curStart.minute()).second(0);
+      nextStart = clampFollowingStart(p, nextStart);
+
       const normalizedStart = p.allDay ? nextStart.hour(0).minute(0) : nextStart;
       const normalizedEnd = p.allDay ? curEnd.hour(23).minute(59) : curEnd;
 
@@ -587,11 +538,12 @@ const Calendar: React.FC = () => {
   };
 
   const onPickEndDate = (d: Dayjs) => {
+    setFormError("");
     setForm((p) => {
       const curStart = toDayjs(p.start);
       const curEnd = toDayjs(p.end);
 
-      const nextEnd = d.hour(curEnd.hour()).minute(curEnd.minute());
+      const nextEnd = d.hour(curEnd.hour()).minute(curEnd.minute()).second(0);
       const normalizedEnd = p.allDay ? nextEnd.hour(23).minute(59) : nextEnd;
       const normalizedStart = p.allDay ? curStart.hour(0).minute(0) : curStart;
 
@@ -601,11 +553,12 @@ const Calendar: React.FC = () => {
   };
 
   const onPickStartTime = (t: Dayjs) => {
+    setFormError("");
     setForm((p) => {
       const curStart = toDayjs(p.start);
       const curEnd = toDayjs(p.end);
 
-      const nextStart = curStart.hour(t.hour()).minute(t.minute());
+      const nextStart = curStart.hour(t.hour()).minute(t.minute()).second(0);
       const fixed = ensureOrderAfterStartChange(nextStart, curEnd);
 
       return {
@@ -618,11 +571,12 @@ const Calendar: React.FC = () => {
   };
 
   const onPickEndTime = (t: Dayjs) => {
+    setFormError("");
     setForm((p) => {
       const curStart = toDayjs(p.start);
       const curEnd = toDayjs(p.end);
 
-      const nextEnd = curEnd.hour(t.hour()).minute(t.minute());
+      const nextEnd = curEnd.hour(t.hour()).minute(t.minute()).second(0);
       const fixed = ensureOrderAfterEndChange(curStart, nextEnd);
 
       return {
@@ -634,71 +588,36 @@ const Calendar: React.FC = () => {
     });
   };
 
-  const dateTextColor = (d: Dayjs) => {
-    const t = getDayType(d);
-    if (t === "red") return "#dc2626";
-    if (t === "blue") return "#2563eb";
-    return "rgba(0,0,0,0.90)";
+  const onPickRepeatStartDate = (d: Dayjs) => {
+    setFormError("");
+    const ymdRaw = d.format("YYYY-MM-DD");
+
+    setForm((p) => {
+      const ymd = clampFollowingRepeatStartYmd(p, ymdRaw);
+
+      const nextEnd =
+        p.repeatRangeEnd && dayjs(p.repeatRangeEnd).isBefore(dayjs(ymd), "day") ? ymd : p.repeatRangeEnd;
+
+      return { ...p, repeatRangeStart: ymd, repeatRangeEnd: nextEnd };
+    });
   };
 
-  const StartDateBtn = (
-    <button
-      type="button"
-      onClick={() => setPicker((p) => (p === "startDate" ? "none" : "startDate"))}
-      style={{ ...textPillBtnStyle(picker === "startDate"), color: dateTextColor(startD) }}
-    >
-      {formatKoreanDateLabel(startD)}
-    </button>
-  );
+  const onPickRepeatEndDate = (d: Dayjs) => {
+    setFormError("");
+    const ymd = d.format("YYYY-MM-DD");
 
-  const StartTimeBtn = (
-    <button
-      type="button"
-      onClick={() => setPicker((p) => (p === "startTime" ? "none" : "startTime"))}
-      style={{
-        ...textPillBtnStyle(picker === "startTime"),
-        opacity: form.allDay ? 0.5 : 1,
-        cursor: form.allDay ? "not-allowed" : "pointer",
-      }}
-      disabled={form.allDay}
-    >
-      {formatKoreanTimeLabel(startD)}
-    </button>
-  );
+    setForm((p) => {
+      const nextStart =
+        p.repeatRangeStart && dayjs(p.repeatRangeStart).isAfter(dayjs(ymd), "day") ? ymd : p.repeatRangeStart;
 
-  const EndDateBtn = (
-    <button
-      type="button"
-      onClick={() => setPicker((p) => (p === "endDate" ? "none" : "endDate"))}
-      style={{ ...textPillBtnStyle(picker === "endDate"), color: dateTextColor(endD) }}
-    >
-      {formatKoreanDateLabel(endD)}
-    </button>
-  );
-
-  const EndTimeBtn = (
-    <button
-      type="button"
-      onClick={() => setPicker((p) => (p === "endTime" ? "none" : "endTime"))}
-      style={{
-        ...textPillBtnStyle(picker === "endTime"),
-        opacity: form.allDay ? 0.5 : 1,
-        cursor: form.allDay ? "not-allowed" : "pointer",
-      }}
-      disabled={form.allDay}
-    >
-      {formatKoreanTimeLabel(endD)}
-    </button>
-  );
-
-  const isTimeOpen = picker === "startTime" || picker === "endTime";
-  const timeValue = picker === "startTime" ? startD : endD;
+      return { ...p, repeatRangeEnd: ymd, repeatRangeStart: nextStart };
+    });
+  };
 
   return (
     <div style={{ width: "100%" }}>
       <style>{`
         .fc .fc-daygrid-event { border-radius: 8px; padding: 2px 6px; }
-
         .fc .fc-daygrid-dot-event {
           border-radius: 8px;
           padding: 2px 6px;
@@ -709,15 +628,14 @@ const Calendar: React.FC = () => {
         .fc .fc-daygrid-dot-event .fc-event-title,
         .fc .fc-daygrid-dot-event .fc-event-time { color: var(--fc-event-text-color, #fff); font-weight: 700; }
 
-        /* 날짜 숫자 색 */
         .fc .pz-day-red  .fc-daygrid-day-number { color: #dc2626 !important; }
         .fc .pz-day-blue .fc-daygrid-day-number { color: #2563eb !important; }
+        .fc .pz-day-black .fc-daygrid-day-number { color: rgba(0,0,0,0.9) !important; }
 
-        /* 요일 헤더 색 */
         .fc .pz-dow-red  .fc-col-header-cell-cushion { color: #dc2626 !important; }
         .fc .pz-dow-blue .fc-col-header-cell-cushion { color: #2563eb !important; }
+        .fc .pz-dow-black .fc-col-header-cell-cushion { color: rgba(0,0,0,0.9) !important;}
 
-        /* 공휴일 tooltip(브라우저 기본 title이 아니라 커스텀) */
         .fc .pz-holiday-tip { position: relative; }
         .fc .pz-holiday-tip:hover::after {
           content: attr(data-holiday);
@@ -749,348 +667,46 @@ const Calendar: React.FC = () => {
         }
       `}</style>
 
-      <div
-        style={{
-          background: "#fff",
-          border: "1px solid rgba(0,0,0,0.08)",
-          borderRadius: 12,
-          padding: 12,
+      <CalendarView
+        calRef={calRef}
+        expandedEvents={expandedEvents}
+        holidayMap={holidayMap}
+        getDayType={getDayType}
+        onDateClick={onDateClick}
+        onEventClick={onEventClick}
+        onDatesSet={(range, year) => {
+          setHolidayYear(year);
+          setViewRange(range);
         }}
-      >
-        <FullCalendar
-          key={holidayMap.size} 
-          ref={calRef}
-          plugins={[dayGridPlugin, interactionPlugin]}
-          initialView="dayGridMonth"
-          height={calendarHeight}
-          locale="ko"
-          headerToolbar={{ left: "prev,next today", center: "title", right: "" }}
-          datesSet={(arg) => {
-            const y = dayjs(arg.start).add(10, "day").year();
-            setHolidayYear(y);
-          }}
-          dayCellDidMount={(arg) => {
-            // ✅ 공휴일 이름 tooltip(커스텀)
-            const ymd = dayjs(arg.date).format("YYYY-MM-DD");
-            const name = holidayMap.get(ymd);
+      />
 
-            const frame = arg.el.querySelector(".fc-daygrid-day-frame") as HTMLElement | null;
-            const target = frame ?? (arg.el as HTMLElement);
-
-            if (name) {
-              target.dataset.holiday = name;
-              target.classList.add("pz-holiday-tip");
-            } else {
-              delete target.dataset.holiday;
-              target.classList.remove("pz-holiday-tip");
-            }
-          }}
-          dateClick={onDateClick}
-          eventClick={onEventClick}
-          displayEventTime={false}
-          displayEventEnd={false}
-          dayCellClassNames={(arg) => {
-            const d = dayjs(arg.date);
-            const t = getDayType(d);
-            if (t === "red") return ["pz-day-red"];
-            if (t === "blue") return ["pz-day-blue"];
-            return [];
-          }}
-          dayHeaderClassNames={(arg) => {
-            const d = dayjs(arg.date);
-            const dow = d.day();
-            if (dow === 0) return ["pz-dow-red"];
-            if (dow === 6) return ["pz-dow-blue"];
-            return [];
-          }}
-          eventDisplay="block"
-          events={events.map((e) => ({
-            id: e.id,
-            title: e.title,
-            start: e.start,
-            end: e.end,
-            allDay: e.allDay,
-            backgroundColor: e.color,
-            borderColor: e.color,
-            extendedProps: { memo: e.memo, repeat: e.repeat, createdBy: e.createdBy },
-          }))}
-          dayMaxEvents={2}
-          moreLinkClick="popover"
-        />
-      </div>
-
-      {/* ===== 모달 ===== */}
       {mode !== "none" && (
-        <div
-          onClick={closeModal}
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.35)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 16,
-            zIndex: 9999,
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              width: "min(560px, 100%)",
-              background: "#fff",
-              borderRadius: 14,
-              padding: 16,
-              boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
-            }}
-          >
-            {/* 헤더 */}
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 700, fontSize: 16 }}>
-                  {mode === "create" ? "일정 추가" : "일정 상세"}
-                </div>
-
-                {/* 하루종일 토글 */}
-                <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ fontSize: 14, fontWeight: 600 }}>하루 종일</span>
-                  <Switch
-                    checked={form.allDay}
-                    onChange={(e) => onToggleAllDay(e.target.checked)}
-                    inputProps={{ "aria-label": "all day" }}
-                  />
-                </div>
-
-                {/* 시작/종료 텍스트 버튼 */}
-                <div style={{ marginTop: 10 }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 40px 1fr", gap: 10, alignItems: "center" }}>
-                    <div style={{ display: "grid", gap: 10 }}>
-                      <div style={{ fontSize: 12, opacity: 0.6 }}>시작</div>
-                      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                        {StartDateBtn}
-                        {StartTimeBtn}
-                      </div>
-                    </div>
-
-                    <div style={{ textAlign: "center", fontSize: 22, opacity: 0.35 }}>→</div>
-
-                    <div style={{ display: "grid", gap: 10 }}>
-                      <div style={{ fontSize: 12, opacity: 0.6 }}>종료</div>
-                      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                        {EndDateBtn}
-                        {EndTimeBtn}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <button
-                onClick={closeModal}
-                style={{ border: "none", background: "transparent", fontSize: 18, cursor: "pointer", lineHeight: 1 }}
-                aria-label="close"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* ===== 펼침 영역 ===== */}
-            {picker !== "none" && (
-              <div style={{ marginTop: 14, borderTop: "1px solid rgba(0,0,0,0.08)", paddingTop: 14 }}>
-                <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="ko">
-                  {(picker === "startDate" || picker === "endDate") && (
-                    <div>
-                      <div style={{ fontWeight: 700, marginBottom: 10 }}>
-                        {picker === "startDate" ? "시작 날짜 선택" : "종료 날짜 선택"}
-                      </div>
-                      <DateCalendar
-                        value={picker === "startDate" ? startD : endD}
-                        onChange={(d) => {
-                          if (!d) return;
-                          if (picker === "startDate") onPickStartDate(d);
-                          else onPickEndDate(d);
-                        }}
-                        slots={{ day: CustomDay as any }}
-                        slotProps={{
-                          day: { holidaySet } as any,
-                        }}
-                        sx={{
-                          "& .MuiDayCalendar-weekDayLabel:first-of-type": { color: "#dc2626" },
-                          "& .MuiDayCalendar-weekDayLabel:last-of-type": { color: "#2563eb" },
-                        }}
-                      />
-                    </div>
-                  )}
-
-                  {isTimeOpen && (
-                    <div>
-                      <div style={{ fontWeight: 700, marginBottom: 10 }}>
-                        {picker === "startTime" ? "시작 시간 선택" : "종료 시간 선택"}
-                      </div>
-
-                      <div style={{ opacity: form.allDay ? 0.5 : 1, pointerEvents: form.allDay ? "none" : "auto" }}>
-                        <WheelTimePicker
-                          value={timeValue}
-                          minutesStep={5}
-                          onChange={(t) => {
-                            if (picker === "startTime") onPickStartTime(t);
-                            else onPickEndTime(t);
-                          }}
-                        />
-                      </div>
-
-                      {form.allDay && (
-                        <div style={{ marginTop: 8, fontSize: 12, opacity: 0.65 }}>
-                          * 하루 종일이 켜져있어서 시간 변경은 비활성화됩니다.
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </LocalizationProvider>
-              </div>
-            )}
-
-            {/* 제목 */}
-            <div style={{ marginTop: 14 }}>
-              <label style={{ display: "block", fontSize: 13, marginBottom: 6, opacity: 0.8 }}>제목</label>
-              <input
-                value={form.title}
-                onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
-                placeholder="예: 생일, 여행, 병원"
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  borderRadius: 10,
-                  border: "1px solid rgba(0,0,0,0.15)",
-                  outline: "none",
-                }}
-                autoFocus
-              />
-            </div>
-
-            {/* 메모 */}
-            <div style={{ marginTop: 12 }}>
-              <label style={{ display: "block", fontSize: 13, marginBottom: 6, opacity: 0.8 }}>메모</label>
-              <textarea
-                value={form.memo}
-                onChange={(e) => setForm((p) => ({ ...p, memo: e.target.value }))}
-                rows={3}
-                placeholder="한두 줄 메모"
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  borderRadius: 10,
-                  border: "1px solid rgba(0,0,0,0.15)",
-                  outline: "none",
-                  resize: "vertical",
-                }}
-              />
-            </div>
-
-            {/* 반복 */}
-            <div style={{ marginTop: 12, display: "flex", gap: 10, alignItems: "center" }}>
-              <label style={{ fontSize: 13, opacity: 0.8, width: 60 }}>반복</label>
-              <select
-                value={form.repeat}
-                onChange={(e) => setForm((p) => ({ ...p, repeat: e.target.value as RepeatType }))}
-                style={{
-                  flex: 1,
-                  padding: "10px 12px",
-                  borderRadius: 10,
-                  border: "1px solid rgba(0,0,0,0.15)",
-                  outline: "none",
-                }}
-              >
-                <option value="none">반복 안함</option>
-                <option value="daily">매일</option>
-                <option value="weekly">매주</option>
-                <option value="monthly">매월</option>
-                <option value="yearly">매년</option>
-              </select>
-            </div>
-
-            {/* 색상 */}
-            <div style={{ marginTop: 12, display: "flex", gap: 10, alignItems: "center" }}>
-              <label style={{ fontSize: 13, opacity: 0.8, width: 60 }}>색상</label>
-              <input
-                type="color"
-                value={form.color}
-                onChange={(e) => setForm((p) => ({ ...p, color: e.target.value }))}
-                style={{ width: 48, height: 36, padding: 0, border: "none", background: "transparent" }}
-              />
-              <div style={{ fontSize: 12, opacity: 0.7 }}>내 고유색(추후 프로필로 이동)</div>
-            </div>
-
-            {/* 버튼 */}
-            <div style={{ display: "flex", gap: 10, marginTop: 14, justifyContent: "flex-end" }}>
-              <button
-                onClick={closeModal}
-                style={{
-                  padding: "10px 12px",
-                  borderRadius: 10,
-                  border: "1px solid rgba(0,0,0,0.15)",
-                  background: "#fff",
-                  cursor: "pointer",
-                }}
-              >
-                취소
-              </button>
-
-              {mode === "create" ? (
-                <button
-                  onClick={saveNew}
-                  style={{
-                    padding: "10px 12px",
-                    borderRadius: 10,
-                    border: "none",
-                    background: "#1e2a78",
-                    color: "#fff",
-                    cursor: "pointer",
-                  }}
-                >
-                  저장
-                </button>
-              ) : (
-                <>
-                  <button
-                    onClick={deleteEvent}
-                    disabled={!canEdit}
-                    style={{
-                      padding: "10px 12px",
-                      borderRadius: 10,
-                      border: "1px solid rgba(220,38,38,0.4)",
-                      background: canEdit ? "#fff" : "rgba(0,0,0,0.05)",
-                      color: canEdit ? "#dc2626" : "rgba(0,0,0,0.35)",
-                      cursor: canEdit ? "pointer" : "not-allowed",
-                    }}
-                  >
-                    삭제
-                  </button>
-                  <button
-                    onClick={updateEvent}
-                    disabled={!canEdit}
-                    style={{
-                      padding: "10px 12px",
-                      borderRadius: 10,
-                      border: "none",
-                      background: canEdit ? "#1e2a78" : "rgba(0,0,0,0.2)",
-                      color: "#fff",
-                      cursor: canEdit ? "pointer" : "not-allowed",
-                    }}
-                  >
-                    수정
-                  </button>
-                </>
-              )}
-            </div>
-
-            {!canEdit && mode === "detail" && (
-              <div style={{ marginTop: 10, fontSize: 12, opacity: 0.65 }}>
-                * 다른 사람이 만든 일정은 수정/삭제할 수 없습니다.
-              </div>
-            )}
-          </div>
-        </div>
+        <EventModal
+          mode={mode}
+          form={form}
+          setForm={setForm}
+          formError={formError}
+          setFormError={setFormError}
+          holidaySet={holidaySet}
+          picker={picker}
+          setPicker={setPicker}
+          lockRepeatControls={lockRepeatControls}
+          canEdit={canEdit}
+          onToggleAllDay={onToggleAllDay}
+          onPickStartDate={onPickStartDate}
+          onPickEndDate={onPickEndDate}
+          onPickStartTime={onPickStartTime}
+          onPickEndTime={onPickEndTime}
+          onPickRepeatStartDate={onPickRepeatStartDate}
+          onPickRepeatEndDate={onPickRepeatEndDate}
+          toggleMultiDate={toggleMultiDate}
+          clearMultiDates={clearMultiDates}
+          closeModal={closeModal}
+          saveNew={saveNew}
+          updateEvent={updateEvent}
+          deleteEvent={deleteEvent}
+          getDayType={getDayType}
+        />
       )}
     </div>
   );
