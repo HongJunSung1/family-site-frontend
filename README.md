@@ -41,7 +41,8 @@
 - 서버리스 구조
 **백엔드 배포**
 ```bash
-npx wrangler deploy
+실서버 : npx wrangler deploy
+로컬: wrangler dev --remote    // API 연동된 내역 불러오려면 --remote를 붙여야 함
 ```
 
 ### Database
