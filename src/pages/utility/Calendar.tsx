@@ -36,8 +36,8 @@ const Calendar: React.FC = () => {
   const [picker, setPicker] = useState<PickerTarget>("none");
 
   // ✅ 로그인/캘린더 정보
-  const [userId, setUserId] = useState<string>("");                 // createdBy 비교용
-  const [calendarId, setCalendarId] = useState<number | null>(null); // 이제 여기서만 관리
+  const [userId, setUserId] = useState<string>("");
+  const [calendarId, setCalendarId] = useState<number | null>(null);
 
   const [form, setForm] = useState<FormState>({
     id: "",
@@ -65,12 +65,16 @@ const Calendar: React.FC = () => {
     return { start: now.startOf("month"), end: now.endOf("month").add(1, "day") };
   });
 
+  // ✅ 반복이면 multiDates 금지 (기존 정책 유지)
+  const isRecurringForMultiDates =
+    (form.repeatSnap?.repeat ?? "none") !== "none" || (form.repeat ?? "none") !== "none";
+
   // ✅ /api/auth/me 로 userId + defaultCalendarId 가져오기
   useEffect(() => {
     console.log("✅ [ME] effect mounted");
     (async () => {
       const token = localStorage.getItem("accessToken");
-      console.log("✅ [ME] token exists?", !!token); // (2)
+      console.log("✅ [ME] token exists?", !!token);
       if (!token) {
         setFormError("로그인이 필요합니다.");
         return;
@@ -79,9 +83,9 @@ const Calendar: React.FC = () => {
       const res = await fetch(`${API_BASE}/api/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-       console.log("✅ [ME] status:", res.status); // (3)
+      console.log("✅ [ME] status:", res.status);
       const data = (await res.json().catch(() => null)) as MeResponse | null;
-       console.log("📦 [ME] raw:", data); // (4) 제일 중요
+      console.log("📦 [ME] raw:", data);
       if (!res.ok || !data?.ok) {
         setFormError(data?.message ?? "로그인 정보를 불러오지 못했습니다.");
         return;
@@ -89,10 +93,10 @@ const Calendar: React.FC = () => {
 
       const uid = String(data.user?.id ?? "");
       setUserId(uid);
-      
+
       const cid = data.defaultCalendarId ?? null;
       setCalendarId(cid);
-      console.log("📅 [ME] parsed calendarId:", cid, "typeof:", typeof cid); // (5)
+      console.log("📅 [ME] parsed calendarId:", cid, "typeof:", typeof cid);
 
       if (!cid) {
         setFormError("이 계정은 가입된 캘린더가 없습니다. (calendar_members 확인 필요)");
@@ -110,7 +114,6 @@ const Calendar: React.FC = () => {
     });
     const data = await res.json().catch(() => null);
     if (!res.ok || !data?.ok) {
-      // 403이면 멤버십 문제
       if (res.status === 403) setFormError("이 캘린더에 대한 권한이 없습니다. (calendar_members 확인)");
       return;
     }
@@ -161,7 +164,6 @@ const Calendar: React.FC = () => {
   }, [calendarId]);
 
   useEffect(() => {
-    // calendarId가 세팅된 뒤에만 호출
     if (calendarId) loadEvents();
   }, [calendarId, loadEvents]);
 
@@ -219,7 +221,12 @@ const Calendar: React.FC = () => {
     return ymd;
   };
 
+  // ✅ 반복이면 multiDates 조작 금지(기존 정책 유지)
   const toggleMultiDate = (ymd: string) => {
+    if (isRecurringForMultiDates) {
+      setFormError("반복일정에서는 '여러 날짜에 동일 일정 추가'를 사용할 수 없습니다.");
+      return;
+    }
     setForm((p) => {
       const set = new Set(p.multiDates ?? []);
       if (set.has(ymd)) set.delete(ymd);
@@ -229,6 +236,10 @@ const Calendar: React.FC = () => {
   };
 
   const clearMultiDates = () => {
+    if (isRecurringForMultiDates) {
+      setFormError("반복일정에서는 '여러 날짜에 동일 일정 추가'를 사용할 수 없습니다.");
+      return;
+    }
     setForm((p) => ({ ...p, multiDates: [] }));
   };
 
@@ -249,9 +260,12 @@ const Calendar: React.FC = () => {
       repeatRangeStart: "",
       repeatRangeEnd: "",
       repeatSnap: { repeat: "none", repeatInterval: 1, repeatRangeStart: "", repeatRangeEnd: "" },
-      multiDates: [info.dateStr],
+
+      // ✅ 핵심 수정: 날짜 클릭 시 multiDates는 "비워둔다"
+      multiDates: [],
+
       color: "#1e2a78",
-      createdBy: userId, // ✅ currentUserId 대신
+      createdBy: userId,
       allDay: false,
       prevStartTime: "09:00",
       prevEndTime: "10:00",
@@ -270,35 +284,55 @@ const Calendar: React.FC = () => {
     const startD = toDayjs(e.startStr || "");
     const endD = toDayjs(e.endStr || e.startStr || "");
 
-    const masterId = e.extendedProps?.masterId || e.id;
-    const occKey = e.extendedProps?.occKey || "";
+    const masterId = String(e.extendedProps?.masterId || e.id || "");
+    const occKey = String(e.extendedProps?.occKey || "");
 
     const master = events.find((x) => x.id === masterId);
 
     const snapRepeat = (master?.repeat ?? e.extendedProps?.repeat ?? "none") as any;
-    const snapInterval = Math.max(1, master?.repeatInterval ?? 1);
-    const snapRS = master?.repeatRangeStart ?? "";
-    const snapRE = master?.repeatRangeEnd ?? "";
+    const snapInterval = Math.max(1, master?.repeatInterval ?? e.extendedProps?.repeatInterval ?? 1);
+    const snapRS = master?.repeatRangeStart ?? e.extendedProps?.repeatRangeStart ?? "";
+    const snapRE = master?.repeatRangeEnd ?? e.extendedProps?.repeatRangeEnd ?? "";
+
+    const occTitle = String(e.title ?? master?.title ?? "");
+    const occMemo = String(e.extendedProps?.memo ?? master?.memo ?? "");
+    const occColor = String(e.backgroundColor ?? master?.color ?? "#1e2a78");
+    const occCreatedBy = String(e.extendedProps?.createdBy ?? master?.createdBy ?? "");
+    const occAllDay = !!(e.allDay ?? master?.allDay);
+
+    const isRecurringClick = occKey && (snapRepeat ?? "none") !== "none";
+    const initialScope = isRecurringClick ? "this" : "all";
 
     setForm({
       id: masterId,
-      title: master?.title ?? e.title ?? "",
+      title: occTitle,
       start: formatISO(startD),
       end: formatISO(endD),
-      memo: master?.memo ?? e.extendedProps?.memo ?? "",
+      memo: occMemo,
+
       repeat: snapRepeat,
       repeatInterval: snapInterval,
       repeatRangeStart: snapRS,
       repeatRangeEnd: snapRE,
-      repeatSnap: { repeat: snapRepeat, repeatInterval: snapInterval, repeatRangeStart: snapRS, repeatRangeEnd: snapRE },
+      repeatSnap: {
+        repeat: snapRepeat,
+        repeatInterval: snapInterval,
+        repeatRangeStart: snapRS,
+        repeatRangeEnd: snapRE,
+      },
+
+      // ✅ detail에서도 multiDates 사용 가능(단, 반복은 toggle/clear에서 막음)
       multiDates: [],
-      color: master?.color ?? e.backgroundColor ?? "#1e2a78",
-      createdBy: master?.createdBy ?? e.extendedProps?.createdBy ?? "",
-      allDay: !!(master?.allDay ?? e.allDay),
+
+      color: occColor,
+      createdBy: occCreatedBy,
+      allDay: occAllDay,
+
       prevStartTime: startD.format("HH:mm"),
       prevEndTime: endD.format("HH:mm"),
-      clickedOccKey: occKey,
-      applyScope: "this",
+
+      clickedOccKey: isRecurringClick ? occKey : "",
+      applyScope: initialScope,
     });
 
     setPicker("none");
@@ -312,9 +346,79 @@ const Calendar: React.FC = () => {
   const lockRepeatControls = isEditingRecurringOccurrence && form.applyScope === "this";
 
   const saveNew = async () => {
-    
     const t = form.title.trim();
     if (!t) return;
+
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      setFormError("로그인이 필요합니다.");
+      return;
+    }
+    if (!calendarId) {
+      setFormError("캘린더 정보가 없습니다. (me에서 defaultCalendarId 확인)");
+      return;
+    }
+
+    // ✅ 안전장치: multiDates는 "2개 이상"일 때만 서버로 보냄 (단건 저장과 충돌 방지)
+    const mdRaw = (form.multiDates ?? []).filter(Boolean);
+    const multiDatesToSend = mdRaw.length >= 2 ? mdRaw : [];
+
+    const res = await fetch(`${API_BASE}/api/calendar/events`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        calendarId,
+        title: t,
+        memo: form.memo,
+        color: form.color,
+        allDay: form.allDay,
+        startAt: form.start,
+        endAt: form.end,
+
+        repeatType: form.repeat,
+        repeatInterval: form.repeatInterval,
+        repeatRangeStart: form.repeatRangeStart,
+        repeatRangeEnd: form.repeatRangeEnd,
+
+        multiDates: multiDatesToSend,
+
+        repeatAnchorDom: form.repeat === "monthly" ? Number(form.start.slice(8, 10)) : null,
+      }),
+    });
+
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok || !data?.ok) {
+      if (res.status === 403) setFormError("저장 권한이 없습니다. (calendar_members role 확인)");
+      else setFormError(data?.message ?? "저장 중 오류가 발생했습니다.");
+      return;
+    }
+
+    closeModal();
+    await loadEvents();
+  };
+
+  /**
+   * ✅ detail에서 multiDates 선택 시 => "수정"이 아니라 "복제 생성"으로 처리
+   * - 반복 일정에서는 기존 정책대로 금지
+   */
+  const createClonesFromDetail = async () => {
+    const t = form.title.trim();
+    if (!t) return;
+
+    if (isRecurringForMultiDates) {
+      setFormError("반복일정에서는 '여러 날짜에 동일 일정 추가'를 사용할 수 없습니다.");
+      return;
+    }
+
+    const md = (form.multiDates ?? []).filter(Boolean);
+    if (md.length === 0) {
+      setFormError("복제할 날짜를 선택해주세요.");
+      return;
+    }
 
     const token = localStorage.getItem("accessToken");
     if (!token) {
@@ -333,7 +437,7 @@ const Calendar: React.FC = () => {
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
-        calendarId, // ✅ 하드코딩 제거
+        calendarId,
         title: t,
         memo: form.memo,
         color: form.color,
@@ -341,24 +445,22 @@ const Calendar: React.FC = () => {
         startAt: form.start,
         endAt: form.end,
 
-        repeatType: form.repeat,
-        repeatInterval: form.repeatInterval,
-        repeatRangeStart: form.repeatRangeStart,
-        repeatRangeEnd: form.repeatRangeEnd,
+        repeatType: "none",
+        repeatInterval: 1,
+        repeatRangeStart: "",
+        repeatRangeEnd: "",
 
-        multiDates: form.multiDates ?? [],
+        multiDates: md,
 
-        // monthly anchor: 시작일의 일자
-        repeatAnchorDom: form.repeat === "monthly" ? Number(form.start.slice(8, 10)) : null,
+        repeatAnchorDom: null,
       }),
     });
 
-    
     const data = await res.json().catch(() => null);
 
     if (!res.ok || !data?.ok) {
       if (res.status === 403) setFormError("저장 권한이 없습니다. (calendar_members role 확인)");
-      else setFormError(data?.message ?? "저장 중 오류가 발생했습니다.");
+      else setFormError(data?.message ?? "복제 생성 중 오류가 발생했습니다.");
       return;
     }
 
@@ -366,12 +468,15 @@ const Calendar: React.FC = () => {
     await loadEvents();
   };
 
-  // 아래 updateEvent/deleteEvent는 지금처럼 프론트 상태로만 바꾸고 있어서
-  // 백엔드 PUT/DELETE 붙이기 전이라면 그대로 두셔도 됩니다.
-  // (원하시면 PUT/DELETE까지 “완성본”으로 맞춰드릴게요.)
   const updateEvent = async () => {
     const t = form.title.trim();
     if (!t) return;
+
+    // ✅ detail에서 multiDates가 선택되어 있으면 => "수정" 대신 "복제 생성"
+    if (mode === "detail" && (form.multiDates?.length ?? 0) > 0) {
+      await createClonesFromDetail();
+      return;
+    }
 
     const token = localStorage.getItem("accessToken");
     if (!token) {
@@ -379,19 +484,13 @@ const Calendar: React.FC = () => {
       return;
     }
 
-    // form.id = masterId (events.id)
     if (!form.id) {
       setFormError("수정할 이벤트 id가 없습니다.");
       return;
     }
 
-    // 반복 일정일 때만 scope/occKey 의미가 있음
     const isRecurringMaster = (form.repeatSnap?.repeat ?? "none") !== "none";
-    const scope =
-      isRecurringMaster && form.clickedOccKey
-        ? (form.applyScope ?? "this")
-        : "all";
-
+    const scope = isRecurringMaster && form.clickedOccKey ? (form.applyScope ?? "this") : "all";
     const occKey = scope === "all" ? "" : (form.clickedOccKey ?? "");
 
     try {
@@ -402,8 +501,8 @@ const Calendar: React.FC = () => {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          scope,     // "all" | "this" | "following"
-          occKey,    // scope가 this/following일 때 필요
+          scope,
+          occKey,
 
           title: t,
           memo: form.memo,
@@ -412,7 +511,6 @@ const Calendar: React.FC = () => {
           startAt: form.start,
           endAt: form.end,
 
-          // 반복 저장(backend updateEvent가 받는 필드들)
           repeatType: form.repeat,
           repeatInterval: form.repeatInterval,
           repeatRangeStart: form.repeatRangeStart,
@@ -448,11 +546,7 @@ const Calendar: React.FC = () => {
     }
 
     const isRecurringMaster = (form.repeatSnap?.repeat ?? "none") !== "none";
-    const scope =
-      isRecurringMaster && form.clickedOccKey
-        ? (form.applyScope ?? "this")
-        : "all";
-
+    const scope = isRecurringMaster && form.clickedOccKey ? (form.applyScope ?? "this") : "all";
     const occKey = scope === "all" ? "" : (form.clickedOccKey ?? "");
 
     try {
@@ -463,8 +557,8 @@ const Calendar: React.FC = () => {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          scope,   // "all" | "this" | "following"
-          occKey,  // scope가 this/following일 때 필요
+          scope,
+          occKey,
         }),
       });
 

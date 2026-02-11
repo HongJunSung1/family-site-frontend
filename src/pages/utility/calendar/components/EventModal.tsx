@@ -1,4 +1,4 @@
-// EventModal.tsx (완성본: 반복 ↔ 다중날짜 상호배제 UI/로직 포함)
+// EventModal.tsx (복붙용 완성본: detail에서도 다중날짜 UI 노출 + 반복과 상호배제 유지)
 import React, { useMemo } from "react";
 import dayjs, { Dayjs } from "dayjs";
 import "dayjs/locale/ko";
@@ -88,11 +88,20 @@ export function EventModal(props: Props) {
 
   const multiDatesSet = useMemo(() => new Set(form.multiDates ?? []), [form.multiDates]);
 
-  // ✅ 상호배제 규칙
-  // - 반복이 켜져 있으면 다중 날짜 선택 금지
-  const disableMultiDates = form.repeat !== "none";
-  // - (생성 모드에서) 다중 날짜가 2개 이상이면 반복 선택 금지
-  const isMultiDateMode = mode === "create" && (form.multiDates?.length ?? 0) >= 2;
+  /**
+   * ✅ 상호배제 규칙(업그레이드)
+   * - 반복이 켜져 있으면 다중 날짜 선택 금지
+   * - "detail에서 반복 occurrence 클릭" 상황도 확실히 막기 위해 repeatSnap도 포함
+   */
+  const isRecurring = (form.repeat ?? "none") !== "none" || (form.repeatSnap?.repeat ?? "none") !== "none";
+  const disableMultiDates = isRecurring;
+
+  /**
+   * - (생성 모드에서) 다중 날짜가 2개 이상이면 반복 선택 금지
+   * - detail은 "복제 생성" 개념이므로, multiDates가 있어도 repeat을 켜는 건 금지(혼동 방지)
+   */
+  const isMultiDateMode = (form.multiDates?.length ?? 0) >= 2;
+  const blockRepeatBecauseMultiDates = isMultiDateMode; // create/detail 모두 적용
 
   const dateTextColor = (d: Dayjs) => {
     const t = getDayType(d);
@@ -175,9 +184,8 @@ export function EventModal(props: Props) {
       const startYmd = String(p.start || "").slice(0, 10);
       const startYmdOk = /^\d{4}-\d{2}-\d{2}$/.test(startYmd);
 
-      // 다중 날짜 상태에서 반복을 켜는 것을 UI에서 막지만, 혹시라도 들어오면 방어
+      // 다중 날짜가 2개 이상이면 반복 금지(방어)
       if (nextRepeat !== "none" && (p.multiDates?.length ?? 0) >= 2) {
-        // repeat은 변경하지 않고 그대로 유지
         return p;
       }
 
@@ -185,7 +193,6 @@ export function EventModal(props: Props) {
         ...p,
         repeat: nextRepeat,
         repeatInterval: Math.max(1, p.repeatInterval || 1),
-        // ✅ 반복을 켜면 다중날짜는 시작일만 유지
         multiDates: nextRepeat === "none" ? p.multiDates : startYmdOk ? [startYmd] : [],
       };
     });
@@ -199,6 +206,13 @@ export function EventModal(props: Props) {
     }
     setPicker((p) => (p === "multiDates" ? "none" : "multiDates"));
   };
+
+  /**
+   * ✅ detail에서 multiDates 사용 UX
+   * - detail에서 다중날짜 선택 = “복제 생성” (Calendar.tsx updateEvent에서 처리)
+   * - 그래서 버튼 텍스트/안내문구를 detail에 맞게 조정
+   */
+  const isDetailCloneMode = mode === "detail" && (form.multiDates?.length ?? 0) > 0 && !disableMultiDates;
 
   return (
     <div
@@ -322,7 +336,7 @@ export function EventModal(props: Props) {
 
             <select
               value={form.repeat}
-              disabled={lockRepeatControls || isMultiDateMode}
+              disabled={lockRepeatControls || blockRepeatBecauseMultiDates}
               onChange={(e) => onChangeRepeat(e.target.value as RepeatType)}
               style={{
                 flex: 1,
@@ -330,7 +344,7 @@ export function EventModal(props: Props) {
                 borderRadius: 10,
                 border: "1px solid rgba(0,0,0,0.15)",
                 outline: "none",
-                cursor: lockRepeatControls || isMultiDateMode ? "not-allowed" : "pointer",
+                cursor: lockRepeatControls || blockRepeatBecauseMultiDates ? "not-allowed" : "pointer",
               }}
             >
               <option value="none">반복 안함</option>
@@ -414,24 +428,25 @@ export function EventModal(props: Props) {
               * “이 일정만”에서는 반복 규칙을 변경할 수 없습니다. (전체/이후에서 변경 가능)
             </div>
           )}
-          {isMultiDateMode && (
+          {blockRepeatBecauseMultiDates && (
             <div style={{ fontSize: 12, opacity: 0.7, color: "#111827" }}>
-              * 여러 날짜에 동일 일정 추가에서는 반복 설정을 사용할 수 없습니다. (단건 날짜일 때만 가능)
+              * 여러 날짜에 동일 일정 추가(복제 포함)에서는 반복 설정을 사용할 수 없습니다. (단건 날짜일 때만 가능)
             </div>
           )}
-          {/* ✅ 반복이면 다중 날짜 안내 */}
-          {mode === "create" && disableMultiDates && (
+          {disableMultiDates && (
             <div style={{ fontSize: 12, opacity: 0.7, color: "#111827" }}>
               * 반복 일정에서는 “여러 날짜에 동일 일정 추가”를 사용할 수 없습니다.
             </div>
           )}
         </div>
 
-        {/* 불규칙 날짜 여러 개 */}
-        {mode === "create" && (
+        {/* 불규칙 날짜 여러 개 (create + detail 모두 노출) */}
+        {(mode === "create" || mode === "detail") && (
           <div style={{ marginTop: 12, padding: 12, borderRadius: 10, background: "rgba(0,0,0,0.03)" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-              <div style={{ fontSize: 13, fontWeight: 800 }}>여러 날짜에 동일 일정 추가</div>
+              <div style={{ fontSize: 13, fontWeight: 800 }}>
+                여러 날짜에 동일 일정 추가 {mode === "detail" ? "(복제)" : ""}
+              </div>
 
               <div style={{ display: "flex", gap: 8 }}>
                 <button
@@ -475,7 +490,9 @@ export function EventModal(props: Props) {
             </div>
 
             <div style={{ marginTop: 8, fontSize: 12, opacity: 0.65 }}>
-              * 저장을 누르면 선택된 날짜 각각에 동일한 일정이 생성됩니다.
+              {mode === "create"
+                ? "* 저장을 누르면 선택된 날짜 각각에 동일한 일정이 생성됩니다."
+                : "* ‘수정’ 버튼을 누르면 선택된 날짜들로 동일 일정이 복제 생성됩니다. (원본 일정은 그대로 유지)"}
             </div>
 
             {disableMultiDates && (
@@ -565,7 +582,6 @@ export function EventModal(props: Props) {
                       : "여러 날짜 선택"}
                   </div>
 
-                  {/* ✅ 반복 상태에서 multiDates 달력이 열렸다면 즉시 안내(방어) */}
                   {picker === "multiDates" && disableMultiDates ? (
                     <div style={{ fontSize: 12, opacity: 0.75 }}>
                       반복 일정에서는 여러 날짜를 선택할 수 없습니다. (반복을 끄면 사용 가능)
@@ -596,7 +612,6 @@ export function EventModal(props: Props) {
                         else if (picker === "repeatStartDate") onPickRepeatStartDate(d);
                         else if (picker === "repeatEndDate") onPickRepeatEndDate(d);
                         else if (picker === "multiDates") {
-                          // ✅ 이중 방어
                           if (disableMultiDates) {
                             setFormError("반복 일정에서는 ‘여러 날짜 선택’을 사용할 수 없습니다.");
                             return;
@@ -705,7 +720,7 @@ export function EventModal(props: Props) {
                   cursor: canEdit ? "pointer" : "not-allowed",
                 }}
               >
-                수정
+                {isDetailCloneMode ? "복제 추가" : "수정"}
               </button>
             </>
           )}
