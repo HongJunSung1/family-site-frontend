@@ -1,0 +1,351 @@
+/* ✅ 다크 테마 팔레트 */
+:root {
+  --cal-bg: #2f3744;
+  --cal-panel: #343e4d; /* ✅ 이 색을 '기준'으로 통일 */
+  --cal-line: rgba(255,255,255,0.08);
+  --cal-text: rgba(255,255,255,0.92);
+  --cal-muted: rgba(255,255,255,0.55);
+  --cal-accent: #44c7c2;
+  --cal-accent-2: #7fe3df;
+}
+
+
+
+/* wrapper */
+/* 전체 화면 배경 + 가운데 정렬 */
+.root {
+  width: 100%;
+  min-height: 100vh;
+  background: light dark;
+  box-sizing: border-box;
+
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;   /* 가로 중앙 */
+}
+
+/* 가운데 카드(PC에서 폭 제한) */
+.container {
+  width: 100%;
+  max-width: 1100px;
+  padding: 24px 16px;
+  box-sizing: border-box;
+
+  background: transparent; 
+}
+/* 캘린더가 들어가는 카드(선택) */
+.card {
+  background: var(--cal-panel);           /* 캘린더만 패널색 */
+  border-radius: 16px;
+  overflow: hidden;
+
+  border: 1px solid var(--cal-line);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.35); /* 떠 보이게 */
+}
+
+/* FullCalendar 전체 프레임 */
+:global(.fc) {
+  color: var(--cal-text);
+}
+
+/* 캘린더 바깥 패널 느낌 */
+:global(.fc .fc-view-harness) {
+  background: var(--cal-panel);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+/* 그리드/헤더/바디까지 전부 동일 톤으로 채우기(흰색 비침 방지) */
+:global(.fc .fc-scrollgrid),
+:global(.fc .fc-scrollgrid-section),
+:global(.fc .fc-scrollgrid-section > td),
+:global(.fc .fc-daygrid-body),
+:global(.fc .fc-daygrid-day),
+:global(.fc .fc-col-header),
+:global(.fc .fc-col-header-cell),
+:global(.fc .fc-daygrid-day-frame) {
+  background: var(--cal-panel);
+}
+
+
+/* toolbar를 2열 그리드로: 왼쪽=타이틀, 오른쪽=버튼들 */
+:global(.fc .fc-toolbar) {
+  display: grid;
+  grid-template-columns: 1fr auto; /* 왼쪽 넓게, 오른쪽 버튼 */
+  align-items: center;
+  gap: 10px;
+
+  padding: 14px;
+  margin: 0;
+  background: var(--cal-panel);
+  border-bottom: 1px solid var(--cal-line);
+  min-height: 56px;
+}
+
+/* FullCalendar가 만드는 3개 chunk 중
+   - 가운데 chunk(타이틀)는 왼쪽으로
+   - 오른쪽 chunk(버튼들)는 오른쪽으로 보내기 */
+:global(.fc .fc-toolbar-chunk:nth-child(2)) {
+  justify-self: start;  /* 타이틀 쪽 */
+}
+:global(.fc .fc-toolbar-chunk:nth-child(3)) {
+  justify-self: end;    /* 버튼들 */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 타이틀 스타일만 유지 (absolute 금지) */
+:global(.fc .fc-toolbar-title) {
+  color: var(--cal-text);
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  margin: 0;
+}
+
+/* today + prev/next 버튼이 붙어보이면 간격만 */
+:global(.fc .fc-button-group) {
+  display: inline-flex;
+  gap: 8px;
+}
+
+/* 그리드 경계선/열 끝 맞춤 안정화 */
+:global(.fc .fc-scrollgrid) {
+  border-collapse: collapse !important;
+  width: 100%;
+}
+
+:global(.fc .fc-scrollgrid-section > td) {
+  padding: 0 !important;
+}
+
+/* 버튼 다크 톤 */
+:global(.fc .fc-button) {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid var(--cal-line);
+  color: var(--cal-text);
+  border-radius: 10px;
+  box-shadow: none;
+}
+:global(.fc .fc-button:hover) {
+  background: rgba(255,255,255,0.14);
+}
+:global(.fc .fc-button:focus),
+:global(.fc .fc-button-primary:focus) {
+  box-shadow: 0 0 0 2px rgba(68,199,194,0.35);
+}
+:global(.fc .fc-button-primary:disabled) {
+  opacity: 0.5;
+}
+
+/* 요일 헤더 */
+:global(.fc .fc-col-header-cell) {
+  border-color: var(--cal-line);
+  background: rgba(0,0,0,0.08);
+}
+:global(.fc .fc-col-header-cell-cushion) {
+  color: var(--cal-muted);
+  font-weight: 700;
+}
+
+/* 날짜 셀 / 그리드 라인 */
+:global(.fc .fc-scrollgrid),
+:global(.fc .fc-scrollgrid-section),
+:global(.fc .fc-scrollgrid-section > td),
+:global(.fc .fc-daygrid-body),
+:global(.fc .fc-daygrid-day) {
+  border-color: var(--cal-line) !important;
+}
+
+/* 날짜 숫자(링크) = 원형 배지 베이스 */
+:global(.fc .fc-daygrid-day-number) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  
+  min-width: 30px;          /* 정원 */
+  height: 30px;         /* 정원 */
+  padding: 0 6px !important;
+
+  border-radius: 999px;
+
+  font-size: 12px;      /* 한 줄로 들어가게 축소 */
+  line-height: 1;       /* 삐져나오는 것 방지 */
+  white-space: nowrap;  /* 줄바꿈 방지 */
+
+  /* 오른쪽에 붙어보이는 느낌 방지 */
+  margin-right: 2px;    /* 요청하신 1px 이상 띄움 */
+}
+
+/* 오늘 날짜 하이라이트 */
+:global(.fc .fc-day-today) {
+  background: rgba(68,199,194,0.10) !important;
+}
+
+/* 오늘 날짜 숫자만 동그란 배경 */
+:global(.fc .fc-day-today .fc-daygrid-day-number) {
+  background: rgba(68, 199, 194, 0.25) !important;
+  color: var(--cal-text) !important;
+  font-weight: 900;
+
+  padding: 0 8px;      /* ← 여기로 원 크기 조절 */
+  height: 30px;
+  border-radius: 999px;
+}
+
+/* 선택/hover 느낌 */
+:global(.fc .fc-daygrid-day:hover) {
+  background: rgba(255,255,255,0.04);
+}
+
+/* 둥근 pill 스타일 유지 + 다크 톤 강화 */
+:global(.fc .fc-daygrid-event) {
+  border-radius: 10px;
+  padding: 2px 8px;
+}
+
+:global(.fc .fc-daygrid-day-events) {
+  min-height: calc(5 * 24px + 20px);
+}
+:global(.fc .fc-daygrid-day-frame) {
+  height: 200px; /* 필요 시 조절 */
+}
+:global(.fc),
+:global(.fc .fc-view-harness),
+:global(.fc .fc-view-harness-active) {
+  height: 100% !important;
+}
+
+:global(.fc .fc-daygrid-dot-event) {
+  border-radius: 10px;
+  padding: 2px 8px;
+  background: rgba(68,199,194,0.18);
+  border: 1px solid rgba(68,199,194,0.35);
+}
+:global(.fc .fc-daygrid-dot-event .fc-daygrid-event-dot) {
+  display: none;
+}
+:global(.fc .fc-daygrid-dot-event .fc-event-title),
+:global(.fc .fc-daygrid-dot-event .fc-event-time) {
+  color: var(--cal-text);
+  font-weight: 800;
+}
+
+/* 기존 주말/공휴일 색상 로직은 유지하되, 다크에서 보이도록 톤만 약간 조정해도 됨 */
+:global(.fc .pz-day-red .fc-daygrid-day-number) {
+  color: #ff6b6b !important;
+}
+:global(.fc .pz-day-blue .fc-daygrid-day-number) {
+  color: #6aa8ff !important;
+}
+:global(.fc .pz-day-black .fc-daygrid-day-number) {
+  color: var(--cal-muted) !important;
+}
+
+:global(.fc .pz-dow-red .fc-col-header-cell-cushion) {
+  color: #ff6b6b !important;
+}
+:global(.fc .pz-dow-blue .fc-col-header-cell-cushion) {
+  color: #6aa8ff !important;
+}
+:global(.fc .pz-dow-black .fc-col-header-cell-cushion) {
+  color: var(--cal-muted) !important;
+}
+
+/* 공휴일 툴팁(기존 유지, 다크 톤과도 자연스럽게) */
+:global(.fc .pz-holiday-tip) {
+  position: relative;
+}
+:global(.fc .pz-holiday-tip:hover::after) {
+  content: attr(data-holiday);
+  position: absolute;
+  left: 50%;
+  top: 4px;
+  transform: translateX(-50%);
+  z-index: 999999;
+  padding: 6px 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(0,0,0,0.85);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  pointer-events: none;
+}
+:global(.fc .pz-holiday-tip:hover::before) {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0px;
+  transform: translateX(-50%);
+  z-index: 999999;
+  border: 6px solid transparent;
+  border-bottom-color: rgba(0,0,0,0.85);
+  pointer-events: none;
+}
+
+/* FullCalendar 기본 변수 override (흰 배경/회색 border 원천 차단) */
+:global(.fc) {
+  --fc-page-bg-color: var(--cal-panel);
+  --fc-neutral-bg-color: rgba(255, 255, 255, 0.06);
+  --fc-border-color: var(--cal-line); /* 또는 transparent 로도 가능 */
+  --fc-today-bg-color: rgba(68, 199, 194, 0.10);
+}
+
+/* prev/next 버튼을 작게 + 배경 제거 */
+:global(.fc .fc-prev-button),
+:global(.fc .fc-next-button) {
+  padding: 4px 8px !important;   /* 기존 대비 크게 줄임 */
+  min-width: 32px !important;
+  height: 32px !important;
+  border-radius: 10px !important;
+
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  box-shadow: none !important;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 아이콘(꺽쇠) 크기 줄이기 */
+:global(.fc .fc-prev-button .fc-icon),
+:global(.fc .fc-next-button .fc-icon) {
+  font-size: 14px !important; /* 절반 느낌 */
+}
+
+/* hover만 살짝 */
+:global(.fc .fc-prev-button:hover),
+:global(.fc .fc-next-button:hover) {
+  background: rgba(255,255,255,0.08) !important;
+  border-color: var(--cal-line) !important;
+}
+
+.calendarShell {
+  background: var(--cal-panel);
+  border: none;
+  border-radius: 16px;
+  padding: 0; /* 바깥 흰 테두리 느낌 제거 */
+}
+
+/* customButtons의 myToday 버튼은 클래스명이 fc-myToday-button 으로 생성됨 */
+:global(.fc button.fc-myToday-button) {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 10px !important;
+}
+
+/* hover도 배경 없애기 */
+:global(.fc button.fc-myToday-button:hover),
+:global(.fc button.fc-myToday-button:active),
+:global(.fc button.fc-myToday-button:focus) {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}

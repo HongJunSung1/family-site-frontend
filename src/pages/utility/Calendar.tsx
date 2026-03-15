@@ -11,6 +11,8 @@ import { EventModal } from "./calendar/components/EventModal";
 import { addHours, formatISO, pad2, toDayjs } from "./calendar/utils/date";
 import { expandRecurringEvents } from "./calendar/utils/recurrence";
 
+import styles from "./Calendar.module.css";
+
 const API_BASE = import.meta.env.VITE_API_URL || "";
 dayjs.locale("ko");
 
@@ -35,7 +37,7 @@ const Calendar: React.FC = () => {
   const [mode, setMode] = useState<ModalMode>("none");
   const [picker, setPicker] = useState<PickerTarget>("none");
 
-  // ✅ 로그인/캘린더 정보
+  // 로그인/캘린더 정보
   const [userId, setUserId] = useState<string>("");
   const [calendarId, setCalendarId] = useState<number | null>(null);
 
@@ -65,16 +67,16 @@ const Calendar: React.FC = () => {
     return { start: now.startOf("month"), end: now.endOf("month").add(1, "day") };
   });
 
-  // ✅ 반복이면 multiDates 금지 (기존 정책 유지)
+  // 반복이면 multiDates 금지 (기존 정책 유지)
   const isRecurringForMultiDates =
     (form.repeatSnap?.repeat ?? "none") !== "none" || (form.repeat ?? "none") !== "none";
 
-  // ✅ /api/auth/me 로 userId + defaultCalendarId 가져오기
+  // /api/auth/me 로 userId + defaultCalendarId 가져오기
   useEffect(() => {
-    console.log("✅ [ME] effect mounted");
+    // console.log("✅ [ME] effect mounted");
     (async () => {
       const token = localStorage.getItem("accessToken");
-      console.log("✅ [ME] token exists?", !!token);
+      // console.log("✅ [ME] token exists?", !!token);
       if (!token) {
         setFormError("로그인이 필요합니다.");
         return;
@@ -83,9 +85,9 @@ const Calendar: React.FC = () => {
       const res = await fetch(`${API_BASE}/api/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log("✅ [ME] status:", res.status);
+      // console.log("✅ [ME] status:", res.status);
       const data = (await res.json().catch(() => null)) as MeResponse | null;
-      console.log("📦 [ME] raw:", data);
+      // console.log("📦 [ME] raw:", data);
       if (!res.ok || !data?.ok) {
         setFormError(data?.message ?? "로그인 정보를 불러오지 못했습니다.");
         return;
@@ -96,7 +98,7 @@ const Calendar: React.FC = () => {
 
       const cid = data.defaultCalendarId ?? null;
       setCalendarId(cid);
-      console.log("📅 [ME] parsed calendarId:", cid, "typeof:", typeof cid);
+      // console.log("📅 [ME] parsed calendarId:", cid, "typeof:", typeof cid);
 
       if (!cid) {
         setFormError("이 계정은 가입된 캘린더가 없습니다. (calendar_members 확인 필요)");
@@ -221,7 +223,7 @@ const Calendar: React.FC = () => {
     return ymd;
   };
 
-  // ✅ 반복이면 multiDates 조작 금지(기존 정책 유지)
+  // 반복이면 multiDates 조작 금지(기존 정책 유지)
   const toggleMultiDate = (ymd: string) => {
     if (isRecurringForMultiDates) {
       setFormError("반복일정에서는 '여러 날짜에 동일 일정 추가'를 사용할 수 없습니다.");
@@ -261,7 +263,7 @@ const Calendar: React.FC = () => {
       repeatRangeEnd: "",
       repeatSnap: { repeat: "none", repeatInterval: 1, repeatRangeStart: "", repeatRangeEnd: "" },
 
-      // ✅ 핵심 수정: 날짜 클릭 시 multiDates는 "비워둔다"
+      // 날짜 클릭 시 multiDates는 비워둔다
       multiDates: [],
 
       color: "#1e2a78",
@@ -321,7 +323,7 @@ const Calendar: React.FC = () => {
         repeatRangeEnd: snapRE,
       },
 
-      // ✅ detail에서도 multiDates 사용 가능(단, 반복은 toggle/clear에서 막음)
+      // detail에서도 multiDates 사용 가능(단, 반복은 toggle/clear에서 막음)
       multiDates: [],
 
       color: occColor,
@@ -359,7 +361,7 @@ const Calendar: React.FC = () => {
       return;
     }
 
-    // ✅ 안전장치: multiDates는 "2개 이상"일 때만 서버로 보냄 (단건 저장과 충돌 방지)
+    // 안전장치: multiDates는 "2개 이상"일 때만 서버로 보냄 (단건 저장과 충돌 방지)
     const mdRaw = (form.multiDates ?? []).filter(Boolean);
     const multiDatesToSend = mdRaw.length >= 2 ? mdRaw : [];
 
@@ -402,7 +404,7 @@ const Calendar: React.FC = () => {
   };
 
   /**
-   * ✅ detail에서 multiDates 선택 시 => "수정"이 아니라 "복제 생성"으로 처리
+   * detail에서 multiDates 선택 시 => "수정"이 아니라 "복제 생성"으로 처리
    * - 반복 일정에서는 기존 정책대로 금지
    */
   const createClonesFromDetail = async () => {
@@ -472,7 +474,7 @@ const Calendar: React.FC = () => {
     const t = form.title.trim();
     if (!t) return;
 
-    // ✅ detail에서 multiDates가 선택되어 있으면 => "수정" 대신 "복제 생성"
+    // detail에서 multiDates가 선택되어 있으면 => "수정" 대신 "복제 생성"
     if (mode === "detail" && (form.multiDates?.length ?? 0) > 0) {
       await createClonesFromDetail();
       return;
@@ -709,99 +711,52 @@ const Calendar: React.FC = () => {
   };
 
   return (
-    <div style={{ width: "100%" }}>
-      <style>{`
-        .fc .fc-daygrid-event { border-radius: 8px; padding: 2px 6px; }
-        .fc .fc-daygrid-dot-event {
-          border-radius: 8px;
-          padding: 2px 6px;
-          background: var(--fc-event-bg-color, rgba(30,42,120,0.2));
-          border: 1px solid var(--fc-event-border-color, rgba(30,42,120,0.35));
-        }
-        .fc .fc-daygrid-dot-event .fc-daygrid-event-dot { display: none; }
-        .fc .fc-daygrid-dot-event .fc-event-title,
-        .fc .fc-daygrid-dot-event .fc-event-time { color: var(--fc-event-text-color, #fff); font-weight: 700; }
+    <div className={styles.root}>
+      <div className={styles.container}>
+        <div className={styles.card}>
+          <CalendarView
+            calRef={calRef}
+            expandedEvents={expandedEvents}
+            holidayMap={holidayMap}
+            getDayType={getDayType}
+            onDateClick={onDateClick}
+            onEventClick={onEventClick}
+            onDatesSet={(range, year) => {
+              setHolidayYear(year);
+              setViewRange(range);
+            }}
+          />
 
-        .fc .pz-day-red  .fc-daygrid-day-number { color: #dc2626 !important; }
-        .fc .pz-day-blue .fc-daygrid-day-number { color: #2563eb !important; }
-        .fc .pz-day-black .fc-daygrid-day-number { color: rgba(0,0,0,0.9) !important; }
-
-        .fc .pz-dow-red  .fc-col-header-cell-cushion { color: #dc2626 !important; }
-        .fc .pz-dow-blue .fc-col-header-cell-cushion { color: #2563eb !important; }
-        .fc .pz-dow-black .fc-col-header-cell-cushion { color: rgba(0,0,0,0.9) !important;}
-
-        .fc .pz-holiday-tip { position: relative; }
-        .fc .pz-holiday-tip:hover::after {
-          content: attr(data-holiday);
-          position: absolute;
-          left: 50%;
-          top: 4px;
-          transform: translateX(-50%);
-          z-index: 999999;
-          padding: 6px 8px;
-          border-radius: 8px;
-          border: 1px solid rgba(0,0,0,0.12);
-          background: rgba(0,0,0,0.85);
-          color: #fff;
-          font-size: 12px;
-          font-weight: 700;
-          white-space: nowrap;
-          pointer-events: none;
-        }
-        .fc .pz-holiday-tip:hover::before {
-          content: "";
-          position: absolute;
-          left: 50%;
-          top: 0px;
-          transform: translateX(-50%);
-          z-index: 999999;
-          border: 6px solid transparent;
-          border-bottom-color: rgba(0,0,0,0.85);
-          pointer-events: none;
-        }
-      `}</style>
-
-      <CalendarView
-        calRef={calRef}
-        expandedEvents={expandedEvents}
-        holidayMap={holidayMap}
-        getDayType={getDayType}
-        onDateClick={onDateClick}
-        onEventClick={onEventClick}
-        onDatesSet={(range, year) => {
-          setHolidayYear(year);
-          setViewRange(range);
-        }}
-      />
-
-      {mode !== "none" && (
-        <EventModal
-          mode={mode}
-          form={form}
-          setForm={setForm}
-          formError={formError}
-          setFormError={setFormError}
-          holidaySet={holidaySet}
-          picker={picker}
-          setPicker={setPicker}
-          lockRepeatControls={lockRepeatControls}
-          canEdit={canEdit}
-          onToggleAllDay={onToggleAllDay}
-          onPickStartDate={onPickStartDate}
-          onPickEndDate={onPickEndDate}
-          onPickStartTime={onPickStartTime}
-          onPickEndTime={onPickEndTime}
-          onPickRepeatStartDate={onPickRepeatStartDate}
-          onPickRepeatEndDate={onPickRepeatEndDate}
-          toggleMultiDate={toggleMultiDate}
-          clearMultiDates={clearMultiDates}
-          closeModal={closeModal}
-          saveNew={saveNew}
-          updateEvent={updateEvent}
-          deleteEvent={deleteEvent}
-          getDayType={getDayType}
-        />
-      )}
+          {mode !== "none" && (
+            <EventModal
+              mode={mode}
+              form={form}
+              setForm={setForm}
+              formError={formError}
+              setFormError={setFormError}
+              holidaySet={holidaySet}
+              picker={picker}
+              setPicker={setPicker}
+              lockRepeatControls={lockRepeatControls}
+              canEdit={canEdit}
+              onToggleAllDay={onToggleAllDay}
+              onPickStartDate={onPickStartDate}
+              onPickEndDate={onPickEndDate}
+              onPickStartTime={onPickStartTime}
+              onPickEndTime={onPickEndTime}
+              onPickRepeatStartDate={onPickRepeatStartDate}
+              onPickRepeatEndDate={onPickRepeatEndDate}
+              toggleMultiDate={toggleMultiDate}
+              clearMultiDates={clearMultiDates}
+              closeModal={closeModal}
+              saveNew={saveNew}
+              updateEvent={updateEvent}
+              deleteEvent={deleteEvent}
+              getDayType={getDayType}
+            />
+          )}
+        </div>
+      </div>
     </div>
   );
 };

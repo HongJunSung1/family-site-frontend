@@ -7,6 +7,7 @@ import type { Dayjs } from "dayjs";
 
 import type { DayType, ViewRange } from "../types";
 import type { ExpandedEvent } from "../utils/recurrence";
+import styles from "../../Calendar.module.css";
 
 type Props = {
   calRef: React.RefObject<FullCalendar | null>;
@@ -27,26 +28,25 @@ export function CalendarView({
   onEventClick,
   onDatesSet,
 }: Props) {
+
   return (
-    <div
-      style={{
-        background: "#fff",
-        border: "1px solid rgba(0,0,0,0.08)",
-        borderRadius: 12,
-        padding: 12,
-      }}
-    >
+    <div className={styles.calendarShell}>
       <FullCalendar
         key={holidayMap.size}
         ref={calRef}
         plugins={[dayGridPlugin, interactionPlugin]}
         initialView="dayGridMonth"
         height="auto"
+        // height={800}
         locale="ko"
-        headerToolbar={{ left: "prev,next today", center: "title", right: "" }}
+        customButtons={{
+                        myToday: {text: "📆", click: () => calRef.current?.getApi().today()},
+                      }}
+        headerToolbar={{ left: "title", center: "myToday prev,next", right: "", }}
         datesSet={(arg) => {
           const y = dayjs(arg.start).add(10, "day").year();
           onDatesSet({ start: dayjs(arg.start), end: dayjs(arg.end) }, y);
+          
         }}
         dayCellDidMount={(arg) => {
           const ymd = dayjs(arg.date).format("YYYY-MM-DD");
@@ -98,7 +98,9 @@ export function CalendarView({
             repeat: e.repeat ?? "none",
           },
         }))}
-        dayMaxEvents={2}
+        dayMaxEvents={5}
+        expandRows={true} // 주(행) 높이를 동일하게 분배
+        fixedWeekCount={true}   // 5~6주 고정(월뷰에서 행 높이 안정)
         moreLinkClick="popover"
       />
     </div>

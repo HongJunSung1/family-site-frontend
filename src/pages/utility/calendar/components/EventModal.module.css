@@ -1,0 +1,479 @@
+/* EventModal.module.css */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 9999;
+  overflow-y: auto;
+}
+
+.modal {
+  width: min(560px, 100%);
+  background: #f3f4f6;
+  color: #111827;
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+
+  position: relative;
+
+  /* 스크롤바 숨기기 */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  
+}
+.modal::-webkit-scrollbar {
+  display: none;
+}
+/* 모달창 안의 항목들이 부모 width를 절대 초과하지 않도록  */
+.modal * {
+  box-sizing: border-box;
+}
+
+.btnOutline {
+  color: #111827;
+}
+
+.linkBtn {
+  color: #111827;
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.headerLeft {
+  flex: 1;
+}
+
+.title {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.closeBtn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+
+  width: 32px;
+  height: 32px;
+
+  border-radius: 8px;
+  border: none;
+
+  background: transparent;
+
+  font-size: 20px;
+  font-weight: 600;
+
+  color: #6b7280;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+
+  transition: background 0.15s;
+}
+
+.closeBtn:hover {
+  color: #111827;
+}
+
+/* All day */
+.allDayRow {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.allDayLabel {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Range */
+.rangeWrap {
+  margin-top: 10px;
+}
+
+.rangeGrid {
+  display: grid;
+  grid-template-columns: 1fr 40px 1fr;
+  gap: 10px;
+  align-items: center;
+}
+
+.rangeCol {
+  display: grid;
+  gap: 10px;
+}
+
+.rangeHint {
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+.rangeArrow {
+  text-align: center;
+  font-size: 22px;
+  opacity: 0.35;
+}
+
+.pillRow {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.formError {
+  margin-top: 10px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #dc2626;
+}
+
+/* Common section */
+.section {
+  margin-top: 14px;
+}
+
+.sectionRow {
+  margin-top: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(0,0,0,0.15);
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  cursor: pointer;
+}
+
+.sectionTitle {
+  font-size: 13px;
+  /* font-weight: 600; */
+  opacity: 0.8;
+}
+
+.sectionRight {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sectionSummary {
+  font-size: 13px;
+  color: rgba(0,0,0,0.6);
+}
+
+.sectionArrow {
+  font-size: 14px;
+  color: rgba(0,0,0,0.55);
+}
+
+.label {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 6px;
+  opacity: 0.8;
+}
+
+.textInput,
+.textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(0,0,0,0.12);
+  background: #f9fafb;
+  color: #111827;
+  outline: none;
+  resize: none;
+
+  box-sizing: border-box;
+}
+
+.textInput:focus,
+.textarea:focus {
+  border-color: rgba(30, 42, 120, 0.35);
+  box-shadow: 0 0 0 3px rgba(30, 42, 120, 0.08);
+}
+
+/* Reusable pill button */
+.pillBtn {
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  background: #fff;
+  padding: 8px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  color: #111827;
+}
+
+.pillBtnActive {
+  border-color: rgba(30, 42, 120, 0.55);
+  box-shadow: 0 0 0 3px rgba(30, 42, 120, 0.12);
+}
+
+.pillBtnDisabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Repeat area */
+.sectionGrid {
+  margin-top: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.repeatRow {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.labelFixed {
+  font-size: 13px;
+  opacity: 0.8;
+  width: 60px;
+}
+
+.select {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  outline: none;
+  cursor: pointer;
+  background: #fff;
+  color: #111827;
+}
+
+.numberInput {
+  width: 86px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  outline: none;
+  color: #111827;
+}
+
+.repeatUnit {
+  font-size: 12px;
+  opacity: 0.7;
+  white-space: nowrap;
+}
+
+.dim {
+  opacity: 0.55;
+}
+
+.disabledControl {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.periodRow {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.periodDisabled {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.tilde {
+  opacity: 0.5;
+}
+
+.linkBtn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  opacity: 0.85;
+  padding: 6px 8px;
+}
+
+.linkBtnDisabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.hint {
+  font-size: 12px;
+  opacity: 0.8;
+  color: #111827;
+}
+
+/* Card */
+.card {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #e5e7eb;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+}
+
+.cardHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cardHeadBtns {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.cardTitle {
+  font-size: 14px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.cardText {
+  margin-top: 8px;
+  font-size: 12px;
+  color: rgba(17, 24, 39, 0.88);
+}
+
+.cardSubText {
+  margin-top: 8px;
+  font-size: 12px;
+  color: rgba(17, 24, 39, 0.78);
+}
+
+.accordionSummary {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(17, 24, 39, 0.72);
+}
+
+.accordionArrow {
+  font-size: 18px;
+  font-weight: 900;
+  color: #374151;
+  line-height: 1;
+}
+
+/* Simple row */
+.row {
+  margin-top: 12px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.colorInput {
+  width: 48px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.subNote {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+/* Radios */
+.radioRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 6px;
+}
+
+.radioText {
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+/* Expand */
+.expand {
+  margin-top: 14px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  padding-top: 14px;
+}
+
+.expandTitle {
+  font-weight: 700;
+  margin: 10px 0;
+}
+
+.expandHint {
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+.timeDisabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Footer buttons */
+.footer {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+  justify-content: flex-end;
+}
+
+.btnOutline {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  background: #fff;
+  cursor: pointer;
+}
+
+.btnPrimary {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: none;
+  background: #1e2a78;
+  color: white;
+  cursor: pointer;
+}
+
+.btnDanger {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(220, 38, 38, 0.4);
+  background: #fff;
+  color: #dc2626;
+  cursor: pointer;
+}
+
+.btnDisabled {
+  background: rgba(0, 0, 0, 0.2);
+  color: #fff;
+  cursor: not-allowed;
+}
+
+.bottomHint {
+  margin-top: 10px;
+  font-size: 12px;
+  opacity: 0.65;
+}

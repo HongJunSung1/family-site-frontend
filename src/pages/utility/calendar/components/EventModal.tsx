@@ -1,5 +1,5 @@
-// EventModal.tsx (복붙용 완성본: detail에서도 다중날짜 UI 노출 + 반복과 상호배제 유지)
-import React, { useMemo } from "react";
+// EventModal.tsx
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import dayjs, { Dayjs } from "dayjs";
 import "dayjs/locale/ko";
 
@@ -11,12 +11,9 @@ import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
 import type { ApplyScope, FormState, ModalMode, PickerTarget, RepeatType } from "../types";
 import { CustomDay } from "./CustomDay";
 import { WheelTimePicker } from "./WheelTimePicker";
-import {
-  formatKoreanDateLabel,
-  formatKoreanTimeLabel,
-  textPillBtnStyle,
-  toDayjs,
-} from "../utils/date";
+import { formatKoreanDateLabel, formatKoreanTimeLabel, toDayjs } from "../utils/date";
+
+import styles from "./EventModal.module.css";
 
 type Props = {
   mode: ModalMode;
@@ -88,20 +85,25 @@ export function EventModal(props: Props) {
 
   const multiDatesSet = useMemo(() => new Set(form.multiDates ?? []), [form.multiDates]);
 
-  /**
-   * ✅ 상호배제 규칙(업그레이드)
-   * - 반복이 켜져 있으면 다중 날짜 선택 금지
-   * - "detail에서 반복 occurrence 클릭" 상황도 확실히 막기 위해 repeatSnap도 포함
-   */
-  const isRecurring = (form.repeat ?? "none") !== "none" || (form.repeatSnap?.repeat ?? "none") !== "none";
+  const isRecurring =
+    (form.repeat ?? "none") !== "none" || (form.repeatSnap?.repeat ?? "none") !== "none";
   const disableMultiDates = isRecurring;
 
-  /**
-   * - (생성 모드에서) 다중 날짜가 2개 이상이면 반복 선택 금지
-   * - detail은 "복제 생성" 개념이므로, multiDates가 있어도 repeat을 켜는 건 금지(혼동 방지)
-   */
   const isMultiDateMode = (form.multiDates?.length ?? 0) >= 2;
-  const blockRepeatBecauseMultiDates = isMultiDateMode; // create/detail 모두 적용
+  const blockRepeatBecauseMultiDates = isMultiDateMode;
+
+  const RepeatUnitLabel =
+    form.repeat === "none"
+      ? ""
+      : form.repeat === "daily"
+      ? "일마다　"
+      : form.repeat === "weekly"
+      ? "주마다　"
+      : form.repeat === "monthly"
+      ? "개월마다"
+      : "년마다　";
+
+  const repeatUiDisabled = form.repeat === "none" || lockRepeatControls;
 
   const dateTextColor = (d: Dayjs) => {
     const t = getDayType(d);
@@ -110,84 +112,148 @@ export function EventModal(props: Props) {
     return "rgba(0,0,0,0.90)";
   };
 
-  const StartDateBtn = (
-    <button
-      type="button"
-      onClick={() => setPicker((p) => (p === "startDate" ? "none" : "startDate"))}
-      style={{ ...textPillBtnStyle(picker === "startDate"), color: dateTextColor(startD) }}
-    >
-      {formatKoreanDateLabel(startD)}
-    </button>
-  );
+  const pillClass = (active: boolean, disabled?: boolean) =>
+    [styles.pillBtn, active ? styles.pillBtnActive : "", disabled ? styles.pillBtnDisabled : ""]
+      .filter(Boolean)
+      .join(" ");
 
-  const StartTimeBtn = (
-    <button
-      type="button"
-      onClick={() => setPicker((p) => (p === "startTime" ? "none" : "startTime"))}
-      style={{
-        ...textPillBtnStyle(picker === "startTime"),
-        opacity: form.allDay ? 0.5 : 1,
-        cursor: form.allDay ? "not-allowed" : "pointer",
-      }}
-      disabled={form.allDay}
-    >
-      {formatKoreanTimeLabel(startD)}
-    </button>
-  );
+  const [repeatOpen, setRepeatOpen] = useState(false);
+  const [multiDateOpen, setMultiDateOpen] = useState(false);
 
-  const EndDateBtn = (
-    <button
-      type="button"
-      onClick={() => setPicker((p) => (p === "endDate" ? "none" : "endDate"))}
-      style={{ ...textPillBtnStyle(picker === "endDate"), color: dateTextColor(endD) }}
-    >
-      {formatKoreanDateLabel(endD)}
-    </button>
-  );
+  useEffect(() => {
+    if (picker === "repeatStartDate" || picker === "repeatEndDate") {
+      setRepeatOpen(true);
+    }
+    if (picker === "multiDates") {
+      setMultiDateOpen(true);
+    }
+  }, [picker]);
 
-  const EndTimeBtn = (
-    <button
-      type="button"
-      onClick={() => setPicker((p) => (p === "endTime" ? "none" : "endTime"))}
-      style={{
-        ...textPillBtnStyle(picker === "endTime"),
-        opacity: form.allDay ? 0.5 : 1,
-        cursor: form.allDay ? "not-allowed" : "pointer",
-      }}
-      disabled={form.allDay}
-    >
-      {formatKoreanTimeLabel(endD)}
-    </button>
-  );
-
-  const isTimeOpen = picker === "startTime" || picker === "endTime";
-  const timeValue = picker === "startTime" ? startD : endD;
-
-  const RepeatUnitLabel =
+  const repeatSummary =
     form.repeat === "none"
-      ? ""
-      : form.repeat === "daily"
-      ? "일마다"
-      : form.repeat === "weekly"
-      ? "주마다"
-      : form.repeat === "monthly"
-      ? "개월마다"
-      : "년마다";
+      ? "반복 안함"
+      : `${
+          form.repeat === "daily"
+            ? `매일 / ${Math.max(1, form.repeatInterval || 1)}일 간격`
+            : form.repeat === "weekly"
+            ? `매주 / ${Math.max(1, form.repeatInterval || 1)}주 간격`
+            : form.repeat === "monthly"
+            ? `매월 / ${Math.max(1, form.repeatInterval || 1)}개월 간격`
+            : `매년 / ${Math.max(1, form.repeatInterval || 1)}년 간격`
+        }`;
 
-  const repeatUiDisabled = form.repeat === "none" || lockRepeatControls;
+  const multiDateSummary =
+    (form.multiDates?.length ?? 0) > 0
+      ? `${form.multiDates?.length ?? 0}개 날짜 선택됨`
+      : "선택된 날짜 없음";
 
-  // ✅ repeat 변경 핸들러: 반복 켜면 multiDates는 시작일 1개로 강제
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const modalRef = useRef<HTMLDivElement | null>(null);
+
+  const dragRef = useRef({
+    dragging: false,
+    startX: 0,
+    startY: 0,
+    originX: 0,
+    originY: 0,
+  });
+
+  const clampDragOffset = (nextX: number, nextY: number) => {
+    const el = modalRef.current;
+    if (!el) return { x: nextX, y: nextY };
+
+    const rect = el.getBoundingClientRect();
+    const modalWidth = rect.width;
+    const modalHeight = rect.height;
+
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    const baseLeft = (vw - modalWidth) / 2;
+    const baseTop = (vh - modalHeight) / 2;
+
+    const minX = -baseLeft;
+    const maxX = vw - modalWidth - baseLeft;
+
+    const minY = -baseTop;
+    const maxY = vh - modalHeight - baseTop;
+
+    return {
+      x: Math.min(Math.max(nextX, minX), maxX),
+      y: Math.min(Math.max(nextY, minY), maxY),
+    };
+  };
+
+  const handleDragStart = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+
+    if (
+      target.closest("button, input, textarea, select, option, label") ||
+      target.closest(".MuiSwitch-root")
+    ) {
+      return;
+    }
+
+    dragRef.current = {
+      dragging: true,
+      startX: e.clientX,
+      startY: e.clientY,
+      originX: dragOffset.x,
+      originY: dragOffset.y,
+    };
+
+    e.preventDefault();
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!dragRef.current.dragging) return;
+
+      const dx = e.clientX - dragRef.current.startX;
+      const dy = e.clientY - dragRef.current.startY;
+
+      const nextX = dragRef.current.originX + dx;
+      const nextY = dragRef.current.originY + dy;
+
+      setDragOffset(clampDragOffset(nextX, nextY));
+    };
+
+    const handleMouseUp = () => {
+      dragRef.current.dragging = false;
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [dragOffset.x, dragOffset.y]);
+
+  useLayoutEffect(() => {
+    const handleResize = () => {
+      setDragOffset((prev) => clampDragOffset(prev.x, prev.y));
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const onChangeRepeat = (next: RepeatType) => {
     setFormError("");
+
+    if (next === "none" && (picker === "repeatStartDate" || picker === "repeatEndDate")) {
+      setPicker("none");
+    }
+
     setForm((p) => {
       const nextRepeat = next;
       const startYmd = String(p.start || "").slice(0, 10);
       const startYmdOk = /^\d{4}-\d{2}-\d{2}$/.test(startYmd);
 
-      // 다중 날짜가 2개 이상이면 반복 금지(방어)
-      if (nextRepeat !== "none" && (p.multiDates?.length ?? 0) >= 2) {
-        return p;
-      }
+      if (nextRepeat !== "none" && (p.multiDates?.length ?? 0) >= 2) return p;
 
       return {
         ...p,
@@ -198,55 +264,79 @@ export function EventModal(props: Props) {
     });
   };
 
-  // ✅ 다중날짜 달력 열기: 반복이 켜져 있으면 열지 않음
   const openMultiDatesPicker = () => {
     if (disableMultiDates) {
       setFormError("반복 일정에서는 ‘여러 날짜 선택’을 사용할 수 없습니다.");
       return;
     }
+    setMultiDateOpen(true);
     setPicker((p) => (p === "multiDates" ? "none" : "multiDates"));
   };
 
-  /**
-   * ✅ detail에서 multiDates 사용 UX
-   * - detail에서 다중날짜 선택 = “복제 생성” (Calendar.tsx updateEvent에서 처리)
-   * - 그래서 버튼 텍스트/안내문구를 detail에 맞게 조정
-   */
-  const isDetailCloneMode = mode === "detail" && (form.multiDates?.length ?? 0) > 0 && !disableMultiDates;
+  const isDetailCloneMode =
+    mode === "detail" && (form.multiDates?.length ?? 0) > 0 && !disableMultiDates;
+
+  const StartDateBtn = (
+    <button
+      type="button"
+      onClick={() => setPicker((p) => (p === "startDate" ? "none" : "startDate"))}
+      className={pillClass(picker === "startDate")}
+      style={{ color: dateTextColor(startD) }}
+    >
+      {formatKoreanDateLabel(startD)}
+    </button>
+  );
+
+  const StartTimeBtn = (
+    <button
+      type="button"
+      onClick={() => setPicker((p) => (p === "startTime" ? "none" : "startTime"))}
+      className={pillClass(picker === "startTime", form.allDay)}
+      disabled={form.allDay}
+    >
+      {formatKoreanTimeLabel(startD)}
+    </button>
+  );
+
+  const EndDateBtn = (
+    <button
+      type="button"
+      onClick={() => setPicker((p) => (p === "endDate" ? "none" : "endDate"))}
+      className={pillClass(picker === "endDate")}
+      style={{ color: dateTextColor(endD) }}
+    >
+      {formatKoreanDateLabel(endD)}
+    </button>
+  );
+
+  const EndTimeBtn = (
+    <button
+      type="button"
+      onClick={() => setPicker((p) => (p === "endTime" ? "none" : "endTime"))}
+      className={pillClass(picker === "endTime", form.allDay)}
+      disabled={form.allDay}
+    >
+      {formatKoreanTimeLabel(endD)}
+    </button>
+  );
 
   return (
-    <div
-      onClick={closeModal}
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.35)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 16,
-        zIndex: 9999,
-      }}
-    >
+    <div className={styles.overlay}>
       <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          width: "min(560px, 100%)",
-          background: "#fff",
-          borderRadius: 14,
-          padding: 16,
-          boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
-        }}
+        ref={modalRef}
+        className={styles.modal}
+        style={{ transform: `translate(${dragOffset.x}px, ${dragOffset.y}px)` }}
       >
-        {/* 헤더 */}
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 700, fontSize: 16 }}>
-              {mode === "create" ? "일정 추가" : "일정 상세"}
-            </div>
+        <button onClick={closeModal} className={styles.closeBtn} aria-label="close">
+          ✕
+        </button>
 
-            <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontSize: 14, fontWeight: 600 }}>하루 종일</span>
+        <div className={styles.header} onMouseDown={handleDragStart}>
+          <div className={styles.headerLeft}>
+            <div className={styles.title}>{mode === "create" ? "일정 추가" : "일정 상세"}</div>
+
+            <div className={styles.allDayRow}>
+              <span className={styles.allDayLabel}>하루 종일</span>
               <Switch
                 checked={form.allDay}
                 onChange={(e) => onToggleAllDay(e.target.checked)}
@@ -254,271 +344,445 @@ export function EventModal(props: Props) {
               />
             </div>
 
-            <div style={{ marginTop: 10 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 40px 1fr", gap: 10, alignItems: "center" }}>
-                <div style={{ display: "grid", gap: 10 }}>
-                  <div style={{ fontSize: 12, opacity: 0.6 }}>시작</div>
-                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <div className={styles.rangeWrap}>
+              <div className={styles.rangeGrid}>
+                <div className={styles.rangeCol}>
+                  <div className={styles.rangeHint}>시작</div>
+                  <div className={styles.pillRow}>
                     {StartDateBtn}
                     {StartTimeBtn}
                   </div>
                 </div>
 
-                <div style={{ textAlign: "center", fontSize: 22, opacity: 0.35 }}>→</div>
+                <div className={styles.rangeArrow}>→</div>
 
-                <div style={{ display: "grid", gap: 10 }}>
-                  <div style={{ fontSize: 12, opacity: 0.6 }}>종료</div>
-                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <div className={styles.rangeCol}>
+                  <div className={styles.rangeHint}>종료</div>
+                  <div className={styles.pillRow}>
                     {EndDateBtn}
                     {EndTimeBtn}
                   </div>
                 </div>
               </div>
+
+              {(picker === "startDate" ||
+                picker === "startTime" ||
+                picker === "endDate" ||
+                picker === "endTime") && (
+                <div className={styles.expandInline}>
+                  <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="ko">
+                    {(picker === "startDate" || picker === "endDate") && (
+                      <div>
+                        <div className={styles.expandTitle}>
+                          {picker === "startDate" ? "시작 날짜 선택" : "종료 날짜 선택"}
+                        </div>
+
+                        <DateCalendar
+                          value={picker === "startDate" ? startD : endD}
+                          onChange={(d) => {
+                            if (!d) return;
+                            if (picker === "startDate") onPickStartDate(d);
+                            else onPickEndDate(d);
+                          }}
+                          slots={{ day: CustomDay as any }}
+                          slotProps={{
+                            day: {
+                              holidaySet,
+                            } as any,
+                          }}
+                          sx={{
+                            "& .MuiDayCalendar-weekDayLabel:first-of-type": { color: "#dc2626" },
+                            "& .MuiDayCalendar-weekDayLabel:last-of-type": { color: "#2563eb" },
+
+                            "& .MuiYearCalendar-button": {
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              lineHeight: 1,
+                              paddingTop: 0,
+                              paddingBottom: 0,
+                            },
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    {(picker === "startTime" || picker === "endTime") && (
+                      <div>
+                        <div className={styles.expandTitle}>
+                          {picker === "startTime" ? "시작 시간 선택" : "종료 시간 선택"}
+                        </div>
+
+                        <div className={form.allDay ? styles.timeDisabled : ""}>
+                          <WheelTimePicker
+                            value={picker === "startTime" ? startD : endD}
+                            minutesStep={5}
+                            onChange={(t) => {
+                              if (picker === "startTime") onPickStartTime(t);
+                              else onPickEndTime(t);
+                            }}
+                          />
+                        </div>
+
+                        {form.allDay && (
+                          <div className={styles.expandHint}>
+                            * 하루 종일이 켜져있어서 시간 변경은 비활성화됩니다.
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </LocalizationProvider>
+                </div>
+              )}
             </div>
 
-            {formError && (
-              <div style={{ marginTop: 10, fontSize: 12, fontWeight: 800, color: "#dc2626" }}>
-                {formError}
-              </div>
-            )}
+            {formError && <div className={styles.formError}>{formError}</div>}
           </div>
-
-          <button
-            onClick={closeModal}
-            style={{ border: "none", background: "transparent", fontSize: 18, cursor: "pointer", lineHeight: 1 }}
-            aria-label="close"
-          >
-            ✕
-          </button>
         </div>
 
-        {/* 제목 */}
-        <div style={{ marginTop: 14 }}>
-          <label style={{ display: "block", fontSize: 13, marginBottom: 6, opacity: 0.8 }}>제목</label>
+        <div className={styles.section}>
+          <label className={styles.label}>제목</label>
           <input
             value={form.title}
             onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
-            placeholder="예: 생일, 여행, 병원"
-            style={{
-              width: "100%",
-              padding: "10px 12px",
-              borderRadius: 10,
-              border: "1px solid rgba(0,0,0,0.15)",
-              outline: "none",
-            }}
+            placeholder="일정을 입력해주세요."
+            className={styles.textInput}
             autoFocus
           />
         </div>
 
-        {/* 메모 */}
-        <div style={{ marginTop: 12 }}>
-          <label style={{ display: "block", fontSize: 13, marginBottom: 6, opacity: 0.8 }}>메모</label>
+        <div className={styles.section}>
+          <label className={styles.label}>메모</label>
           <textarea
             value={form.memo}
             onChange={(e) => setForm((p) => ({ ...p, memo: e.target.value }))}
             rows={3}
-            placeholder="한두 줄 메모"
-            style={{
-              width: "100%",
-              padding: "10px 12px",
-              borderRadius: 10,
-              border: "1px solid rgba(0,0,0,0.15)",
-              outline: "none",
-              resize: "vertical",
-            }}
+            placeholder="일정과 관련한 상세 내용을 기재해주세요."
+            className={styles.textarea}
           />
         </div>
 
-        {/* 반복 */}
-        <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
-          <div style={{ display: "flex", gap: 10, alignItems: "center", opacity: lockRepeatControls ? 0.55 : 1 }}>
-            <label style={{ fontSize: 13, opacity: 0.8, width: 60 }}>반복</label>
+        <>
+          <div
+            className={styles.sectionRow}
+            onClick={() => {
+              const next = !repeatOpen;
+              setRepeatOpen(next);
 
-            <select
-              value={form.repeat}
-              disabled={lockRepeatControls || blockRepeatBecauseMultiDates}
-              onChange={(e) => onChangeRepeat(e.target.value as RepeatType)}
-              style={{
-                flex: 1,
-                padding: "10px 12px",
-                borderRadius: 10,
-                border: "1px solid rgba(0,0,0,0.15)",
-                outline: "none",
-                cursor: lockRepeatControls || blockRepeatBecauseMultiDates ? "not-allowed" : "pointer",
-              }}
-            >
-              <option value="none">반복 안함</option>
-              <option value="daily">매일</option>
-              <option value="weekly">매주</option>
-              <option value="monthly">매월</option>
-              <option value="yearly">매년</option>
-            </select>
+              if (!next && (picker === "repeatStartDate" || picker === "repeatEndDate")) {
+                setPicker("none");
+              }
+            }}
+          >
+            <div className={styles.sectionTitle}>반복</div>
 
-            <input
-              type="number"
-              min={1}
-              value={form.repeatInterval}
-              disabled={repeatUiDisabled}
-              onChange={(e) => setForm((p) => ({ ...p, repeatInterval: Math.max(1, Number(e.target.value || 1)) }))}
-              style={{
-                width: 86,
-                padding: "10px 12px",
-                borderRadius: 10,
-                border: "1px solid rgba(0,0,0,0.15)",
-                outline: "none",
-                opacity: repeatUiDisabled ? 0.5 : 1,
-                cursor: repeatUiDisabled ? "not-allowed" : "text",
-              }}
-            />
-
-            <div style={{ fontSize: 12, opacity: 0.7, whiteSpace: "nowrap" }}>{RepeatUnitLabel}</div>
+            <div className={styles.sectionRight}>
+              <span className={styles.sectionSummary}>{repeatSummary}</span>
+              <span className={styles.sectionArrow}>{repeatOpen ? "▴" : "▾"}</span>
+            </div>
           </div>
 
-          {form.repeat !== "none" && (
+          {repeatOpen && (
+            <div className={styles.sectionGrid}>
+              <div className={[styles.repeatRow, lockRepeatControls ? styles.dim : ""].join(" ")}>
+                <select
+                  value={form.repeat}
+                  disabled={lockRepeatControls || blockRepeatBecauseMultiDates}
+                  onChange={(e) => onChangeRepeat(e.target.value as RepeatType)}
+                  className={[
+                    styles.select,
+                    lockRepeatControls || blockRepeatBecauseMultiDates ? styles.disabledControl : "",
+                  ].join(" ")}
+                >
+                  <option value="none">반복 안함</option>
+                  <option value="daily">매일</option>
+                  <option value="weekly">매주</option>
+                  <option value="monthly">매월</option>
+                  <option value="yearly">매년</option>
+                </select>
+
+                <input
+                  type="number"
+                  min={1}
+                  value={form.repeatInterval}
+                  disabled={repeatUiDisabled}
+                  onChange={(e) =>
+                    setForm((p) => ({
+                      ...p,
+                      repeatInterval: Math.max(1, Number(e.target.value || 1)),
+                    }))
+                  }
+                  className={[
+                    styles.numberInput,
+                    repeatUiDisabled ? styles.disabledControl : "",
+                  ].join(" ")}
+                />
+
+                <div className={styles.repeatUnit}>{RepeatUnitLabel}</div>
+              </div>
+
+              {form.repeat !== "none" && (
+                <div
+                  className={[styles.periodRow, repeatUiDisabled ? styles.periodDisabled : ""].join(
+                    " "
+                  )}
+                >
+                  <div className={styles.labelFixed}>기간</div>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPicker((p) => (p === "repeatStartDate" ? "none" : "repeatStartDate"))
+                    }
+                    className={pillClass(picker === "repeatStartDate")}
+                  >
+                    {form.repeatRangeStart
+                      ? dayjs(form.repeatRangeStart).format("M월 D일")
+                      : "시작일(없음)"}
+                  </button>
+
+                  <span className={styles.tilde}>~</span>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPicker((p) => (p === "repeatEndDate" ? "none" : "repeatEndDate"))
+                    }
+                    className={pillClass(picker === "repeatEndDate")}
+                  >
+                    {form.repeatRangeEnd
+                      ? dayjs(form.repeatRangeEnd).format("M월 D일")
+                      : "종료일(없음)"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormError("");
+                      setForm((p) => ({ ...p, repeatRangeStart: "", repeatRangeEnd: "" }));
+
+                      if (picker === "repeatStartDate" || picker === "repeatEndDate") {
+                        setPicker("none");
+                      }
+                    }}
+                    className={styles.linkBtn}
+                  >
+                    초기화
+                  </button>
+                </div>
+              )}
+
+              {lockRepeatControls && (
+                <div className={styles.hint}>
+                  * “이 일정만”에서는 반복 규칙을 변경할 수 없습니다. (전체/이후에서 변경 가능)
+                </div>
+              )}
+              {blockRepeatBecauseMultiDates && (
+                <div className={styles.hint}>
+                  * 여러 날짜에 동일 일정 추가(복제 포함)에서는 반복 설정을 사용할 수 없습니다.
+                  (단건 날짜일 때만 가능)
+                </div>
+              )}
+              {disableMultiDates && (
+                <div className={styles.hint}>
+                  * 반복 일정에서는 “여러 날짜에 동일 일정 추가”를 사용할 수 없습니다.
+                </div>
+              )}
+
+              {(picker === "repeatStartDate" || picker === "repeatEndDate") && (
+                <div className={styles.expand}>
+                  <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="ko">
+                    <div>
+                      <div className={styles.expandTitle}>
+                        {picker === "repeatStartDate" ? "반복 시작일 선택" : "반복 종료일 선택"}
+                      </div>
+
+                      <DateCalendar
+                        value={
+                          picker === "repeatStartDate"
+                            ? form.repeatRangeStart
+                              ? dayjs(`${form.repeatRangeStart}T00:00`)
+                              : startD
+                            : form.repeatRangeEnd
+                            ? dayjs(`${form.repeatRangeEnd}T00:00`)
+                            : endD
+                        }
+                        onChange={(d) => {
+                          if (!d) return;
+                          if (picker === "repeatStartDate") onPickRepeatStartDate(d);
+                          else onPickRepeatEndDate(d);
+                        }}
+                        slots={{ day: CustomDay as any }}
+                        slotProps={{
+                          day: {
+                            holidaySet,
+                          } as any,
+                        }}
+                        sx={{
+                          "& .MuiDayCalendar-weekDayLabel:first-of-type": { color: "#dc2626" },
+                          "& .MuiDayCalendar-weekDayLabel:last-of-type": { color: "#2563eb" },
+
+                          "& .MuiYearCalendar-button": {
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            lineHeight: 1,
+                            paddingTop: 0,
+                            paddingBottom: 0,
+                          },
+                        }}
+                      />
+                    </div>
+                  </LocalizationProvider>
+                </div>
+              )}
+            </div>
+          )}
+        </>
+
+        {(mode === "create" || mode === "detail") && (
+          <>
             <div
-              style={{
-                display: "flex",
-                gap: 10,
-                alignItems: "center",
-                opacity: repeatUiDisabled ? 0.55 : 1,
-                pointerEvents: repeatUiDisabled ? "none" : "auto",
+              className={styles.sectionRow}
+              onClick={() => {
+                const next = !multiDateOpen;
+                setMultiDateOpen(next);
+
+                if (!next && picker === "multiDates") {
+                  setPicker("none");
+                }
               }}
             >
-              <div style={{ fontSize: 13, opacity: 0.8, width: 60 }}>기간</div>
-
-              <button
-                type="button"
-                onClick={() => setPicker((p) => (p === "repeatStartDate" ? "none" : "repeatStartDate"))}
-                style={textPillBtnStyle(picker === "repeatStartDate")}
-              >
-                {form.repeatRangeStart ? dayjs(form.repeatRangeStart).format("M월 D일") : "시작일(없음)"}
-              </button>
-
-              <span style={{ opacity: 0.5 }}>~</span>
-
-              <button
-                type="button"
-                onClick={() => setPicker((p) => (p === "repeatEndDate" ? "none" : "repeatEndDate"))}
-                style={textPillBtnStyle(picker === "repeatEndDate")}
-              >
-                {form.repeatRangeEnd ? dayjs(form.repeatRangeEnd).format("M월 D일") : "종료일(없음)"}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setFormError("");
-                  setForm((p) => ({ ...p, repeatRangeStart: "", repeatRangeEnd: "" }));
-                }}
-                style={{
-                  border: "none",
-                  background: "transparent",
-                  cursor: "pointer",
-                  fontSize: 12,
-                  opacity: 0.7,
-                }}
-              >
-                초기화
-              </button>
-            </div>
-          )}
-
-          {lockRepeatControls && (
-            <div style={{ fontSize: 12, opacity: 0.7, color: "#111827" }}>
-              * “이 일정만”에서는 반복 규칙을 변경할 수 없습니다. (전체/이후에서 변경 가능)
-            </div>
-          )}
-          {blockRepeatBecauseMultiDates && (
-            <div style={{ fontSize: 12, opacity: 0.7, color: "#111827" }}>
-              * 여러 날짜에 동일 일정 추가(복제 포함)에서는 반복 설정을 사용할 수 없습니다. (단건 날짜일 때만 가능)
-            </div>
-          )}
-          {disableMultiDates && (
-            <div style={{ fontSize: 12, opacity: 0.7, color: "#111827" }}>
-              * 반복 일정에서는 “여러 날짜에 동일 일정 추가”를 사용할 수 없습니다.
-            </div>
-          )}
-        </div>
-
-        {/* 불규칙 날짜 여러 개 (create + detail 모두 노출) */}
-        {(mode === "create" || mode === "detail") && (
-          <div style={{ marginTop: 12, padding: 12, borderRadius: 10, background: "rgba(0,0,0,0.03)" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-              <div style={{ fontSize: 13, fontWeight: 800 }}>
+              <div className={styles.sectionTitle}>
                 여러 날짜에 동일 일정 추가 {mode === "detail" ? "(복제)" : ""}
               </div>
 
-              <div style={{ display: "flex", gap: 8 }}>
-                <button
-                  type="button"
-                  onClick={openMultiDatesPicker}
-                  disabled={disableMultiDates}
-                  style={{
-                    ...textPillBtnStyle(picker === "multiDates"),
-                    opacity: disableMultiDates ? 0.5 : 1,
-                    cursor: disableMultiDates ? "not-allowed" : "pointer",
-                  }}
-                >
-                  날짜 선택
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (disableMultiDates) {
-                      setFormError("반복 일정에서는 ‘여러 날짜 선택’을 사용할 수 없습니다.");
-                      return;
-                    }
-                    clearMultiDates();
-                  }}
-                  disabled={disableMultiDates}
-                  style={{
-                    border: "none",
-                    background: "transparent",
-                    fontSize: 12,
-                    opacity: disableMultiDates ? 0.35 : 0.7,
-                    cursor: disableMultiDates ? "not-allowed" : "pointer",
-                  }}
-                >
-                  초기화
-                </button>
+              <div className={styles.sectionRight}>
+                <span className={styles.sectionSummary}>{multiDateSummary}</span>
+                <span className={styles.sectionArrow}>{multiDateOpen ? "▴" : "▾"}</span>
               </div>
             </div>
 
-            <div style={{ marginTop: 8, fontSize: 12, opacity: 0.7 }}>
-              선택된 날짜: {(form.multiDates?.length ?? 0) > 0 ? form.multiDates.join(", ") : "없음"}
-            </div>
+            {multiDateOpen && (
+              <div className={styles.sectionGrid}>
+                <div className={styles.cardHeadBtns} style={{ marginTop: 2 }}>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openMultiDatesPicker();
+                    }}
+                    disabled={disableMultiDates}
+                    className={pillClass(picker === "multiDates", disableMultiDates)}
+                  >
+                    날짜 선택
+                  </button>
 
-            <div style={{ marginTop: 8, fontSize: 12, opacity: 0.65 }}>
-              {mode === "create"
-                ? "* 저장을 누르면 선택된 날짜 각각에 동일한 일정이 생성됩니다."
-                : "* ‘수정’ 버튼을 누르면 선택된 날짜들로 동일 일정이 복제 생성됩니다. (원본 일정은 그대로 유지)"}
-            </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (disableMultiDates) {
+                        setFormError("반복 일정에서는 ‘여러 날짜 선택’을 사용할 수 없습니다.");
+                        return;
+                      }
+                      clearMultiDates();
+                    }}
+                    disabled={disableMultiDates}
+                    className={[
+                      styles.linkBtn,
+                      disableMultiDates ? styles.linkBtnDisabled : "",
+                    ].join(" ")}
+                  >
+                    초기화
+                  </button>
+                </div>
 
-            {disableMultiDates && (
-              <div style={{ marginTop: 8, fontSize: 12, opacity: 0.65 }}>
-                * 현재는 반복 일정이라 다중 날짜 선택이 비활성화됩니다.
+                <div className={styles.cardText}>
+                  선택된 날짜: {(form.multiDates?.length ?? 0) > 0 ? form.multiDates.join(", ") : "없음"}
+                </div>
+
+                <div className={styles.cardSubText}>
+                  {mode === "create"
+                    ? "* 저장을 누르면 선택된 날짜 각각에 동일한 일정이 생성됩니다."
+                    : "* ‘수정’ 버튼을 누르면 선택된 날짜들로 동일 일정이 복제 생성됩니다. (원본 일정은 그대로 유지)"}
+                </div>
+
+                {disableMultiDates && (
+                  <div className={styles.cardSubText}>
+                    * 현재는 반복 일정이라 다중 날짜 선택이 비활성화됩니다.
+                  </div>
+                )}
+
+                {picker === "multiDates" && (
+                  <div className={styles.expand}>
+                    <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="ko">
+                      <div>
+                        <div className={styles.expandTitle}>여러 날짜 선택</div>
+
+                        {disableMultiDates ? (
+                          <div className={styles.expandHint}>
+                            반복 일정에서는 여러 날짜를 선택할 수 없습니다. (반복을 끄면 사용 가능)
+                          </div>
+                        ) : (
+                          <DateCalendar
+                            value={
+                              form.multiDates?.[form.multiDates.length - 1]
+                                ? dayjs(`${form.multiDates[form.multiDates.length - 1]}T00:00`)
+                                : startD
+                            }
+                            onChange={(d) => {
+                              if (!d) return;
+                              if (disableMultiDates) {
+                                setFormError("반복 일정에서는 ‘여러 날짜 선택’을 사용할 수 없습니다.");
+                                return;
+                              }
+                              toggleMultiDate(d.format("YYYY-MM-DD"));
+                            }}
+                            slots={{ day: CustomDay as any }}
+                            slotProps={{
+                              day: {
+                                holidaySet,
+                                selectedSet: multiDatesSet,
+                              } as any,
+                            }}
+                            sx={{
+                              "& .MuiDayCalendar-weekDayLabel:first-of-type": { color: "#dc2626" },
+                              "& .MuiDayCalendar-weekDayLabel:last-of-type": { color: "#2563eb" },
+                              "& .MuiYearCalendar-button": {
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                lineHeight: 1,
+                                paddingTop: 0,
+                                paddingBottom: 0,
+                              },
+                            }}
+                          />
+                        )}
+                      </div>
+                    </LocalizationProvider>
+                  </div>
+                )}
               </div>
             )}
-          </div>
+          </>
         )}
 
-        {/* 색상 */}
-        <div style={{ marginTop: 12, display: "flex", gap: 10, alignItems: "center" }}>
-          <label style={{ fontSize: 13, opacity: 0.8, width: 60 }}>색상</label>
+        <div className={styles.row}>
+          <label className={styles.labelFixed}>색상</label>
           <input
             type="color"
             value={form.color}
             onChange={(e) => setForm((p) => ({ ...p, color: e.target.value }))}
-            style={{ width: 48, height: 36, padding: 0, border: "none", background: "transparent" }}
+            className={styles.colorInput}
           />
-          <div style={{ fontSize: 12, opacity: 0.7 }}>내 고유색(추후 프로필로 이동)</div>
+          <div className={styles.subNote}>내 고유색(추후 프로필로 이동)</div>
         </div>
 
-        {/* 적용 범위 */}
         {mode === "detail" && (form.repeatSnap.repeat ?? "none") !== "none" && (
-          <div style={{ marginTop: 12, padding: 12, borderRadius: 10, background: "rgba(0,0,0,0.03)" }}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>적용 범위</div>
+          <div className={styles.card}>
+            <div className={styles.cardTitle}>적용 범위</div>
 
             {(
               [
@@ -527,7 +791,7 @@ export function EventModal(props: Props) {
                 { v: "all", label: "전체 일정(모두)" },
               ] as const
             ).map((opt) => (
-              <label key={opt.v} style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 6 }}>
+              <label key={opt.v} className={styles.radioRow}>
                 <input
                   type="radio"
                   name="applyScope"
@@ -550,146 +814,21 @@ export function EventModal(props: Props) {
                     });
                   }}
                 />
-                <span style={{ fontSize: 13, opacity: 0.85 }}>{opt.label}</span>
+                <span className={styles.radioText}>{opt.label}</span>
               </label>
             ))}
 
-            <div style={{ marginTop: 8, fontSize: 12, opacity: 0.65 }}>
-              * “이 일정과 이후”는 과거 일정이 유지됩니다.
-            </div>
+            <div className={styles.cardSubText}>* “이 일정과 이후”는 과거 일정이 유지됩니다.</div>
           </div>
         )}
 
-        {/* 펼침 영역 */}
-        {picker !== "none" && (
-          <div style={{ marginTop: 14, borderTop: "1px solid rgba(0,0,0,0.08)", paddingTop: 14 }}>
-            <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="ko">
-              {(picker === "startDate" ||
-                picker === "endDate" ||
-                picker === "repeatStartDate" ||
-                picker === "repeatEndDate" ||
-                picker === "multiDates") && (
-                <div>
-                  <div style={{ fontWeight: 700, marginBottom: 10 }}>
-                    {picker === "startDate"
-                      ? "시작 날짜 선택"
-                      : picker === "endDate"
-                      ? "종료 날짜 선택"
-                      : picker === "repeatStartDate"
-                      ? "반복 시작일 선택"
-                      : picker === "repeatEndDate"
-                      ? "반복 종료일 선택"
-                      : "여러 날짜 선택"}
-                  </div>
-
-                  {picker === "multiDates" && disableMultiDates ? (
-                    <div style={{ fontSize: 12, opacity: 0.75 }}>
-                      반복 일정에서는 여러 날짜를 선택할 수 없습니다. (반복을 끄면 사용 가능)
-                    </div>
-                  ) : (
-                    <DateCalendar
-                      value={
-                        picker === "startDate"
-                          ? startD
-                          : picker === "endDate"
-                          ? endD
-                          : picker === "repeatStartDate"
-                          ? form.repeatRangeStart
-                            ? dayjs(`${form.repeatRangeStart}T00:00`)
-                            : startD
-                          : picker === "repeatEndDate"
-                          ? form.repeatRangeEnd
-                            ? dayjs(`${form.repeatRangeEnd}T00:00`)
-                            : endD
-                          : form.multiDates?.[form.multiDates.length - 1]
-                          ? dayjs(`${form.multiDates[form.multiDates.length - 1]}T00:00`)
-                          : startD
-                      }
-                      onChange={(d) => {
-                        if (!d) return;
-                        if (picker === "startDate") onPickStartDate(d);
-                        else if (picker === "endDate") onPickEndDate(d);
-                        else if (picker === "repeatStartDate") onPickRepeatStartDate(d);
-                        else if (picker === "repeatEndDate") onPickRepeatEndDate(d);
-                        else if (picker === "multiDates") {
-                          if (disableMultiDates) {
-                            setFormError("반복 일정에서는 ‘여러 날짜 선택’을 사용할 수 없습니다.");
-                            return;
-                          }
-                          toggleMultiDate(d.format("YYYY-MM-DD"));
-                        }
-                      }}
-                      slots={{ day: CustomDay as any }}
-                      slotProps={{
-                        day: {
-                          holidaySet,
-                          selectedSet: picker === "multiDates" ? multiDatesSet : undefined,
-                        } as any,
-                      }}
-                      sx={{
-                        "& .MuiDayCalendar-weekDayLabel:first-of-type": { color: "#dc2626" },
-                        "& .MuiDayCalendar-weekDayLabel:last-of-type": { color: "#2563eb" },
-                      }}
-                    />
-                  )}
-                </div>
-              )}
-
-              {isTimeOpen && (
-                <div>
-                  <div style={{ fontWeight: 700, marginBottom: 10 }}>
-                    {picker === "startTime" ? "시작 시간 선택" : "종료 시간 선택"}
-                  </div>
-
-                  <div style={{ opacity: form.allDay ? 0.5 : 1, pointerEvents: form.allDay ? "none" : "auto" }}>
-                    <WheelTimePicker
-                      value={timeValue}
-                      minutesStep={5}
-                      onChange={(t) => {
-                        if (picker === "startTime") onPickStartTime(t);
-                        else onPickEndTime(t);
-                      }}
-                    />
-                  </div>
-
-                  {form.allDay && (
-                    <div style={{ marginTop: 8, fontSize: 12, opacity: 0.65 }}>
-                      * 하루 종일이 켜져있어서 시간 변경은 비활성화됩니다.
-                    </div>
-                  )}
-                </div>
-              )}
-            </LocalizationProvider>
-          </div>
-        )}
-
-        {/* 버튼 */}
-        <div style={{ display: "flex", gap: 10, marginTop: 14, justifyContent: "flex-end" }}>
-          <button
-            onClick={closeModal}
-            style={{
-              padding: "10px 12px",
-              borderRadius: 10,
-              border: "1px solid rgba(0,0,0,0.15)",
-              background: "#fff",
-              cursor: "pointer",
-            }}
-          >
+        <div className={styles.footer}>
+          <button onClick={closeModal} className={styles.btnOutline}>
             취소
           </button>
 
           {mode === "create" ? (
-            <button
-              onClick={saveNew}
-              style={{
-                padding: "10px 12px",
-                borderRadius: 10,
-                border: "none",
-                background: "#1e2a78",
-                color: "#fff",
-                cursor: "pointer",
-              }}
-            >
+            <button onClick={saveNew} className={styles.btnPrimary}>
               저장
             </button>
           ) : (
@@ -697,28 +836,14 @@ export function EventModal(props: Props) {
               <button
                 onClick={deleteEvent}
                 disabled={!canEdit}
-                style={{
-                  padding: "10px 12px",
-                  borderRadius: 10,
-                  border: "1px solid rgba(220,38,38,0.4)",
-                  background: canEdit ? "#fff" : "rgba(0,0,0,0.05)",
-                  color: canEdit ? "#dc2626" : "rgba(0,0,0,0.35)",
-                  cursor: canEdit ? "pointer" : "not-allowed",
-                }}
+                className={[styles.btnDanger, !canEdit ? styles.btnDisabled : ""].join(" ")}
               >
                 삭제
               </button>
               <button
                 onClick={updateEvent}
                 disabled={!canEdit}
-                style={{
-                  padding: "10px 12px",
-                  borderRadius: 10,
-                  border: "none",
-                  background: canEdit ? "#1e2a78" : "rgba(0,0,0,0.2)",
-                  color: "#fff",
-                  cursor: canEdit ? "pointer" : "not-allowed",
-                }}
+                className={[styles.btnPrimary, !canEdit ? styles.btnDisabled : ""].join(" ")}
               >
                 {isDetailCloneMode ? "복제 추가" : "수정"}
               </button>
@@ -727,9 +852,7 @@ export function EventModal(props: Props) {
         </div>
 
         {!canEdit && mode === "detail" && (
-          <div style={{ marginTop: 10, fontSize: 12, opacity: 0.65 }}>
-            * 다른 사람이 만든 일정은 수정/삭제할 수 없습니다.
-          </div>
+          <div className={styles.bottomHint}>* 다른 사람이 만든 일정은 수정/삭제할 수 없습니다.</div>
         )}
       </div>
     </div>

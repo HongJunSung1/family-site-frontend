@@ -11,7 +11,7 @@ export default function App() {
   const [checking, setChecking] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // ✅ 앱 시작 시 로그인 유효성 검사
+  // 앱 시작 시 로그인 유효성 검사
   useEffect(() => {
     const checkLogin = async () => {
       const token = localStorage.getItem("accessToken");
@@ -48,7 +48,7 @@ export default function App() {
     checkLogin();
   }, [API_BASE]);
 
-  // ✅ 서버 확인 중에는 아무 화면도 안 띄움
+  // 서버 확인 중에는 아무 화면도 안 띄움
   if (checking) {
     return <div style={{ padding: 24 }}>로그인 상태 확인 중...</div>;
   }

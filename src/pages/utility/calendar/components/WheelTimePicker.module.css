@@ -1,0 +1,147 @@
+.wrap {
+  display: flex;
+  gap: 18px;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 6px 0 2px;
+  position: relative;
+}
+
+/* 중앙 선택 영역 가이드 라인 */
+.wrap::before,
+.wrap::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.1);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.wrap::before {
+  top: calc(50% - 22px);
+}
+
+.wrap::after {
+  top: calc(50% + 22px);
+}
+
+/* 위/아래 페이드 */
+.wrapFadeTop,
+.wrapFadeBottom {
+  display: none;
+}
+
+.wrap::selection {
+  background: transparent;
+}
+
+.wrap::marker {
+  content: "";
+}
+
+.col {
+  position: relative;
+  height: 220px; /* ITEM_H(44) * VISIBLE(5) */
+  width: 78px;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+
+  background: transparent;
+  border: none;
+  border-radius: 0;
+
+  scroll-behavior: smooth;
+}
+
+.col::-webkit-scrollbar {
+  display: none;
+}
+
+/* 각 컬럼 자체에 위/아래 fade 오버레이 */
+.col::before,
+.col::after {
+  content: "";
+  position: sticky;
+  left: 0;
+  display: block;
+  width: 100%;
+  height: 36px;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.col::before {
+  top: 0;
+  margin-bottom: -36px;
+  background: linear-gradient(to bottom, #f3f4f6 0%, rgba(243, 244, 246, 0) 100%);
+}
+
+.col::after {
+  bottom: 0;
+  margin-top: -36px;
+  background: linear-gradient(to top, #f3f4f6 0%, rgba(243, 244, 246, 0) 100%);
+}
+
+.item {
+  width: 100%;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: none;
+  background: transparent;
+  outline: none;
+  box-shadow: none;
+
+  cursor: pointer;
+  user-select: none;
+
+  padding: 0;
+  margin: 0;
+
+  color: rgba(17, 24, 39, 0.24);
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1;
+
+  transform: scale(1);
+  transition:
+    color 0.16s ease,
+    opacity 0.16s ease,
+    transform 0.16s ease,
+    font-weight 0.16s ease;
+}
+
+.item:focus,
+.item:focus-visible,
+.item:active {
+  outline: none;
+  box-shadow: none;
+  border: none;
+}
+
+.timeItem {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.itemSelected {
+  color: rgba(17, 24, 39, 0.98);
+  font-weight: 700;
+  transform: scale(1.06);
+}
+
+.item:hover {
+  color: rgba(17, 24, 39, 0.52);
+}
+
+.itemSelected:hover {
+  color: rgba(17, 24, 39, 0.98);
+}

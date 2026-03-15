@@ -1,6 +1,7 @@
 import React from "react";
 import type { Dayjs } from "dayjs";
 import { pad2 } from "../utils/date";
+import styles from "./WheelTimePicker.module.css";
 
 type WheelTimePickerProps = {
   value: Dayjs;
@@ -45,22 +46,31 @@ export const WheelTimePicker: React.FC<WheelTimePickerProps> = React.memo(
     const hourRef = React.useRef<HTMLDivElement | null>(null);
     const minRef = React.useRef<HTMLDivElement | null>(null);
 
+    const merScrollTimerRef = React.useRef<number | null>(null);
+    const hourScrollTimerRef = React.useRef<number | null>(null);
+    const minScrollTimerRef = React.useRef<number | null>(null);
+
     const setScrollTopIfNeeded = (el: HTMLDivElement | null, targetTop: number) => {
       if (!el) return;
       if (Math.abs(el.scrollTop - targetTop) < 0.5) return;
       el.scrollTop = targetTop;
     };
 
+    const getTargetTopByIndex = React.useCallback(
+      (idx: number) => Math.max(0, PAD + idx * ITEM_H - CENTER_OFFSET),
+      [PAD, ITEM_H, CENTER_OFFSET]
+    );
+
     const scrollToCenter = React.useCallback(
       (el: HTMLDivElement | null, idx: number, smooth: boolean) => {
         if (!el) return;
-        const target = PAD + idx * ITEM_H - CENTER_OFFSET;
+        const target = getTargetTopByIndex(idx);
         el.scrollTo({
-          top: Math.max(0, target),
+          top: target,
           behavior: smooth ? "smooth" : "auto",
         });
       },
-      [PAD, ITEM_H, CENTER_OFFSET]
+      [getTargetTopByIndex]
     );
 
     React.useLayoutEffect(() => {
@@ -72,14 +82,14 @@ export const WheelTimePicker: React.FC<WheelTimePickerProps> = React.memo(
       const hourIdx = derived.h12 - 1;
       const minIdx = Math.max(0, minuteOptions.indexOf(derived.min));
 
-      const merTop = Math.max(0, PAD + merIdx * ITEM_H - CENTER_OFFSET);
-      const hourTop = Math.max(0, PAD + hourIdx * ITEM_H - CENTER_OFFSET);
-      const minTop = Math.max(0, PAD + minIdx * ITEM_H - CENTER_OFFSET);
+      const merTop = getTargetTopByIndex(merIdx);
+      const hourTop = getTargetTopByIndex(hourIdx);
+      const minTop = getTargetTopByIndex(minIdx);
 
       setScrollTopIfNeeded(merRef.current, merTop);
       setScrollTopIfNeeded(hourRef.current, hourTop);
       setScrollTopIfNeeded(minRef.current, minTop);
-    }, [derived.mer, derived.h12, derived.min, minuteOptions, PAD, ITEM_H, CENTER_OFFSET]);
+    }, [derived.mer, derived.h12, derived.min, minuteOptions, getTargetTopByIndex]);
 
     const to24h = (m_: "오전" | "오후", h12_: number) => {
       if (m_ === "오전") return h12_ === 12 ? 0 : h12_;
@@ -98,53 +108,85 @@ export const WheelTimePicker: React.FC<WheelTimePickerProps> = React.memo(
       return curMer;
     };
 
-    const colStyle: React.CSSProperties = {
-      height: ITEM_H * VISIBLE,
-      width: 110,
-      overflowY: "auto",
-      borderRadius: 12,
-      background: "rgba(0,0,0,0.03)",
-      scrollbarWidth: "none",
-      msOverflowStyle: "none",
-      WebkitOverflowScrolling: "touch",
+    const clampIndex = (idx: number, max: number) => Math.max(0, Math.min(idx, max));
+
+    const getNearestIndexFromScrollTop = (scrollTop: number, maxIndex: number) => {
+      const raw = (scrollTop + CENTER_OFFSET - PAD) / ITEM_H;
+      return clampIndex(Math.round(raw), maxIndex);
     };
 
-    const itemBase: React.CSSProperties = {
-      height: ITEM_H,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontSize: 34,
-      fontWeight: 700,
-      color: "rgba(0,0,0,0.35)",
-      userSelect: "none",
-      cursor: "pointer",
-      borderRadius: 12,
-      margin: "0 10px",
-      background: "transparent",
-      border: "none",
-      outline: "none",
+    const applyMerByIndex = React.useCallback(
+      (idx: number, smooth: boolean) => {
+        const nextMer = idx === 0 ? "오전" : "오후";
+        setMer(nextMer);
+        commit(nextMer, h12, min);
+        scrollToCenter(merRef.current, idx, smooth);
+      },
+      [h12, min, scrollToCenter, value]
+    );
+
+    const applyHourByIndex = React.useCallback(
+      (idx: number, smooth: boolean) => {
+        const nextH12 = idx + 1;
+        const nextMer = autoFlipMerIfNeeded(h12, nextH12, mer);
+
+        setH12(nextH12);
+        if (nextMer !== mer) setMer(nextMer);
+
+        commit(nextMer, nextH12, min);
+        scrollToCenter(hourRef.current, idx, smooth);
+
+        if (nextMer !== mer) {
+          const merIdx = nextMer === "오전" ? 0 : 1;
+          scrollToCenter(merRef.current, merIdx, smooth);
+        }
+      },
+      [h12, mer, min, scrollToCenter, value]
+    );
+
+    const applyMinByIndex = React.useCallback(
+      (idx: number, smooth: boolean) => {
+        const nextMin = minuteOptions[idx];
+        setMin(nextMin);
+        commit(mer, h12, nextMin);
+        scrollToCenter(minRef.current, idx, smooth);
+      },
+      [minuteOptions, mer, h12, scrollToCenter, value]
+    );
+
+    const scheduleSnap = (
+      timerRef: React.MutableRefObject<number | null>,
+      fn: () => void
+    ) => {
+      if (timerRef.current) {
+        window.clearTimeout(timerRef.current);
+      }
+      timerRef.current = window.setTimeout(fn, 80);
     };
 
-    const itemSelected: React.CSSProperties = {
-      color: "rgba(0,0,0,0.90)",
-      background: "rgba(30,42,120,0.12)",
-    };
-
-    const spacer: React.CSSProperties = { height: PAD };
+    const spacerStyle: React.CSSProperties = { height: PAD };
 
     return (
-      <div style={{ display: "flex", gap: 14, justifyContent: "center", padding: "10px 0" }}>
-        <style>{`.wtp-col::-webkit-scrollbar { display: none; }`}</style>
-
-        <div className="wtp-col" ref={merRef} style={colStyle}>
-          <div style={spacer} />
+      <div className={styles.wrap}>
+        <div
+          className={styles.col}
+          ref={merRef}
+          onScroll={(e) => {
+            const el = e.currentTarget;
+            scheduleSnap(merScrollTimerRef, () => {
+              const idx = getNearestIndexFromScrollTop(el.scrollTop, 1);
+              applyMerByIndex(idx, true);
+            });
+          }}
+        >
+          <div style={spacerStyle} />
           {(["오전", "오후"] as const).map((v, idx) => {
             const isSelected = v === mer;
             return (
-              <div
+              <button
                 key={v}
-                style={{ ...itemBase, ...(isSelected ? itemSelected : {}) }}
+                type="button"
+                className={`${styles.item} ${isSelected ? styles.itemSelected : ""}`}
                 onClick={() => {
                   setMer(v);
                   commit(v, h12, min);
@@ -152,20 +194,31 @@ export const WheelTimePicker: React.FC<WheelTimePickerProps> = React.memo(
                 }}
               >
                 {v}
-              </div>
+              </button>
             );
           })}
-          <div style={spacer} />
+          <div style={spacerStyle} />
         </div>
 
-        <div className="wtp-col" ref={hourRef} style={colStyle}>
-          <div style={spacer} />
+        <div
+          className={styles.col}
+          ref={hourRef}
+          onScroll={(e) => {
+            const el = e.currentTarget;
+            scheduleSnap(hourScrollTimerRef, () => {
+              const idx = getNearestIndexFromScrollTop(el.scrollTop, 11);
+              applyHourByIndex(idx, true);
+            });
+          }}
+        >
+          <div style={spacerStyle} />
           {Array.from({ length: 12 }, (_, i) => i + 1).map((v, idx) => {
             const isSelected = v === h12;
             return (
-              <div
+              <button
                 key={v}
-                style={{ ...itemBase, ...(isSelected ? itemSelected : {}) }}
+                type="button"
+                className={`${styles.item} ${styles.timeItem} ${isSelected ? styles.itemSelected : ""}`}
                 onClick={() => {
                   const nextH12 = v;
                   const nextMer = autoFlipMerIfNeeded(h12, nextH12, mer);
@@ -173,23 +226,39 @@ export const WheelTimePicker: React.FC<WheelTimePickerProps> = React.memo(
                   if (nextMer !== mer) setMer(nextMer);
                   commit(nextMer, nextH12, min);
                   scrollToCenter(hourRef.current, idx, true);
+
+                  if (nextMer !== mer) {
+                    const merIdx = nextMer === "오전" ? 0 : 1;
+                    scrollToCenter(merRef.current, merIdx, true);
+                  }
                 }}
               >
                 {pad2(v)}
-              </div>
+              </button>
             );
           })}
-          <div style={spacer} />
+          <div style={spacerStyle} />
         </div>
 
-        <div className="wtp-col" ref={minRef} style={colStyle}>
-          <div style={spacer} />
+        <div
+          className={styles.col}
+          ref={minRef}
+          onScroll={(e) => {
+            const el = e.currentTarget;
+            scheduleSnap(minScrollTimerRef, () => {
+              const idx = getNearestIndexFromScrollTop(el.scrollTop, minuteOptions.length - 1);
+              applyMinByIndex(idx, true);
+            });
+          }}
+        >
+          <div style={spacerStyle} />
           {minuteOptions.map((v, idx) => {
             const isSelected = v === min;
             return (
-              <div
+              <button
                 key={v}
-                style={{ ...itemBase, ...(isSelected ? itemSelected : {}) }}
+                type="button"
+                className={`${styles.item} ${styles.timeItem} ${isSelected ? styles.itemSelected : ""}`}
                 onClick={() => {
                   setMin(v);
                   commit(mer, h12, v);
@@ -197,13 +266,14 @@ export const WheelTimePicker: React.FC<WheelTimePickerProps> = React.memo(
                 }}
               >
                 {pad2(v)}
-              </div>
+              </button>
             );
           })}
-          <div style={spacer} />
+          <div style={spacerStyle} />
         </div>
       </div>
     );
   }
 );
+
 WheelTimePicker.displayName = "WheelTimePicker";
