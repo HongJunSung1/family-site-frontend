@@ -34,6 +34,9 @@
   - 정적 웹 호스팅
   - GitHub push 시 자동 빌드 & 배포
   - 글로벌 CDN 제공한다해서 그게 뭔지도 잘 모르면서 멋있어 보이길래 이걸로 함
+```bash
+로컬: npm run dev
+```
 
 ### Backend (API)
 - **Cloudflare Workers**
