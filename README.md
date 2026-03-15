@@ -45,7 +45,7 @@
 **백엔드 배포**
 ```bash
 실서버 : npx wrangler deploy
-로컬: wrangler dev --remote    // API 연동된 내역 불러오려면 --remote를 붙여야 함
+로컬: wrangler dev --local    // API 연동된 내역 불러오려고 개발전용파일 .dev.vars에 API키 추가
 ```
 
 ### Database
