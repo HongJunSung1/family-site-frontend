@@ -278,38 +278,38 @@ export function EventModal(props: Props) {
       return;
     }
 
-    const existingScript = document.querySelector(
-      'script[data-kakao-map="true"]'
-    ) as HTMLScriptElement | null;
-
     const loadMap = () => {
+      if (!window.kakao?.maps) return;
+
       window.kakao.maps.load(() => {
         initMap();
       });
     };
 
-    if (window.kakao?.maps) {
-      loadMap();
-      return;
-    }
-
-    if (existingScript) {
-      existingScript.addEventListener("load", loadMap);
-      return () => existingScript.removeEventListener("load", loadMap);
-    }
+    // 기존 스크립트 제거
+    const oldScripts = document.querySelectorAll('script[data-kakao-map="true"]');
+    oldScripts.forEach((s) => s.parentNode?.removeChild(s));
 
     const script = document.createElement("script");
-    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_MAP_KEY}&autoload=false&libraries=services`;
+    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_MAP_KEY}&autoload=false&libraries=services&_v=${Date.now()}`;
     script.async = true;
     script.setAttribute("data-kakao-map", "true");
-    script.addEventListener("load", loadMap);
+
+    script.onload = () => {
+      loadMap();
+    };
+
+    script.onerror = (e) => {
+      console.error("[kakao sdk] load error", e);
+    };
+
     document.head.appendChild(script);
 
     return () => {
-      script.removeEventListener("load", loadMap);
+      script.onload = null;
+      script.onerror = null;
     };
-  }, [KAKAO_MAP_KEY, mode, form.locationLat, form.locationLng]);
-
+  }, [KAKAO_MAP_KEY, mode]);
 
   // form.locationName이 바뀌면 input도 따라오도록
   useEffect(() => {
