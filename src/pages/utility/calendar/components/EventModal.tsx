@@ -686,7 +686,12 @@ export function EventModal(props: Props) {
                         setFormError("반복 일정에서는 ‘여러 날짜 선택’을 사용할 수 없습니다.");
                         return;
                       }
+
                       clearMultiDates();
+
+                      if (picker === "multiDates") {
+                        setPicker("none");
+                      }
                     }}
                     disabled={disableMultiDates}
                     className={[
