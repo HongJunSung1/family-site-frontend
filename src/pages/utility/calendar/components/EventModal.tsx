@@ -125,25 +125,149 @@ export function EventModal(props: Props) {
   const KAKAO_MAP_KEY = import.meta.env.VITE_KAKAO_MAP_JS_KEY;
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstance = useRef<any>(null);
+  const markerRef = useRef<any>(null);
+  const placesRef = useRef<any>(null);
+  const geocoderRef = useRef<any>(null);
+
+  const [placeKeyword, setPlaceKeyword] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+
+  const moveMarkerTo = (lat: number, lng: number) => {
+    if (!mapInstance.current || !window.kakao?.maps) return;
+
+    const position = new window.kakao.maps.LatLng(lat, lng);
+
+    if (!markerRef.current) {
+      markerRef.current = new window.kakao.maps.Marker({
+        position,
+      });
+      markerRef.current.setMap(mapInstance.current);
+    } else {
+      markerRef.current.setPosition(position);
+    }
+
+    mapInstance.current.setCenter(position);
+  };
+
+  const reverseGeocode = (lat: number, lng: number, placeName?: string) => {
+    if (!geocoderRef.current) return;
+
+    geocoderRef.current.coord2Address(
+      lng,
+      lat,
+      (result: any, status: any) => {
+        const ok = status === window.kakao.maps.services.Status.OK;
+        const address =
+          ok && result?.[0]
+            ? result[0].road_address?.address_name || result[0].address?.address_name || ""
+            : "";
+
+        setForm((p) => ({
+          ...p,
+          locationName: placeName ?? p.locationName,
+          locationAddress: address,
+          locationLat: lat,
+          locationLng: lng,
+        }));
+      }
+    );
+  };
+
+  const applyLocation = (lat: number, lng: number, placeName: string, address?: string) => {
+    moveMarkerTo(lat, lng);
+
+    if (address && address.trim()) {
+      setForm((p) => ({
+        ...p,
+        locationName: placeName,
+        locationAddress: address,
+        locationLat: lat,
+        locationLng: lng,
+      }));
+    } else {
+      reverseGeocode(lat, lng, placeName);
+    }
+  };
 
   const initMap = () => {
     if (!mapRef.current || !window.kakao?.maps) return;
 
-    const center = new window.kakao.maps.LatLng(37.5665, 126.9780);
+    const lat = form.locationLat ?? 37.5665;
+    const lng = form.locationLng ?? 126.9780;
+    const center = new window.kakao.maps.LatLng(lat, lng);
 
-    const options = {
+    const map = new window.kakao.maps.Map(mapRef.current, {
       center,
       level: 3,
-    };
-
-    const map = new window.kakao.maps.Map(mapRef.current, options);
+    });
 
     mapInstance.current = map;
+    placesRef.current = new window.kakao.maps.services.Places();
+    geocoderRef.current = new window.kakao.maps.services.Geocoder();
+
+    if (form.locationLat != null && form.locationLng != null) {
+      const marker = new window.kakao.maps.Marker({
+        position: center,
+      });
+      marker.setMap(map);
+      markerRef.current = marker;
+    } else {
+      markerRef.current = null;
+    }
+
+    window.kakao.maps.event.addListener(map, "click", (mouseEvent: any) => {
+      const latlng = mouseEvent.latLng;
+      const nextLat = latlng.getLat();
+      const nextLng = latlng.getLng();
+
+      moveMarkerTo(nextLat, nextLng);
+      reverseGeocode(nextLat, nextLng);
+    });
 
     setTimeout(() => {
       map.relayout();
       map.setCenter(center);
     }, 0);
+  };
+
+  // 검색 함수
+  const searchPlaces = () => {
+    const keyword = placeKeyword.trim();
+
+    if (!keyword) {
+      setSearchResults([]);
+      return;
+    }
+
+    if (!placesRef.current) return;
+
+    setIsSearching(true);
+
+    placesRef.current.keywordSearch(keyword, (data: any[], status: any) => {
+      setIsSearching(false);
+
+      if (status === window.kakao.maps.services.Status.OK) {
+        setSearchResults(data);
+      } else {
+        setSearchResults([]);
+      }
+    });
+  };
+
+  const handleSelectPlace = (place: any) => {
+    const lat = Number(place.y);
+    const lng = Number(place.x);
+
+    applyLocation(
+      lat,
+      lng,
+      place.place_name ?? "",
+      place.road_address_name || place.address_name || ""
+    );
+
+    setPlaceKeyword(place.place_name ?? "");
+    setSearchResults([]);
   };
 
   useEffect(() => {
@@ -184,7 +308,13 @@ export function EventModal(props: Props) {
     return () => {
       script.removeEventListener("load", loadMap);
     };
-  }, [KAKAO_MAP_KEY, mode]);
+  }, [KAKAO_MAP_KEY, mode, form.locationLat, form.locationLng]);
+
+
+  // form.locationName이 바뀌면 input도 따라오도록
+  useEffect(() => {
+    setPlaceKeyword(form.locationName || "");
+  }, [form.locationName]);
   // ==============================================================================================
 
 
@@ -530,9 +660,101 @@ export function EventModal(props: Props) {
           />
         </div>
         <div className={styles.section}>
-          <label className={styles.label}>장소</label>
+          <label className={styles.label}>장소 검색</label>
+
+          <div className={styles.placeSearchRow}>
+            <input
+              type="text"
+              value={placeKeyword}
+              onChange={(e) => setPlaceKeyword(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  searchPlaces();
+                }
+              }}
+              placeholder="장소명을 입력해주세요."
+              className={styles.textInput}
+            />
+
+            <button
+              type="button"
+              className={styles.placeSearchBtn}
+              onClick={searchPlaces}
+            >
+              검색
+            </button>
+          </div>
+
+          {isSearching && <div className={styles.placeSearchHint}>검색 중...</div>}
+
+          {searchResults.length > 0 && (
+            <div className={styles.placeResultList}>
+              {searchResults.map((place, idx) => (
+                <button
+                  key={`${place.id ?? place.place_name}-${idx}`}
+                  type="button"
+                  className={styles.placeResultItem}
+                  onClick={() => handleSelectPlace(place)}
+                >
+                  <div className={styles.placeResultName}>{place.place_name}</div>
+                  <div className={styles.placeResultAddress}>
+                    {place.road_address_name || place.address_name || "주소 정보 없음"}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {(form.locationAddress || (form.locationLat != null && form.locationLng != null)) && (
+            <div className={styles.placeInfoBox}>
+              <div className={styles.placeInfoTitle}>
+                {form.locationName || "선택된 장소"}
+              </div>
+
+              {form.locationAddress && (
+                <div className={styles.placeInfoAddress}>{form.locationAddress}</div>
+              )}
+
+              <div className={styles.placeInfoCoord}>
+                위도: {form.locationLat ?? "-"} / 경도: {form.locationLng ?? "-"}
+              </div>
+            </div>
+          )}
+        </div>
+        <div className={styles.section}>
+          <label className={styles.label}>지도</label>
 
           <div ref={mapRef} className={styles.kakaoMap}></div>
+
+          <div className={styles.mapCoordActions}>
+            <button
+              type="button"
+              className={styles.linkBtn}
+              onClick={() => {
+                setForm((p) => ({
+                  ...p,
+                  locationName: "",
+                  locationAddress: "",
+                  locationLat: null,
+                  locationLng: null,
+                }));
+
+                setPlaceKeyword("");
+                setSearchResults([]);
+
+                markerRef.current?.setMap?.(null);
+                markerRef.current = null;
+
+                if (mapInstance.current && window.kakao?.maps) {
+                  const center = new window.kakao.maps.LatLng(37.5665, 126.9780);
+                  mapInstance.current.setCenter(center);
+                }
+              }}
+            >
+              위치 초기화
+            </button>
+          </div>
         </div>
         <>
           <div

@@ -19,17 +19,22 @@ export type OccKey = string;
 export type CalEvent = {
   id: string;
   title: string;
-  start: string; // ISO (YYYY-MM-DDTHH:mm)
-  end?: string;  // ISO
+  start: string;
+  end?: string;
   allDay: boolean;
   memo?: string;
   color?: string;
   createdBy: string;
 
+  locationName?: string;
+  locationAddress?: string;
+  locationLat?: number | null;
+  locationLng?: number | null;
+
   repeat?: RepeatType;
   repeatInterval?: number;
-  repeatRangeStart?: string; // "YYYY-MM-DD"
-  repeatRangeEnd?: string;   // "YYYY-MM-DD"
+  repeatRangeStart?: string;
+  repeatRangeEnd?: string;
 
   repeatAnchorDom?: number | null;
 
@@ -67,6 +72,12 @@ export type FormState = {
 
   clickedOccKey: string;
   applyScope: ApplyScope;
+
+  locationLat: number | null;
+  locationLng: number | null;
+
+  locationName: string;
+  locationAddress: string;
 };
 
 export type DayType = "red" | "blue" | "black";

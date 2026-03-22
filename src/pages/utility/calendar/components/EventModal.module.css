@@ -485,3 +485,102 @@
   border-radius: 12px;
   margin-top: 8px;
 }
+
+.mapCoordText {
+  margin-top: 8px;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.mapCoordActions {
+  margin-top: 4px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.placeInfoBox {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f9fafb;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.placeInfoTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.placeInfoAddress {
+  margin-top: 4px;
+  font-size: 12px;
+  color: rgba(17, 24, 39, 0.75);
+  line-height: 1.45;
+}
+
+.placeInfoCoord {
+  margin-top: 6px;
+  font-size: 12px;
+  color: rgba(17, 24, 39, 0.6);
+}
+
+.placeSearchRow {
+  display: grid;
+  grid-template-columns: 1fr 72px;
+  gap: 8px;
+  align-items: center;
+}
+
+.placeSearchBtn {
+  height: 42px;
+  border: none;
+  border-radius: 10px;
+  background: #1e2a78;
+  color: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.placeSearchHint {
+  margin-top: 8px;
+  font-size: 12px;
+  color: rgba(17, 24, 39, 0.65);
+}
+
+.placeResultList {
+  margin-top: 10px;
+  display: grid;
+  gap: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.placeResultItem {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.placeResultItem:hover {
+  border-color: rgba(30, 42, 120, 0.25);
+  background: #f9fafb;
+}
+
+.placeResultName {
+  font-size: 13px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.placeResultAddress {
+  margin-top: 4px;
+  font-size: 12px;
+  color: rgba(17, 24, 39, 0.7);
+  line-height: 1.4;
+}

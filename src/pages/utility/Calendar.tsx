@@ -60,6 +60,10 @@ const Calendar: React.FC = () => {
     prevEndTime: "10:00",
     clickedOccKey: "",
     applyScope: "this",
+    locationLat: null,
+    locationLng: null,
+    locationName: "",
+    locationAddress: "",
   });
 
   const [viewRange, setViewRange] = useState<{ start: Dayjs; end: Dayjs }>(() => {
@@ -139,6 +143,11 @@ const Calendar: React.FC = () => {
       memo: e.memo ?? "",
       color: e.color ?? "#1e2a78",
       createdBy: String(e.created_by),
+
+      locationName: e.location_name ?? "",
+      locationAddress: e.location_address ?? "",
+      locationLat: e.location_lat ?? null,
+      locationLng: e.location_lng ?? null,
 
       repeat: e.repeat_type ?? "none",
       repeatInterval: e.repeat_interval ?? 1,
@@ -273,6 +282,10 @@ const Calendar: React.FC = () => {
       prevEndTime: "10:00",
       clickedOccKey: "",
       applyScope: "this",
+      locationLat: null,
+      locationLng: null,
+      locationName: "",
+      locationAddress: "",
     });
 
     setPicker("none");
@@ -335,6 +348,17 @@ const Calendar: React.FC = () => {
 
       clickedOccKey: isRecurringClick ? occKey : "",
       applyScope: initialScope,
+      locationLat:
+        e.extendedProps?.locationLat != null
+          ? Number(e.extendedProps.locationLat)
+          : master?.locationLat ?? null,
+      locationLng:
+        e.extendedProps?.locationLng != null
+          ? Number(e.extendedProps.locationLng)
+          : master?.locationLng ?? null,
+
+      locationName: String(e.extendedProps?.locationName ?? master?.locationName ?? ""),
+      locationAddress: String(e.extendedProps?.locationAddress ?? master?.locationAddress ?? ""),
     });
 
     setPicker("none");
@@ -379,6 +403,11 @@ const Calendar: React.FC = () => {
         allDay: form.allDay,
         startAt: form.start,
         endAt: form.end,
+
+        locationName: form.locationName,
+        locationAddress: form.locationAddress,
+        locationLat: form.locationLat,
+        locationLng: form.locationLng,
 
         repeatType: form.repeat,
         repeatInterval: form.repeatInterval,
@@ -447,6 +476,11 @@ const Calendar: React.FC = () => {
         startAt: form.start,
         endAt: form.end,
 
+        locationName: form.locationName,
+        locationAddress: form.locationAddress,
+        locationLat: form.locationLat,
+        locationLng: form.locationLng,
+
         repeatType: "none",
         repeatInterval: 1,
         repeatRangeStart: "",
@@ -512,6 +546,11 @@ const Calendar: React.FC = () => {
           allDay: form.allDay,
           startAt: form.start,
           endAt: form.end,
+
+          locationName: form.locationName,
+          locationAddress: form.locationAddress,
+          locationLat: form.locationLat,
+          locationLng: form.locationLng,
 
           repeatType: form.repeat,
           repeatInterval: form.repeatInterval,
