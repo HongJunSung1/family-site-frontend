@@ -309,7 +309,7 @@ export function EventModal(props: Props) {
       script.onload = null;
       script.onerror = null;
     };
-  }, [KAKAO_MAP_KEY, mode]);
+  }, [KAKAO_MAP_KEY, mode]); 
 
   // form.locationName이 바뀌면 input도 따라오도록
   useEffect(() => {
