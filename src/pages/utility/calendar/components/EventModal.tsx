@@ -80,6 +80,7 @@ export function EventModal(props: Props) {
     getDayType,
   } = props;
 
+
   const startD = toDayjs(form.start);
   const endD = toDayjs(form.end);
 
@@ -119,6 +120,73 @@ export function EventModal(props: Props) {
 
   const [repeatOpen, setRepeatOpen] = useState(false);
   const [multiDateOpen, setMultiDateOpen] = useState(false);
+
+  // 카카오맵 =====================================================================================
+  const KAKAO_MAP_KEY = import.meta.env.VITE_KAKAO_MAP_JS_KEY;
+  const mapRef = useRef<HTMLDivElement | null>(null);
+  const mapInstance = useRef<any>(null);
+
+  const initMap = () => {
+    if (!mapRef.current || !window.kakao?.maps) return;
+
+    const center = new window.kakao.maps.LatLng(37.5665, 126.9780);
+
+    const options = {
+      center,
+      level: 3,
+    };
+
+    const map = new window.kakao.maps.Map(mapRef.current, options);
+
+    mapInstance.current = map;
+
+    setTimeout(() => {
+      map.relayout();
+      map.setCenter(center);
+    }, 0);
+  };
+
+  useEffect(() => {
+    if (mode === "none") return;
+
+    if (!KAKAO_MAP_KEY) {
+      console.error("VITE_KAKAO_MAP_JS_KEY is missing");
+      return;
+    }
+
+    const existingScript = document.querySelector(
+      'script[data-kakao-map="true"]'
+    ) as HTMLScriptElement | null;
+
+    const loadMap = () => {
+      window.kakao.maps.load(() => {
+        initMap();
+      });
+    };
+
+    if (window.kakao?.maps) {
+      loadMap();
+      return;
+    }
+
+    if (existingScript) {
+      existingScript.addEventListener("load", loadMap);
+      return () => existingScript.removeEventListener("load", loadMap);
+    }
+
+    const script = document.createElement("script");
+    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_MAP_KEY}&autoload=false&libraries=services`;
+    script.async = true;
+    script.setAttribute("data-kakao-map", "true");
+    script.addEventListener("load", loadMap);
+    document.head.appendChild(script);
+
+    return () => {
+      script.removeEventListener("load", loadMap);
+    };
+  }, [KAKAO_MAP_KEY, mode]);
+  // ==============================================================================================
+
 
   useEffect(() => {
     if (picker === "repeatStartDate" || picker === "repeatEndDate") {
@@ -461,7 +529,11 @@ export function EventModal(props: Props) {
             className={styles.textarea}
           />
         </div>
+        <div className={styles.section}>
+          <label className={styles.label}>장소</label>
 
+          <div ref={mapRef} className={styles.kakaoMap}></div>
+        </div>
         <>
           <div
             className={styles.sectionRow}
