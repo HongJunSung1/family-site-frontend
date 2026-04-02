@@ -448,8 +448,6 @@ export function EventModal(props: Props) {
 
     setForm((p) => {
       const nextRepeat = next;
-      const startYmd = String(p.start || "").slice(0, 10);
-      const startYmdOk = /^\d{4}-\d{2}-\d{2}$/.test(startYmd);
 
       if (nextRepeat !== "none" && (p.multiDates?.length ?? 0) >= 2) return p;
 
@@ -457,7 +455,6 @@ export function EventModal(props: Props) {
         ...p,
         repeat: nextRepeat,
         repeatInterval: Math.max(1, p.repeatInterval || 1),
-        multiDates: nextRepeat === "none" ? p.multiDates : startYmdOk ? [startYmd] : [],
       };
     });
   };
