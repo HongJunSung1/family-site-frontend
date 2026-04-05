@@ -15,6 +15,8 @@ import { formatKoreanDateLabel, formatKoreanTimeLabel, toDayjs } from "../utils/
 
 import styles from "./EventModal.module.css";
 
+import {Dialog, DialogTitle, DialogContent, DialogActions, Button } from "@mui/material";
+
 type Props = {
   mode: ModalMode;
 
@@ -92,6 +94,9 @@ export function EventModal(props: Props) {
 
   const isMultiDateMode = (form.multiDates?.length ?? 0) >= 2;
   const blockRepeatBecauseMultiDates = isMultiDateMode;
+
+  // 삭제버튼
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const RepeatUnitLabel =
     form.repeat === "none"
@@ -1231,7 +1236,7 @@ export function EventModal(props: Props) {
           ) : (
             <>
               <button
-                onClick={deleteEvent}
+                onClick={() => setDeleteOpen(true)}
                 disabled={!canEdit}
                 className={[styles.btnDanger, !canEdit ? styles.btnDisabled : ""].join(" ")}
               >
@@ -1251,6 +1256,41 @@ export function EventModal(props: Props) {
         {!canEdit && mode === "detail" && (
           <div className={styles.bottomHint}>* 다른 사람이 만든 일정은 수정/삭제할 수 없습니다.</div>
         )}
+
+        <Dialog open={deleteOpen} 
+        onClose={() => setDeleteOpen(false)}  
+                       sx={{zIndex: 9999, 
+                            "& .MuiBackdrop-root": { borderRadius: "16px",
+                                                     padding: "8px 4px",
+                                                     minWidth: "320px",
+                                                     boxShadow: "0 20px 50px rgba(0,0,0,0.28)",},
+                           }}
+        >
+          <DialogTitle>삭제 확인</DialogTitle>
+
+          <DialogContent>
+            정말 삭제하시겠습니까?
+          </DialogContent>
+
+          <DialogActions sx={{ justifyContent: "center",
+                               gap: 1, // 버튼 사이 간격
+                               paddingBottom: "5px",
+                               marginBottom: "2px"
+                            }}
+          >
+            <Button onClick={() => setDeleteOpen(false)}>취소</Button>
+
+            <Button
+              color="error"
+              onClick={() => {
+                setDeleteOpen(false);
+                deleteEvent();
+              }}
+            >
+              삭제
+            </Button>
+          </DialogActions>
+        </Dialog>
       </div>
     </div>
   );

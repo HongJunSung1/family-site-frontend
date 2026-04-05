@@ -1,0 +1,145 @@
+.card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.sectionTitle {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.primaryButton {
+  min-width: 72px;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.primaryButton:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.inlineError {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 14px;
+}
+
+.inlineSuccess {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 14px;
+}
+
+.infoRow {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 12px;
+  align-items: center;
+  min-height: 56px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.value {
+  font-size: 14px;
+  color: #111827;
+  word-break: break-all;
+  padding: 8px 0;
+}
+
+.input {
+  width: 100%;
+  max-width: 420px;
+  height: 40px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 0 12px;
+  box-sizing: border-box;
+  font-size: 14px;
+  outline: none;
+  background: #ffffff;
+  color: inherit;
+}
+
+.input:focus {
+  border-color: #2563eb;
+}
+
+.confirmOverlay { 
+  position: fixed; 
+  inset: 0; 
+  background: rgba(0, 0, 0, 0.35); 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  z-index: 9999; 
+} 
+  
+.confirmDialog { 
+  width: 320px; 
+  max-width: calc(100vw - 32px); 
+  background: #ffffff;
+  border-radius: 14px; 
+  padding: 20px; 
+  box-sizing: border-box; 
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18); 
+} 
+
+.confirmTitle { 
+  font-size: 18px; 
+  font-weight: 700; 
+  color: #111827; 
+  margin-bottom: 10px; 
+} 
+
+.confirmText { 
+  font-size: 14px; 
+  color: #374151; 
+  margin-bottom: 20px; 
+} 
+
+.confirmButtons { 
+  display: flex; 
+  justify-content: center; 
+  gap: 10px; 
+}
+
+@media (max-width: 768px) {
+  .infoRow {
+    grid-template-columns: 110px 1fr;
+  }
+
+  .input {
+    max-width: 100%;
+  }
+}

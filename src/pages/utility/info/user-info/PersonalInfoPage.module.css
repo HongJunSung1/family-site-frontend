@@ -1,0 +1,170 @@
+.page {
+  width: 100%;
+  min-height: calc(100vh - 63px);
+  background: #f7f8fa;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  padding: 20px 24px 12px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.sidebar {
+  width: 260px;
+  background: #ffffff;
+  border-right: 1px solid #e5e7eb;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.treeChildren {
+  margin-top: 10px;
+  padding-left: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.treeItem {
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  padding: 10px 12px;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  color: #374151;
+}
+
+.treeItem:hover {
+  background: #f9fafb;
+}
+
+.active {
+  background: #e8f0ff;
+  color: #1d4ed8;
+  font-weight: 700;
+}
+
+.content {
+  flex: 1;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.loadingBox,
+.errorBox {
+  margin: 24px;
+  padding: 20px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  font-size: 14px;
+}
+
+.errorBox {
+  color: #b91c1c;
+}
+
+.confirmOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.confirmDialog {
+  width: 320px;
+  max-width: calc(100vw - 32px);
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 20px;
+  box-sizing: border-box;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+}
+
+.confirmTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 10px;
+}
+
+.confirmText {
+  font-size: 14px;
+  color: #374151;
+  margin-bottom: 20px;
+}
+
+.confirmButtons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.primaryButton,
+.secondaryButton {
+  min-width: 72px;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.primaryButton {
+  border: none;
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.primaryButton:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.secondaryButton {
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #374151;
+}
+
+.secondaryButton:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+@media (max-width: 768px) {
+  .body {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .content {
+    padding: 16px;
+  }
+}

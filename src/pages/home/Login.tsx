@@ -20,7 +20,8 @@ export default function Login({ onLogin }: Props) {
   const navigate = useNavigate();
   const location = useLocation() as any;
 
-  const [email, setEmail] = useState("");
+  // const [email, setEmail] = useState("");
+  const [id, setId] = useState("");
   const [password, setPassword] = useState("");
 
   const [errorMsg, setErrorMsg] = useState<string>("");
@@ -29,9 +30,10 @@ export default function Login({ onLogin }: Props) {
 
   // 아이디 저장하기
   useEffect(() => {
-    const savedEmail = localStorage.getItem("rememberEmail");
-    if (savedEmail) {
-      setEmail(savedEmail);
+    const savedId = localStorage.getItem("rememberId");
+    if (savedId) {
+      // setEmail(savedEmail);
+      setId(savedId);
       setRememberId(true);
     }
   }, []);
@@ -39,7 +41,7 @@ export default function Login({ onLogin }: Props) {
   const handleLogin = async () => {
     setErrorMsg("");
 
-    if (!email.trim() || !password.trim()) {
+    if (!id.trim() || !password.trim()) {
       setErrorMsg("아이디와 비밀번호를 입력해주세요.");
       return;
     }    
@@ -52,7 +54,7 @@ export default function Login({ onLogin }: Props) {
       const res = await fetch(`${API_BASE}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), 
+        body: JSON.stringify({ login_id: id.trim(), 
                                password 
                             }),
       });
@@ -83,9 +85,9 @@ export default function Login({ onLogin }: Props) {
 
       // ID 저장
       if (rememberId) {
-        localStorage.setItem("rememberEmail", email.trim());
+        localStorage.setItem("rememberId", id.trim());
       } else {
-        localStorage.removeItem("rememberEmail");
+        localStorage.removeItem("rememberId");
       }
 
       // App 상태 갱신
@@ -113,13 +115,13 @@ export default function Login({ onLogin }: Props) {
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <label>
-          이메일
+          아이디
           <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            type="text"
+            value={id}
+            onChange={(e) => setId(e.target.value)}
             onKeyDown={onKeyDown}
-            placeholder="example@email.com"
+            placeholder="아이디를 입력해주세요."
             autoComplete="username"
             style={{ width: "100%", padding: 10, marginTop: 6 }}
           />

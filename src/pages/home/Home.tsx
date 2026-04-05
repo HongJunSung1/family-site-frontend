@@ -33,7 +33,6 @@ export default function Home({ onLogout }: Props) {
 
   return (
     <div style={{ padding: 24 }}>
-      <h1>홈</h1>
       <Calendar />
       <button onClick={handleLogout}>로그아웃</button>
     </div>

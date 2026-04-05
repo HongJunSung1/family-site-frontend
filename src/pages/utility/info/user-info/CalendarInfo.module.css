@@ -1,0 +1,89 @@
+.card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.sectionTitle {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 20px;
+}
+
+.infoRow {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 12px;
+  align-items: center;
+  min-height: 56px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.value {
+  font-size: 14px;
+  color: #111827;
+  word-break: break-all;
+  padding: 8px 0;
+}
+
+.summaryRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.summaryLabel {
+  min-width: 130px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.summaryValue {
+  color: #111827;
+}
+
+.tableWrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+}
+
+.table th,
+.table td {
+  padding: 12px 14px;
+  border: 1px solid #e5e7eb;
+  text-align: left;
+  font-size: 14px;
+  color:black;
+}
+
+.table th {
+  background: #f3f4f6;
+  font-weight: 700;
+  color: #111827;
+}
+
+.emptyRow {
+  text-align: center;
+  color: #6b7280;
+}
+
+@media (max-width: 768px) {
+  .infoRow {
+    grid-template-columns: 110px 1fr;
+  }
+}
