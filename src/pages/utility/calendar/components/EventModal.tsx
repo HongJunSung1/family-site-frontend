@@ -120,6 +120,15 @@ export function EventModal(props: Props) {
 
   const [repeatOpen, setRepeatOpen] = useState(false);
   const [multiDateOpen, setMultiDateOpen] = useState(false);
+  const [mapOpen, setMapOpen] = useState(false);
+
+  const mapSummary = form.locationName?.trim()
+                     ? form.locationName
+                     : form.locationAddress?.trim()
+                     ? "위치 선택됨"
+                     : "선택된 위치 없음";
+
+
 
   // 카카오맵 =====================================================================================
   const KAKAO_MAP_KEY = import.meta.env.VITE_KAKAO_MAP_JS_KEY;
@@ -158,18 +167,23 @@ export function EventModal(props: Props) {
       lat,
       (result: any, status: any) => {
         const ok = status === window.kakao.maps.services.Status.OK;
+
         const address =
           ok && result?.[0]
             ? result[0].road_address?.address_name || result[0].address?.address_name || ""
             : "";
 
+        const nextName = (placeName && placeName.trim()) || address || "선택한 위치";
+
         setForm((p) => ({
           ...p,
-          locationName: placeName ?? p.locationName,
+          locationName: nextName,
           locationAddress: address,
           locationLat: lat,
           locationLng: lng,
         }));
+
+        setPlaceKeyword(nextName);
       }
     );
   };
@@ -255,6 +269,21 @@ export function EventModal(props: Props) {
     });
   };
 
+  const openInNaverMap = () => {
+    const keyword =
+      form.locationName?.trim() ||
+      form.locationAddress?.trim() ||
+      placeKeyword.trim();
+
+    if (!keyword) {
+      setFormError("먼저 장소를 검색하거나 지도에서 위치를 선택해주세요.");
+      return;
+    }
+
+    const url = `https://map.naver.com/p/search/${encodeURIComponent(keyword)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
   const handleSelectPlace = (place: any) => {
     const lat = Number(place.y);
     const lng = Number(place.x);
@@ -272,13 +301,14 @@ export function EventModal(props: Props) {
 
   useEffect(() => {
     if (mode === "none") return;
+    if (!mapOpen) return;
 
     if (!KAKAO_MAP_KEY) {
       console.error("VITE_KAKAO_MAP_JS_KEY is missing");
       return;
     }
 
-    const loadMap = () => {
+    const bootMap = () => {
       if (!window.kakao?.maps) return;
 
       window.kakao.maps.load(() => {
@@ -286,17 +316,29 @@ export function EventModal(props: Props) {
       });
     };
 
-    // 기존 스크립트 제거
-    const oldScripts = document.querySelectorAll('script[data-kakao-map="true"]');
-    oldScripts.forEach((s) => s.parentNode?.removeChild(s));
+    if (window.kakao?.maps) {
+      bootMap();
+      return;
+    }
+
+    const existingScript = document.querySelector(
+      'script[data-kakao-map="true"]'
+    ) as HTMLScriptElement | null;
+
+    if (existingScript) {
+      existingScript.addEventListener("load", bootMap);
+      return () => {
+        existingScript.removeEventListener("load", bootMap);
+      };
+    }
 
     const script = document.createElement("script");
-    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_MAP_KEY}&autoload=false&libraries=services&_v=${Date.now()}`;
+    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_MAP_KEY}&autoload=false&libraries=services`;
     script.async = true;
     script.setAttribute("data-kakao-map", "true");
 
     script.onload = () => {
-      loadMap();
+      bootMap();
     };
 
     script.onerror = (e) => {
@@ -309,12 +351,27 @@ export function EventModal(props: Props) {
       script.onload = null;
       script.onerror = null;
     };
-  }, [KAKAO_MAP_KEY, mode]); 
+  }, [KAKAO_MAP_KEY, mode, mapOpen]);
 
   // form.locationName이 바뀌면 input도 따라오도록
   useEffect(() => {
     setPlaceKeyword(form.locationName || "");
   }, [form.locationName]);
+
+
+  useEffect(() => {
+    if (!mapOpen) return;
+    if (!mapInstance.current || !window.kakao?.maps) return;
+
+    setTimeout(() => {
+      mapInstance.current.relayout();
+
+      const lat = form.locationLat ?? 37.5665;
+      const lng = form.locationLng ?? 126.9780;
+      const center = new window.kakao.maps.LatLng(lat, lng);
+      mapInstance.current.setCenter(center);
+    }, 0);
+  }, [mapOpen, form.locationLat, form.locationLng]);
   // ==============================================================================================
 
 
@@ -576,8 +633,17 @@ export function EventModal(props: Props) {
                           value={picker === "startDate" ? startD : endD}
                           onChange={(d) => {
                             if (!d) return;
-                            if (picker === "startDate") onPickStartDate(d);
-                            else onPickEndDate(d);
+
+                            if (picker === "startDate") {
+                              onPickStartDate(d);
+                              setPicker("endDate");
+                              return;
+                            }
+
+                            if (picker === "endDate") {
+                              onPickEndDate(d);
+                              setPicker("none");
+                            }
                           }}
                           slots={{ day: CustomDay as any }}
                           slotProps={{
@@ -657,102 +723,129 @@ export function EventModal(props: Props) {
           />
         </div>
         <div className={styles.section}>
-          <label className={styles.label}>장소 검색</label>
-
-          <div className={styles.placeSearchRow}>
-            <input
-              type="text"
-              value={placeKeyword}
-              onChange={(e) => setPlaceKeyword(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  searchPlaces();
-                }
-              }}
-              placeholder="장소명을 입력해주세요."
-              className={styles.textInput}
-            />
-
-            <button
-              type="button"
-              className={styles.placeSearchBtn}
-              onClick={searchPlaces}
-            >
-              검색
-            </button>
-          </div>
-
-          {isSearching && <div className={styles.placeSearchHint}>검색 중...</div>}
-
-          {searchResults.length > 0 && (
-            <div className={styles.placeResultList}>
-              {searchResults.map((place, idx) => (
-                <button
-                  key={`${place.id ?? place.place_name}-${idx}`}
-                  type="button"
-                  className={styles.placeResultItem}
-                  onClick={() => handleSelectPlace(place)}
-                >
-                  <div className={styles.placeResultName}>{place.place_name}</div>
-                  <div className={styles.placeResultAddress}>
-                    {place.road_address_name || place.address_name || "주소 정보 없음"}
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {(form.locationAddress || (form.locationLat != null && form.locationLng != null)) && (
-            <div className={styles.placeInfoBox}>
-              <div className={styles.placeInfoTitle}>
-                {form.locationName || "선택된 장소"}
+          
+            {(form.locationAddress || (form.locationLat != null && form.locationLng != null)) && (
+              <div className={styles.placeInfoBox}>
+                <div className={styles.placeInfoTitle}>
+                  {form.locationName || "선택된 장소"}
+                </div>
+  
+                {form.locationAddress && (
+                  <div className={styles.placeInfoAddress}>{form.locationAddress}</div>
+                )}
+  
+                {/* <div className={styles.placeInfoCoord}>
+                  위도: {form.locationLat ?? "-"} / 경도: {form.locationLng ?? "-"}
+                </div> */}
               </div>
+            )}
 
-              {form.locationAddress && (
-                <div className={styles.placeInfoAddress}>{form.locationAddress}</div>
-              )}
 
-              <div className={styles.placeInfoCoord}>
-                위도: {form.locationLat ?? "-"} / 경도: {form.locationLng ?? "-"}
-              </div>
-            </div>
-          )}
         </div>
-        <div className={styles.section}>
-          <label className={styles.label}>지도</label>
-
-          <div ref={mapRef} className={styles.kakaoMap}></div>
-
-          <div className={styles.mapCoordActions}>
-            <button
-              type="button"
-              className={styles.linkBtn}
+        <>
+            <div
+              className={styles.sectionRow}
               onClick={() => {
-                setForm((p) => ({
-                  ...p,
-                  locationName: "",
-                  locationAddress: "",
-                  locationLat: null,
-                  locationLng: null,
-                }));
-
-                setPlaceKeyword("");
-                setSearchResults([]);
-
-                markerRef.current?.setMap?.(null);
-                markerRef.current = null;
-
-                if (mapInstance.current && window.kakao?.maps) {
-                  const center = new window.kakao.maps.LatLng(37.5665, 126.9780);
-                  mapInstance.current.setCenter(center);
-                }
+                setMapOpen((prev) => !prev);
               }}
             >
-              위치 초기화
-            </button>
+            <div className={styles.sectionTitle}>지도</div>
+
+            <div className={styles.sectionRight}>
+              <span className={styles.sectionSummary}>{mapSummary}</span>
+              <span className={styles.sectionArrow}>{mapOpen ? "▴" : "▾"}</span>
+            </div>
           </div>
-        </div>
+
+          {mapOpen && (
+            <div className={styles.sectionGrid}>
+
+              <div className={styles.placeSearchRow}>
+                <input
+                  type="text"
+                  value={placeKeyword}
+                  onChange={(e) => setPlaceKeyword(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      searchPlaces();
+                    }
+                  }}
+                  placeholder="장소명을 입력해주세요."
+                  className={styles.textInput}
+                />
+
+                <button
+                  type="button"
+                  className={styles.placeSearchBtn}
+                  onClick={searchPlaces}
+                >
+                  검색
+                </button>
+
+                <button
+                  type="button"
+                  className={styles.naverMapBtn}
+                  onClick={openInNaverMap}
+                >
+                  N
+                </button>
+              </div>
+  
+            {isSearching && <div className={styles.placeSearchHint}>검색 중...</div>}
+  
+            {searchResults.length > 0 && (
+              <div className={styles.placeResultList}>
+                {searchResults.map((place, idx) => (
+                  <button
+                    key={`${place.id ?? place.place_name}-${idx}`}
+                    type="button"
+                    className={styles.placeResultItem}
+                    onClick={() => handleSelectPlace(place)}
+                  >
+                    <div className={styles.placeResultName}>{place.place_name}</div>
+                    <div className={styles.placeResultAddress}>
+                      {place.road_address_name || place.address_name || "주소 정보 없음"}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+              <div ref={mapRef} className={styles.kakaoMap}></div>
+
+              <div className={styles.mapCoordActions}>
+                <button
+                  type="button"
+                  className={styles.linkBtn}
+                  onClick={(e) => {
+                    e.stopPropagation();
+
+                    setForm((p) => ({
+                      ...p,
+                      locationName: "",
+                      locationAddress: "",
+                      locationLat: null,
+                      locationLng: null,
+                    }));
+
+                    setPlaceKeyword("");
+                    setSearchResults([]);
+
+                    markerRef.current?.setMap?.(null);
+                    markerRef.current = null;
+
+                    if (mapInstance.current && window.kakao?.maps) {
+                      const center = new window.kakao.maps.LatLng(37.5665, 126.9780);
+                      mapInstance.current.setCenter(center);
+                    }
+                  }}
+                >
+                  위치 초기화
+                </button>
+              </div>
+            </div>
+          )}
+        </>
         <>
           <div
             className={styles.sectionRow}
@@ -900,8 +993,16 @@ export function EventModal(props: Props) {
                         }
                         onChange={(d) => {
                           if (!d) return;
-                          if (picker === "repeatStartDate") onPickRepeatStartDate(d);
-                          else onPickRepeatEndDate(d);
+                          if (picker === "repeatStartDate") {
+                            onPickRepeatStartDate(d);
+                            setPicker("repeatEndDate");
+                            return;
+                          }
+
+                          if (picker === "repeatEndDate") {
+                            onPickRepeatEndDate(d);
+                            setPicker("none");
+                          }
                         }}
                         slots={{ day: CustomDay as any }}
                         slotProps={{

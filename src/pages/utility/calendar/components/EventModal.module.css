@@ -194,6 +194,7 @@
 
 .textInput,
 .textarea {
+  font-family: inherit;
   width: 100%;
   padding: 10px 12px;
   border-radius: 10px;
@@ -486,6 +487,24 @@
   margin-top: 8px;
 }
 
+.naverMapBtn {
+  height: 38px;
+  padding: 0 3px;
+  border: none;
+  border-radius: 10px;
+  background: #1f9d55;
+  color: #fff;
+  font-size: 24px;
+  font-weight: 1000;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.naverMapBtn:hover {
+  filter: brightness(0.95);
+}
+
 .mapCoordText {
   margin-top: 8px;
   font-size: 12px;
@@ -527,13 +546,13 @@
 
 .placeSearchRow {
   display: grid;
-  grid-template-columns: 1fr 72px;
-  gap: 8px;
+  grid-template-columns: 1fr 72px 40px;
+  gap: 6px;
   align-items: center;
 }
 
 .placeSearchBtn {
-  height: 42px;
+  height: 38px;
   border: none;
   border-radius: 10px;
   background: #1e2a78;
