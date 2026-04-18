@@ -58,28 +58,73 @@
 
 .table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   background: #ffffff;
+}
+
+.table input {
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .table th,
 .table td {
   padding: 12px 14px;
   border: 1px solid #e5e7eb;
-  text-align: left;
   font-size: 14px;
   color:black;
+}
+
+.table td {
+  text-align: left;
 }
 
 .table th {
   background: #f3f4f6;
   font-weight: 700;
   color: #111827;
+  text-align: center;
 }
 
 .emptyRow {
   text-align: center;
   color: #6b7280;
+}
+
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.saveButton {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.saveButton:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.errorText {
+  margin-bottom: 12px;
+  color: #dc2626;
+  font-size: 14px;
+}
+
+.successText {
+  margin-bottom: 12px;
+  color: #16a34a;
+  font-size: 14px;
 }
 
 @media (max-width: 768px) {

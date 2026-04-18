@@ -1,7 +1,7 @@
 import { useState } from "react";
 import styles from "./PersonalInfoPage.module.css";
 import BasicPersonalInfo from "./BasicPersonalInfo";
-import CalendarInfo from "./CalendarInfo";
+import CalendarInfo from "../calendar-info/CalendarInfo";
 
 type MenuKey = "basic" | "calendar";
 
