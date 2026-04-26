@@ -4,6 +4,7 @@ import Home from "./pages/home/Home";
 import Login from "./pages/home/Login";
 import Signup from "./pages/home/Signup";
 import ProtectedRoute from "./routes/ProtectedRoute";
+import NotificationBell from "./pages/utility/notification-bell/NotificationBell";
 import PersonalInfoPage from "./pages/utility/info/user-info/PersonalInfoPage";
 
 const API_BASE = import.meta.env.VITE_API_URL;
@@ -28,26 +29,30 @@ function TopNav() {
         </Link>
       </div>
 
-      <button
-        type="button"
-        onClick={() => navigate("/profile")}
-        style={{
-          width: 38,
-          height: 38,
-          borderRadius: "50%",
-          border: "1px solid #ccc",
-          background: "#f3f4f6",
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 18,
-        }}
-        aria-label="개인정보"
-        title="개인정보"
-      >
-        👤
-      </button>
+<div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+  <NotificationBell />
+
+  <button
+    type="button"
+    onClick={() => navigate("/profile")}
+    style={{
+      width: 38,
+      height: 38,
+      borderRadius: "50%",
+      border: "1px solid #ccc",
+      background: "#f3f4f6",
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: 18,
+    }}
+    aria-label="개인정보"
+    title="개인정보"
+  >
+    👤
+  </button>
+</div>
     </nav>
   );
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import styles from "./CalendarInfo.module.css";
+import CalendarInvitePopup from "./CalendarInvitePopup";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
 
@@ -40,6 +41,16 @@ export default function CalendarInfo() {
   const [selectedCalendarId, setSelectedCalendarId] = useState<number | null>(null);
   const [tabOrders, setTabOrders] = useState<Record<number, string>>({});
   const [calendarNames, setCalendarNames] = useState<Record<number, string>>({});
+  
+  const [addingCalendar, setAddingCalendar] = useState(false);
+  const [newCalendarName, setNewCalendarName] = useState("");
+  const [newCalendarTabOrder, setNewCalendarTabOrder] = useState("");
+  const [newCalendarMain, setNewCalendarMain] = useState(false);
+
+  // 초대하기 팝업창
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteCalendarId, setInviteCalendarId] = useState<number | null>(null);
+  const [inviteCalendarName, setInviteCalendarName] = useState("");
 
   const loadCalendarInfo = async () => {
     const token = localStorage.getItem("accessToken");
@@ -101,6 +112,7 @@ export default function CalendarInfo() {
     setErrorMsg("");
     setSuccessMsg("");
 
+    setNewCalendarMain(false);
     setSelectedCalendarId(calendarId);
 
     setTabOrders((prevOrders) => ({
@@ -159,6 +171,19 @@ export default function CalendarInfo() {
     }
   };
 
+  // 캘린더 신규 저장
+  const handleAddCalendarRow = () => {
+    setErrorMsg("");
+    setSuccessMsg("");
+
+    if (addingCalendar) return;
+
+    setAddingCalendar(true);
+    setNewCalendarName("");
+    setNewCalendarTabOrder("");
+    setNewCalendarMain(false);
+  };
+
   const handleSave = async () => {
     setErrorMsg("");
     setSuccessMsg("");
@@ -212,6 +237,47 @@ export default function CalendarInfo() {
         };
       });
 
+      if (addingCalendar) {
+        const trimmedNewName = newCalendarName.trim();
+
+        if (!trimmedNewName) {
+          throw new Error("새 캘린더명을 입력해주세요.");
+        }
+
+        let rawNewOrder = newCalendarMain ? "0" : newCalendarTabOrder;
+
+        if (rawNewOrder === "") {
+          calendarsPayload.push({
+            calendarId: 0,
+            name: trimmedNewName,
+            tabOrder: null,
+          });
+        } else {
+          const newOrderNum = Number(rawNewOrder);
+
+          if (!Number.isInteger(newOrderNum)) {
+            throw new Error("탭 순서는 정수만 입력할 수 있습니다.");
+          }
+
+          if (newOrderNum < 0) {
+            throw new Error("탭 순서는 0 또는 양의 정수만 가능합니다.");
+          }
+
+          if (usedOrders.has(newOrderNum)) {
+            throw new Error("동일한 탭 순서는 저장할 수 없습니다.");
+          }
+
+          usedOrders.add(newOrderNum);
+
+          calendarsPayload.push({
+            calendarId: 0,
+            name: trimmedNewName,
+            tabOrder: newOrderNum,
+          });
+        }
+      }
+
+
       setSaving(true);
 
       const token = localStorage.getItem("accessToken");
@@ -227,7 +293,8 @@ export default function CalendarInfo() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          defaultCalendarId: selectedCalendarId,
+          defaultCalendarId: newCalendarMain ? null : selectedCalendarId,
+          newCalendarMain,
           calendars: calendarsPayload,
         }),
       });
@@ -239,8 +306,13 @@ export default function CalendarInfo() {
         return;
       }
 
-      setSuccessMsg("저장되었습니다.");
+      setAddingCalendar(false);
+      setNewCalendarName("");
+      setNewCalendarTabOrder("");
+      setNewCalendarMain(false);
+      
       await loadCalendarInfo();
+      setSuccessMsg("저장되었습니다.");
     } catch (err: any) {
       setErrorMsg(err?.message ?? "저장 중 오류가 발생했습니다.");
     } finally {
@@ -289,9 +361,22 @@ export default function CalendarInfo() {
   };
 
   // 캘린더초대
-  const handleInvitation = async () => {
-    setErrorMsg("초대 기능은 아직 준비 중입니다.");
+  const handleInvitation = (
+    calendarId: number,
+    calendarName: string,
+    isOwner: boolean
+  ) => {
+    setErrorMsg("");
     setSuccessMsg("");
+
+    if (!isOwner) {
+      setErrorMsg("캘린더 초대는 캘린더장만 가능합니다.");
+      return;
+    }
+
+    setInviteCalendarId(calendarId);
+    setInviteCalendarName(calendarName);
+    setInviteOpen(true);
   };
 
   if (loading) {
@@ -323,6 +408,16 @@ export default function CalendarInfo() {
           {saving ? "저장 중..." : "저장"}
         </button>
       </div>
+      <div className={styles.addButtonRow}>
+        <button
+          type="button"
+          className={styles.addCalendarButton}
+          onClick={handleAddCalendarRow}
+          disabled={addingCalendar}
+        >
+          + 캘린더추가
+        </button>
+      </div>
 
       {errorMsg && <div className={styles.errorText}>{errorMsg}</div>}
       {successMsg && <div className={styles.successText}>{successMsg}</div>}
@@ -331,7 +426,7 @@ export default function CalendarInfo() {
         <table className={styles.table}>
           <colgroup>
             <col style={{ width: "5%" }} />  {/* 메인 */}
-            <col style={{ width: "63%" }} />  {/* 캘린더명 */}
+            <col style={{ width: "68%" }} />  {/* 캘린더명 */}
             <col style={{ width: "8%" }} />  {/* 구분 */}
             <col style={{ width: "5%" }} />  {/* 탭순서 */}
             <col style={{ width: "7%" }} />  {/* 초대 */}
@@ -394,7 +489,13 @@ export default function CalendarInfo() {
                       <button
                         type="button"
                         className={styles.saveButton}
-                        onClick={handleInvitation}
+                        onClick={() =>
+                          handleInvitation(
+                            calendar.id,
+                            calendarNames[calendar.id] ?? calendar.name,
+                            isOwner
+                          )
+                        }
                         disabled={saving}
                       >
                         초대
@@ -420,9 +521,94 @@ export default function CalendarInfo() {
                 </td>
               </tr>
             )}
+            {addingCalendar && (
+              <tr>
+                <td>
+                  <input
+                    type="checkbox"
+                    checked={newCalendarMain}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setNewCalendarMain(checked);
+
+                      if (checked) {
+                        setSelectedCalendarId(null);
+                        setNewCalendarTabOrder("0");
+                      }
+                    }}
+                  />
+                </td>
+
+                <td>
+                  <input
+                    type="text"
+                    value={newCalendarName}
+                    placeholder="새 캘린더명"
+                    onChange={(e) => setNewCalendarName(e.target.value)}
+                  />
+                </td>
+
+                <td>캘린더장</td>
+
+                <td>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={newCalendarMain ? "0" : newCalendarTabOrder}
+                    readOnly={newCalendarMain}
+                    onChange={(e) => {
+                      const value = e.target.value;
+
+                      if (value === "") {
+                        setNewCalendarTabOrder("");
+                        return;
+                      }
+
+                      if (!/^\d+$/.test(value)) return;
+
+                      setNewCalendarTabOrder(value);
+                    }}
+                  />
+                </td>
+
+                <td>
+                  <button
+                    type="button"
+                    className={styles.saveButton}
+                    disabled={saving}
+                  >
+                    초대
+                    {/* 새로 등록하는 거라 초대는 안됨 */}
+                  </button>
+                </td>
+
+                <td>
+                  <button
+                    type="button"
+                    className={styles.saveButton}
+                    onClick={() => {
+                      setAddingCalendar(false);
+                      setNewCalendarName("");
+                      setNewCalendarTabOrder("");
+                      setNewCalendarMain(false);
+                    }}
+                  >
+                    취소
+                  </button>
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
+
+      <CalendarInvitePopup
+        open={inviteOpen}
+        calendarId={inviteCalendarId}
+        calendarName={inviteCalendarName}
+        onClose={() => setInviteOpen(false)}
+      />
     </div>
   );
 }
