@@ -9,7 +9,10 @@
   font-size: 20px;
   font-weight: 700;
   color: #111827;
-  margin-bottom: 20px;
+  margin-bottom: 5px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
 }
 
 .infoRow {
@@ -94,9 +97,9 @@
 
 .headerRow {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  justify-content: space-between;
+  margin-bottom: 5px;
 }
 
 .saveButton {
@@ -125,6 +128,209 @@
   margin-bottom: 12px;
   color: #16a34a;
   font-size: 14px;
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.titleArea {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.addButtonRow {
+  display: none;
+}
+
+.addCalendarButton {
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #111827;
+  border-radius: 999px;
+  padding: 0 14px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
+  margin-bottom: 7px;
+}
+
+.addCalendarButton:hover:not(:disabled) {
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.16);
+  transform: translateY(-1px);
+}
+
+.addCalendarButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tableInputText{
+  height: 30px;
+  background: transparent;
+  color: black;
+  font-weight: 500;
+  border: solid 1px #d2d4d8;
+  border-radius: 8px;
+  padding: 0 10px;
+}
+
+.tableInputCheck{
+  margin: 0 auto; 
+  justify-content: center;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  height: 13px;
+}
+
+.tableInputNumber{
+  height: 30px;
+  background: transparent;
+  color: black;
+  font-weight: 500;
+  border: solid 1px #d2d4d8;
+  border-radius: 8px;
+  justify-content: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+/* 회원명단 보기 */
+.memberToggleButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 34px;
+  height: 34px;
+
+  background: #ffffff;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+
+  color: black;
+  text-align:center;
+}
+
+
+.memberToggleButton:hover {
+  color: #2563eb;
+}
+
+.memberToggleOpen {
+  transform: rotate(180deg);
+}
+
+.memberToggleButton {
+  outline: none;
+  border: none; /* 기존 테두리도 제거 */
+}
+
+.memberToggleButton:focus {
+  outline: none;
+}
+
+.memberToggleButton:focus-visible {
+  outline: none;
+}
+
+.memberDetailRow td {
+  padding: 0;
+  border-top: none;
+  background: #f9fafb;
+}
+
+.memberSlideBox {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.35s ease, opacity 0.25s ease;
+}
+
+.memberSlideBoxOpen {
+  max-height: 420px;
+  opacity: 1;
+}
+
+.memberContent {
+  padding: 14px 18px 18px;
+}
+
+.memberLoading {
+  padding: 16px;
+  text-align: center;
+  color: #6b7280;
+}
+
+.memberTable {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+}
+
+.memberTable th,
+.memberTable td {
+  border: 1px solid #e5e7eb;
+  padding: 9px 10px;
+  text-align: center;
+  font-size: 13px;
+}
+
+.memberTable th {
+  background: #f3f4f6;
+  font-weight: 700;
+}
+
+.memberPaging {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.memberPaging button {
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  color: black;
+}
+
+.memberPaging button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.totalMembers{
+  font-weight: 500;
+  font-size: 12px;
+  color: rgb(144, 144, 144);
+  margin-bottom: 3px;
+}
+
+
+/* 크롬, 사파리, 엣지 */
+/* 숫자 input 옆에 화살표 없애기 */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 @media (max-width: 768px) {

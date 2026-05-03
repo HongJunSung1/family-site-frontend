@@ -1,3 +1,5 @@
+// 캘린더정보
+
 import { useEffect, useState } from "react";
 import styles from "./CalendarInfo.module.css";
 import CalendarInvitePopup from "./CalendarInvitePopup";
@@ -14,6 +16,26 @@ type CalendarInfoItem = {
   tab_order: number | null;
 };
 
+type CalendarMemberItem = {
+  no: number;
+  user_id: number;
+  role: string;
+  joined_at: string;
+  name: string;
+  email: string;
+  total_count: number;
+};
+
+type CalendarDetailResponse = {
+  ok: boolean;
+  calendar: {
+    id: number;
+    name: string;
+    owner_id: number;
+    created_at: string;
+  };
+  members: CalendarMemberItem[];
+};
 type GetMyCalendarsInfoResponse = {
   ok: boolean;
   calendars: CalendarInfoItem[];
@@ -51,6 +73,12 @@ export default function CalendarInfo() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteCalendarId, setInviteCalendarId] = useState<number | null>(null);
   const [inviteCalendarName, setInviteCalendarName] = useState("");
+
+  // 회원 명단 보여주기
+  const [openMemberCalendarId, setOpenMemberCalendarId] = useState<number | null>(null);
+  const [memberMap, setMemberMap] = useState<Record<number, CalendarMemberItem[]>>({});
+  const [memberPageMap, setMemberPageMap] = useState<Record<number, number>>({});
+  const [memberLoadingMap, setMemberLoadingMap] = useState<Record<number, boolean>>({});
 
   const loadCalendarInfo = async () => {
     const token = localStorage.getItem("accessToken");
@@ -379,6 +407,74 @@ export default function CalendarInfo() {
     setInviteOpen(true);
   };
 
+  const handleToggleMembers = async (calendarId: number) => {
+    setErrorMsg("");
+    setSuccessMsg("");
+
+    if (openMemberCalendarId === calendarId) {
+      setOpenMemberCalendarId(null);
+      return;
+    }
+
+    setOpenMemberCalendarId(calendarId);
+    setMemberPageMap((prev) => ({
+      ...prev,
+      [calendarId]: prev[calendarId] ?? 1,
+    }));
+
+    if (memberMap[calendarId]) return;
+
+    try {
+      setMemberLoadingMap((prev) => ({
+        ...prev,
+        [calendarId]: true,
+      }));
+
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        setErrorMsg("로그인 정보가 없습니다.");
+        return;
+      }
+
+      const res = await fetch(
+        `${API_BASE}/api/calendars/getCalendarDetail?calendarId=${calendarId}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const result = (await res.json()) as CalendarDetailResponse;
+
+      if (!res.ok || !result.ok) {
+        setErrorMsg("회원 명단을 불러오지 못했습니다.");
+        return;
+      }
+
+      setMemberMap((prev) => ({
+        ...prev,
+        [calendarId]: result.members ?? [],
+      }));
+    } catch (err) {
+      console.error(err);
+      setErrorMsg("회원 명단 조회 중 오류가 발생했습니다.");
+    } finally {
+      setMemberLoadingMap((prev) => ({
+        ...prev,
+        [calendarId]: false,
+      }));
+    }
+  };
+
+  const handleMemberPageChange = (calendarId: number, page: number) => {
+    setMemberPageMap((prev) => ({
+      ...prev,
+      [calendarId]: page,
+    }));
+  };
+
   if (loading) {
     return (
       <div className={styles.pageStateBox}>
@@ -398,7 +494,19 @@ export default function CalendarInfo() {
   return (
     <div className={styles.card}>
       <div className={styles.headerRow}>
-        <div className={styles.sectionTitle}>캘린더 정보</div>
+        <div className={styles.titleArea}>
+          <div className={styles.sectionTitle}>캘린더 정보</div>
+
+          <button
+            type="button"
+            className={styles.addCalendarButton}
+            onClick={handleAddCalendarRow}
+            disabled={addingCalendar}
+          >
+            + 캘린더추가
+          </button>
+        </div>
+
         <button
           type="button"
           className={styles.saveButton}
@@ -406,16 +514,6 @@ export default function CalendarInfo() {
           disabled={saving}
         >
           {saving ? "저장 중..." : "저장"}
-        </button>
-      </div>
-      <div className={styles.addButtonRow}>
-        <button
-          type="button"
-          className={styles.addCalendarButton}
-          onClick={handleAddCalendarRow}
-          disabled={addingCalendar}
-        >
-          + 캘린더추가
         </button>
       </div>
 
@@ -426,12 +524,14 @@ export default function CalendarInfo() {
         <table className={styles.table}>
           <colgroup>
             <col style={{ width: "5%" }} />  {/* 메인 */}
-            <col style={{ width: "68%" }} />  {/* 캘린더명 */}
-            <col style={{ width: "8%" }} />  {/* 구분 */}
+            <col style={{ width: "64%" }} />  {/* 캘린더명 */}
+            <col style={{ width: "7%" }} />  {/* 구분 */}
             <col style={{ width: "5%" }} />  {/* 탭순서 */}
             <col style={{ width: "7%" }} />  {/* 초대 */}
             <col style={{ width: "7%" }} />  {/* 삭제 */}
+            <col style={{ width: "5%" }} />  {/* 회원명단보기 */}
           </colgroup>
+          
           <thead>
             <tr>
               <th>메인</th>
@@ -439,6 +539,7 @@ export default function CalendarInfo() {
               <th>구분</th>
               <th>순서</th>
               <th colSpan={2}>관리</th>
+              <th>회원정보</th>
             </tr>
           </thead>
           <tbody>
@@ -454,64 +555,164 @@ export default function CalendarInfo() {
                 const isOwner = ownerText === "캘린더장";
 
                 return (
-                  <tr key={calendar.id}>
-                    <td>
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => handleCheckChange(calendar.id)}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="text"
-                        value={calendarNames[calendar.id] ?? ""}
-                        readOnly={!isOwner}
-                        onFocus={() => handleCalendarNameFocus(ownerText)}
-                        onChange={(e) =>
-                          handleCalendarNameChange(calendar.id, ownerText, e.target.value)
-                        }
-                      />
-                    </td>
-                    <td>{ownerText}</td>
+                  <>
+                    <tr key={calendar.id}>
+                      <td>
+                        <input
+                          type="checkbox"
+                          className ={styles.tableInputCheck}
+                          checked={isChecked}
+                          onChange={() => handleCheckChange(calendar.id)}
+                        />
+                      </td>
 
-                    <td>
-                      <input
-                        type="number"
-                        min="0"
-                        step="1"
-                        value={tabOrderValue}
-                        readOnly={isChecked}
-                        onChange={(e) => handleTabOrderChange(calendar.id, e.target.value)}
-                      />
-                    </td>
-                    <td>
-                      <button
-                        type="button"
-                        className={styles.saveButton}
-                        onClick={() =>
-                          handleInvitation(
-                            calendar.id,
-                            calendarNames[calendar.id] ?? calendar.name,
-                            isOwner
-                          )
-                        }
-                        disabled={saving}
-                      >
-                        초대
-                      </button>
-                    </td>
-                    <td>
-                      <button
-                        type="button"
-                        className={styles.saveButton}
-                        onClick={() => handleDelete(calendar.id)}
-                        disabled={saving}
-                      >
-                        삭제
-                      </button>
-                    </td>
-                  </tr>
+                      <td>
+                        <input
+                          type="text"
+                          className ={styles.tableInputText}
+                          value={calendarNames[calendar.id] ?? ""}
+                          readOnly={!isOwner}
+                          onFocus={() => handleCalendarNameFocus(ownerText)}
+                          onChange={(e) =>
+                            handleCalendarNameChange(calendar.id, ownerText, e.target.value)
+                          }
+                        />
+                      </td>
+
+                      <td style={{textAlign: "center"}}>{ownerText}</td>
+
+                      <td>
+                        <input
+                          type="number"
+                          className ={styles.tableInputNumber}
+                          min="0"
+                          step="1"
+                          value={tabOrderValue}
+                          readOnly={isChecked}
+                          onChange={(e) => handleTabOrderChange(calendar.id, e.target.value)}
+                        />
+                      </td>
+
+                      <td>
+                        <button
+                          type="button"
+                          className={styles.saveButton}
+                          onClick={() =>
+                            handleInvitation(
+                              calendar.id,
+                              calendarNames[calendar.id] ?? calendar.name,
+                              isOwner
+                            )
+                          }
+                          disabled={saving}
+                        >
+                          초대
+                        </button>
+                      </td>
+
+                      <td>
+                        <button
+                          type="button"
+                          className={styles.saveButton}
+                          onClick={() => handleDelete(calendar.id)}
+                          disabled={saving}
+                        >
+                          삭제
+                        </button>
+                      </td>
+
+                      <td>
+                        <button
+                          type="button"
+                          className={`${styles.memberToggleButton} ${
+                            openMemberCalendarId === calendar.id ? styles.memberToggleOpen : ""
+                          }`}
+                          onClick={() => handleToggleMembers(calendar.id)}
+                        >
+                          ▼
+                        </button>
+                      </td>
+                    </tr>
+
+                    <tr className={styles.memberDetailRow}>
+                      <td colSpan={7}>
+                        <div
+                          className={`${styles.memberSlideBox} ${
+                            openMemberCalendarId === calendar.id ? styles.memberSlideBoxOpen : ""
+                          }`}
+                        >
+                          {memberLoadingMap[calendar.id] ? (
+                            <div className={styles.memberLoading}>회원 명단을 불러오는 중...</div>
+                          ) : (
+                            (() => {
+                              const members = memberMap[calendar.id] ?? [];
+                              const currentPage = memberPageMap[calendar.id] ?? 1;
+                              const pageSize = 5;
+                              const totalPage = Math.max(1, Math.ceil(members.length / pageSize));
+                              const startIndex = (currentPage - 1) * pageSize;
+                              const visibleMembers = members.slice(startIndex, startIndex + pageSize);
+                              const totalCount = visibleMembers[0]?.total_count ?? 0;
+                              return (
+                                <div className={styles.memberContent}>
+                                  <div className={styles.totalMembers}>전체 회원 수 : {totalCount}명</div>
+                                  <table className={styles.memberTable}>
+                                    <thead>
+                                      <tr>
+                                        <th>번호</th>
+                                        <th>구분</th>
+                                        <th>이름</th>
+                                        <th>이메일</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {visibleMembers.length > 0 ? (
+                                        visibleMembers.map((member) => (
+                                          <tr key={member.user_id}>
+                                            <td>{member.no}</td>
+                                            <td>
+                                              {member.role === "owner" ? "캘린더장" : "일반회원"}
+                                            </td>
+                                            <td>{member.name}</td>
+                                            <td>{member.email}</td>
+                                          </tr>
+                                        ))
+                                      ) : (
+                                        <tr>
+                                          <td colSpan={4}>회원 정보가 없습니다.</td>
+                                        </tr>
+                                      )}
+                                    </tbody>
+                                  </table>
+
+                                  <div className={styles.memberPaging}>
+                                    <button
+                                      type="button"
+                                      disabled={currentPage <= 1}
+                                      onClick={() => handleMemberPageChange(calendar.id, currentPage - 1)}
+                                    >
+                                      이전
+                                    </button>
+
+                                    <span>
+                                      {currentPage} / {totalPage}
+                                    </span>
+
+                                    <button
+                                      type="button"
+                                      disabled={currentPage >= totalPage}
+                                      onClick={() => handleMemberPageChange(calendar.id, currentPage + 1)}
+                                    >
+                                      다음
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })()
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  </>
                 );
               })
             ) : (
