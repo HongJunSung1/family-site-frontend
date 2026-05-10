@@ -662,6 +662,7 @@ export default function CalendarInfo() {
                                         <th>구분</th>
                                         <th>이름</th>
                                         <th>이메일</th>
+                                        <th>가입일</th>
                                       </tr>
                                     </thead>
                                     <tbody>
@@ -674,6 +675,7 @@ export default function CalendarInfo() {
                                             </td>
                                             <td>{member.name}</td>
                                             <td>{member.email}</td>
+                                            <td>{member.joined_at}</td>
                                           </tr>
                                         ))
                                       ) : (

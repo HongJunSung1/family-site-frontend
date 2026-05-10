@@ -7,6 +7,7 @@ export default function Signup() {
 
   const [form, setForm] = useState({
     name: "",
+    id: "",
     email: "",
     password: "",
     familyCode: "",
@@ -22,8 +23,6 @@ export default function Signup() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // ✅ 지금은 백엔드 연결 전이라 "동작 흉내"만 냅니다.
-    // 나중에 여기서 POST /api/signup 같은 걸 호출하게 될 거예요.
     setSubmitting(true);
     try {
       // 간단한 프론트 검증(선택)
@@ -31,6 +30,10 @@ export default function Signup() {
         alert("이메일과 비밀번호는 필수입니다.");
         return;
       }
+      if (!form.id) {
+        alert("아이디는 필수입니다.");
+        return;
+      }      
       if (form.password.length < 8) {
         alert("비밀번호는 8자 이상 입력해주세요.");
         return;
@@ -47,6 +50,7 @@ export default function Signup() {
         // 서버는 name/email/password만 받음 (familyCode는 아직 저장 안 함)
         body: JSON.stringify({
           name: form.name,
+          id: form.id,
           email: form.email,
           password: form.password,
         }),
@@ -87,6 +91,17 @@ export default function Signup() {
             style={{ width: "100%", padding: 10 }}
           />
         </div>
+
+        <div style={{ marginBottom: 12 }}>
+          <label style={{ display: "block", marginBottom: 6 }}>아이디 *</label>
+          <input
+            name="id"
+            value={form.id}
+            onChange={onChange}
+            placeholder="jshong"
+            style={{ width: "100%", padding: 10 }}
+          />
+        </div>        
 
         <div style={{ marginBottom: 12 }}>
           <label style={{ display: "block", marginBottom: 6 }}>이메일 *</label>
