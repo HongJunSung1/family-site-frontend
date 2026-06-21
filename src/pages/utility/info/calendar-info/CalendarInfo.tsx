@@ -1,6 +1,6 @@
 // 캘린더정보
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import styles from "./CalendarInfo.module.css";
 import CalendarInvitePopup from "./CalendarInvitePopup";
 
@@ -66,7 +66,6 @@ export default function CalendarInfo() {
   
   const [addingCalendar, setAddingCalendar] = useState(false);
   const [newCalendarName, setNewCalendarName] = useState("");
-  const [newCalendarTabOrder, setNewCalendarTabOrder] = useState("");
   const [newCalendarMain, setNewCalendarMain] = useState(false);
 
   // 초대하기 팝업창
@@ -136,42 +135,127 @@ export default function CalendarInfo() {
     loadCalendarInfo();
   }, []);
 
-  const handleCheckChange = (calendarId: number) => {
+  const getSortedCalendars = () => {
+    if (!data?.calendars) return [];
+
+    return [...data.calendars].sort((a, b) => {
+      const aOrder =
+        selectedCalendarId === a.id ? 0 : Number(tabOrders[a.id] ?? a.tab_order ?? 999999);
+      const bOrder =
+        selectedCalendarId === b.id ? 0 : Number(tabOrders[b.id] ?? b.tab_order ?? 999999);
+
+      return aOrder - bOrder;
+    });
+  };
+
+  const saveCalendarOrderImmediately = async (
+    orderedCalendarIds: number[],
+    nextDefaultCalendarId: number | null
+  ) => {
+    if (!data) return;
+
+    setErrorMsg("");
+    setSuccessMsg("");
+    setSaving(true);
+
+    try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        setErrorMsg("로그인 정보가 없습니다.");
+        return;
+      }
+
+      const calendarsPayload = orderedCalendarIds.map((calendarId, index) => {
+        const calendar = data.calendars.find((item) => item.id === calendarId);
+        if (!calendar) {
+          throw new Error("캘린더 정보를 찾을 수 없습니다.");
+        }
+
+        return {
+          calendarId,
+          name: (calendarNames[calendarId] ?? calendar.name).trim(),
+          tabOrder: index,
+        };
+      });
+
+      const res = await fetch(`${API_BASE}/api/calendars/saveMyCalendarsInfo`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          defaultCalendarId: nextDefaultCalendarId,
+          newCalendarMain: false,
+          calendars: calendarsPayload,
+        }),
+      });
+
+      const result = (await res.json()) as SaveMyCalendarsInfoResponse;
+
+      if (!res.ok || !result.ok) {
+        setErrorMsg(result.message ?? "순서 저장 중 오류가 발생했습니다.");
+        return;
+      }
+
+      await loadCalendarInfo();
+      setSuccessMsg("순서가 변경되었습니다.");
+    } catch (err: any) {
+      setErrorMsg(err?.message ?? "순서 저장 중 오류가 발생했습니다.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleMoveCalendar = async (calendarId: number, direction: "up" | "down") => {
+    if (!data || saving) return;
+
+    const sorted = getSortedCalendars();
+    const currentIndex = sorted.findIndex((item) => item.id === calendarId);
+
+    if (currentIndex < 0) return;
+    if (direction === "up" && currentIndex === 0) return;
+    if (direction === "down" && currentIndex === sorted.length - 1) return;
+
+    const next = [...sorted];
+    const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+
+    [next[currentIndex], next[targetIndex]] = [next[targetIndex], next[currentIndex]];
+
+    const orderedCalendarIds = next.map((item) => item.id);
+
+    await saveCalendarOrderImmediately(orderedCalendarIds, selectedCalendarId);
+  };
+
+
+  const handleCheckChange = async (calendarId: number) => {
+    if (!data || saving) return;
+
     setErrorMsg("");
     setSuccessMsg("");
 
     setNewCalendarMain(false);
     setSelectedCalendarId(calendarId);
 
-    setTabOrders((prevOrders) => ({
-      ...prevOrders,
-      [calendarId]: "0",
-    }));
+    const sorted = getSortedCalendars();
+    const selected = sorted.find((item) => item.id === calendarId);
+    const others = sorted.filter((item) => item.id !== calendarId);
+
+    if (!selected) return;
+
+    const orderedCalendarIds = [selected, ...others].map((item) => item.id);
+
+    const nextOrders: Record<number, string> = {};
+    orderedCalendarIds.forEach((id, index) => {
+      nextOrders[id] = String(index);
+    });
+
+    setTabOrders(nextOrders);
+
+    await saveCalendarOrderImmediately(orderedCalendarIds, calendarId);
   };
 
-  const handleTabOrderChange = (calendarId: number, value: string) => {
-    setErrorMsg("");
-    setSuccessMsg("");
 
-    if (selectedCalendarId === calendarId) return;
-
-    if (value === "") {
-      setTabOrders((prev) => ({
-        ...prev,
-        [calendarId]: "",
-      }));
-      return;
-    }
-
-    if (!/^\d+$/.test(value)) {
-      return;
-    }
-
-    setTabOrders((prev) => ({
-      ...prev,
-      [calendarId]: value,
-    }));
-  };
 
   const handleCalendarNameChange = (
     calendarId: number,
@@ -208,7 +292,6 @@ export default function CalendarInfo() {
 
     setAddingCalendar(true);
     setNewCalendarName("");
-    setNewCalendarTabOrder("");
     setNewCalendarMain(false);
   };
 
@@ -253,7 +336,7 @@ export default function CalendarInfo() {
         }
 
         if (usedOrders.has(num)) {
-          throw new Error("동일한 탭 순서는 저장할 수 없습니다.");
+          throw new Error("메인 캘린더보다 앞선 순서로 지정할 수 없습니다.");
         }
 
         usedOrders.add(num);
@@ -272,35 +355,30 @@ export default function CalendarInfo() {
           throw new Error("새 캘린더명을 입력해주세요.");
         }
 
-        let rawNewOrder = newCalendarMain ? "0" : newCalendarTabOrder;
+        if (newCalendarMain) {
+          calendarsPayload.forEach((item) => {
+            item.tabOrder = item.tabOrder === null ? null : item.tabOrder + 1;
+          });
 
-        if (rawNewOrder === "") {
           calendarsPayload.push({
             calendarId: 0,
             name: trimmedNewName,
-            tabOrder: null,
+            tabOrder: 0,
           });
         } else {
-          const newOrderNum = Number(rawNewOrder);
-
-          if (!Number.isInteger(newOrderNum)) {
-            throw new Error("탭 순서는 정수만 입력할 수 있습니다.");
-          }
-
-          if (newOrderNum < 0) {
-            throw new Error("탭 순서는 0 또는 양의 정수만 가능합니다.");
-          }
-
-          if (usedOrders.has(newOrderNum)) {
-            throw new Error("동일한 탭 순서는 저장할 수 없습니다.");
-          }
-
-          usedOrders.add(newOrderNum);
+          const maxOrder =
+            calendarsPayload.length === 0
+              ? -1
+              : Math.max(
+                  ...calendarsPayload.map((item) =>
+                    item.tabOrder === null ? -1 : item.tabOrder
+                  )
+                );
 
           calendarsPayload.push({
             calendarId: 0,
             name: trimmedNewName,
-            tabOrder: newOrderNum,
+            tabOrder: maxOrder + 1,
           });
         }
       }
@@ -336,7 +414,6 @@ export default function CalendarInfo() {
 
       setAddingCalendar(false);
       setNewCalendarName("");
-      setNewCalendarTabOrder("");
       setNewCalendarMain(false);
       
       await loadCalendarInfo();
@@ -523,40 +600,61 @@ export default function CalendarInfo() {
       <div className={styles.tableWrap}>
         <table className={styles.table}>
           <colgroup>
+            <col style={{ width: "5%" }} />  {/* 순서이동 */}
             <col style={{ width: "5%" }} />  {/* 메인 */}
-            <col style={{ width: "64%" }} />  {/* 캘린더명 */}
+            <col style={{ width: "65%" }} /> {/* 캘린더명 */}
             <col style={{ width: "7%" }} />  {/* 구분 */}
-            <col style={{ width: "5%" }} />  {/* 탭순서 */}
             <col style={{ width: "7%" }} />  {/* 초대 */}
             <col style={{ width: "7%" }} />  {/* 삭제 */}
-            <col style={{ width: "5%" }} />  {/* 회원명단보기 */}
+            <col style={{ width: "5%" }} /> {/* 회원정보 */}
           </colgroup>
           
           <thead>
             <tr>
+              <th>순서</th>
               <th>메인</th>
               <th>캘린더명</th>
               <th>구분</th>
-              <th>순서</th>
               <th colSpan={2}>관리</th>
               <th>회원정보</th>
             </tr>
           </thead>
           <tbody>
             {data?.calendars && data.calendars.length > 0 ? (
-              data.calendars.map((calendar) => {
+              getSortedCalendars().map((calendar, index) => {
                 const ownerText =
                   calendar.owner_id === calendar.user_id
                     ? "캘린더장"
                     : "일반회원";
 
                 const isChecked = selectedCalendarId === calendar.id;
-                const tabOrderValue = isChecked ? "0" : (tabOrders[calendar.id] ?? "");
+                
                 const isOwner = ownerText === "캘린더장";
 
                 return (
-                  <>
-                    <tr key={calendar.id}>
+                  <Fragment key={calendar.id}>
+                    <tr>
+                      <td>
+                        <div className={styles.orderButtonBox}>
+                          <button
+                            type="button"
+                            className={styles.orderButton}
+                            onClick={() => handleMoveCalendar(calendar.id, "up")}
+                            disabled={saving || index === 0}
+                          >
+                            ▲
+                          </button>
+
+                          <button
+                            type="button"
+                            className={styles.orderButton}
+                            onClick={() => handleMoveCalendar(calendar.id, "down")}
+                            disabled={saving || index === getSortedCalendars().length - 1}
+                          >
+                            ▼
+                          </button>
+                        </div>
+                      </td>
                       <td>
                         <input
                           type="checkbox"
@@ -580,19 +678,6 @@ export default function CalendarInfo() {
                       </td>
 
                       <td style={{textAlign: "center"}}>{ownerText}</td>
-
-                      <td>
-                        <input
-                          type="number"
-                          className ={styles.tableInputNumber}
-                          min="0"
-                          step="1"
-                          value={tabOrderValue}
-                          readOnly={isChecked}
-                          onChange={(e) => handleTabOrderChange(calendar.id, e.target.value)}
-                        />
-                      </td>
-
                       <td>
                         <button
                           type="button"
@@ -714,7 +799,7 @@ export default function CalendarInfo() {
                         </div>
                       </td>
                     </tr>
-                  </>
+                  </Fragment>
                 );
               })
             ) : (
@@ -724,84 +809,70 @@ export default function CalendarInfo() {
                 </td>
               </tr>
             )}
-            {addingCalendar && (
-              <tr>
-                <td>
-                  <input
-                    type="checkbox"
-                    checked={newCalendarMain}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
-                      setNewCalendarMain(checked);
-
-                      if (checked) {
-                        setSelectedCalendarId(null);
-                        setNewCalendarTabOrder("0");
-                      }
-                    }}
-                  />
-                </td>
-
-                <td>
-                  <input
-                    type="text"
-                    value={newCalendarName}
-                    placeholder="새 캘린더명"
-                    onChange={(e) => setNewCalendarName(e.target.value)}
-                  />
-                </td>
-
-                <td>캘린더장</td>
-
-                <td>
-                  <input
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={newCalendarMain ? "0" : newCalendarTabOrder}
-                    readOnly={newCalendarMain}
-                    onChange={(e) => {
-                      const value = e.target.value;
-
-                      if (value === "") {
-                        setNewCalendarTabOrder("");
-                        return;
-                      }
-
-                      if (!/^\d+$/.test(value)) return;
-
-                      setNewCalendarTabOrder(value);
-                    }}
-                  />
-                </td>
-
-                <td>
-                  <button
-                    type="button"
-                    className={styles.saveButton}
-                    disabled={saving}
-                  >
-                    초대
-                    {/* 새로 등록하는 거라 초대는 안됨 */}
+          {addingCalendar && (
+            <tr>
+              <td>
+                <div className={styles.orderButtonBox}>
+                  <button type="button" className={styles.orderButton} disabled>
+                    ▲
                   </button>
-                </td>
-
-                <td>
-                  <button
-                    type="button"
-                    className={styles.saveButton}
-                    onClick={() => {
-                      setAddingCalendar(false);
-                      setNewCalendarName("");
-                      setNewCalendarTabOrder("");
-                      setNewCalendarMain(false);
-                    }}
-                  >
-                    취소
+                  <button type="button" className={styles.orderButton} disabled>
+                    ▼
                   </button>
-                </td>
-              </tr>
-            )}
+                </div>
+              </td>
+
+              <td>
+                <input
+                  type="checkbox"
+                  className ={styles.tableInputCheck}
+                  checked={newCalendarMain}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setNewCalendarMain(checked);
+
+                    if (checked) {
+                      setSelectedCalendarId(null);
+                    }
+                  }}
+                />
+              </td>
+
+              <td>
+                <input
+                  type="text"
+                  value={newCalendarName}
+                  className ={styles.tableInputText}
+                  placeholder="새 캘린더명"
+                  onChange={(e) => setNewCalendarName(e.target.value)}
+                />
+              </td>
+
+              <td>캘린더장</td>
+
+              <td>
+                <button type="button" className={styles.saveButton} disabled={saving}>
+                  초대
+                </button>
+              </td>
+
+              <td>
+                <button
+                  type="button"
+                  className={styles.saveButton}
+                  onClick={() => {
+                    setAddingCalendar(false);
+                    setNewCalendarName("");
+                    setNewCalendarMain(false);
+                  }}
+                >
+                  취소
+                </button>
+              </td>
+
+              <td></td>
+            </tr>
+          )}
           </tbody>
         </table>
       </div>

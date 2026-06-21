@@ -1,4 +1,3 @@
-import React from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
@@ -9,6 +8,31 @@ import type { DayType, ViewRange } from "../types";
 import type { ExpandedEvent } from "../utils/recurrence";
 import styles from "../../Calendar.module.css";
 
+
+const getReadableTextColor = (bgColor?: string) => {
+  if (!bgColor) return "#ffffff";
+
+  let hex = bgColor.replace("#", "").trim();
+
+  if (hex.length === 3) {
+    hex = hex
+      .split("")
+      .map((c) => c + c)
+      .join("");
+  }
+
+  if (hex.length !== 6) return "#ffffff";
+
+  const r = parseInt(hex.slice(0, 2), 16);
+  const g = parseInt(hex.slice(2, 4), 16);
+  const b = parseInt(hex.slice(4, 6), 16);
+
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+
+  return brightness >= 160 ? "#111827" : "#ffffff";
+};
+
+
 type Props = {
   calRef: React.RefObject<FullCalendar | null>;
   expandedEvents: ExpandedEvent[];
@@ -16,8 +40,13 @@ type Props = {
   getDayType: (d: Dayjs) => DayType;
   onDateClick: (info: any) => void;
   onEventClick: (info: any) => void;
+  onEventMouseEnter: (info: any) => void;
+  onEventDidMount?: (info: any) => void;
   onDatesSet: (range: ViewRange, holidayYear: number) => void;
+
+  calendarName: string;
 };
+
 
 export function CalendarView({
   calRef,
@@ -26,11 +55,17 @@ export function CalendarView({
   getDayType,
   onDateClick,
   onEventClick,
+  onEventDidMount,
+  onEventMouseEnter,
   onDatesSet,
+  calendarName,
 }: Props) {
 
   return (
     <div className={styles.calendarShell}>
+      <div className={styles.calendarNameHeader}>
+        {calendarName}
+      </div>
       <FullCalendar
         key={holidayMap.size}
         ref={calRef}
@@ -40,9 +75,18 @@ export function CalendarView({
         // height={800}
         locale="ko"
         customButtons={{
-                        myToday: {text: "📆", click: () => calRef.current?.getApi().today()},
-                      }}
-        headerToolbar={{ left: "title", center: "myToday prev,next", right: "", }}
+          myToday: {
+            text: "📆",
+            hint: "오늘 날짜로 이동",
+            click: () => calRef.current?.getApi().today(),
+          },
+          
+        }}
+        headerToolbar={{
+          left: "title",
+          center: "myToday prev,next",
+          right: "",
+        }}
         datesSet={(arg) => {
           const y = dayjs(arg.start).add(10, "day").year();
           onDatesSet({ start: dayjs(arg.start), end: dayjs(arg.end) }, y);
@@ -51,7 +95,6 @@ export function CalendarView({
         dayCellDidMount={(arg) => {
           const ymd = dayjs(arg.date).format("YYYY-MM-DD");
           const name = holidayMap.get(ymd);
-
           const frame = arg.el.querySelector(".fc-daygrid-day-frame") as HTMLElement | null;
           const target = frame ?? (arg.el as HTMLElement);
 
@@ -63,8 +106,11 @@ export function CalendarView({
             target.classList.remove("pz-holiday-tip");
           }
         }}
+       
         dateClick={onDateClick}
         eventClick={onEventClick}
+        eventDidMount={onEventDidMount}
+        eventMouseEnter={onEventMouseEnter}
         displayEventTime={false}
         displayEventEnd={false}
         dayCellClassNames={(arg) => {
@@ -82,22 +128,31 @@ export function CalendarView({
           return ["pz-dow-black"];
         }}
         eventDisplay="block"
-        events={expandedEvents.map((e) => ({
-          id: e.id,
-          title: e.title,
-          start: e.start,
-          end: e.end,
-          allDay: e.allDay,
-          backgroundColor: e.color,
-          borderColor: e.color,
-          extendedProps: {
-            memo: e.memo,
-            createdBy: e.createdBy,
-            masterId: e.__masterId ?? e.id,
-            occKey: e.__occKey ?? "",
-            repeat: e.repeat ?? "none",
-          },
-        }))}
+ events={expandedEvents.map((e) => {
+  const bgColor = e.color || "#1e2a78";
+
+  return {
+    id: e.id,
+    title: e.title,
+    start: e.start,
+    end: e.end,
+    allDay: e.allDay,
+    backgroundColor: bgColor,
+    borderColor: bgColor,
+    textColor: getReadableTextColor(bgColor),
+    extendedProps: {
+      memo: e.memo,
+      startRaw: e.start,
+      endRaw: e.end,
+      createdBy: e.createdBy,
+      createdByName: e.createdByName,
+      locationName: e.locationName,
+      masterId: e.__masterId ?? e.id,
+      occKey: e.__occKey ?? "",
+      repeat: e.repeat ?? "none",
+    },
+  };
+})}
         dayMaxEvents={5}
         expandRows={true} // 주(행) 높이를 동일하게 분배
         fixedWeekCount={true}   // 5~6주 고정(월뷰에서 행 높이 안정)

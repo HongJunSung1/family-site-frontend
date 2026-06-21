@@ -25,6 +25,7 @@ export type CalEvent = {
   memo?: string;
   color?: string;
   createdBy: string;
+  createdByName: string,
 
   locationName?: string;
   locationAddress?: string;

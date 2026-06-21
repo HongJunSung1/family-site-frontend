@@ -323,7 +323,44 @@
   color: rgb(144, 144, 144);
   margin-bottom: 3px;
 }
+.orderButtonBox {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 2px;
+}
 
+.orderButton {
+  width: 20px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #374151;
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.orderButton:hover:not(:disabled) {
+  background: transparent;
+  color: #111827;
+}
+
+.orderButton:focus {
+  outline: none;
+}
+
+.orderButton:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
 
 /* 크롬, 사파리, 엣지 */
 /* 숫자 input 옆에 화살표 없애기 */

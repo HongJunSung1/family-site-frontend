@@ -9,7 +9,24 @@
   --cal-accent-2: #7fe3df;
 }
 
+.calendarShell {
+  position: relative;
+}
 
+.calendarNameHeader {
+  position: absolute;
+  top: 14px;
+  left: 180px;
+
+  color: #ffffff;
+  font-size: 28px;
+  font-weight: 800;
+  user-select: text;
+  cursor: text;
+  white-space: nowrap;
+
+  z-index: 5;
+}
 
 /* wrapper */
 /* 전체 화면 배경 + 가운데 정렬 */
@@ -227,9 +244,14 @@
 }
 :global(.fc .fc-daygrid-dot-event .fc-event-title),
 :global(.fc .fc-daygrid-dot-event .fc-event-time) {
-  color: var(--cal-text);
+  /* color: var(--cal-text); */
+  color: inherit !important;
   font-weight: 800;
 }
+
+
+
+
 
 /* 기존 주말/공휴일 색상 로직은 유지하되, 다크에서 보이도록 톤만 약간 조정해도 됨 */
 :global(.fc .pz-day-red .fc-daygrid-day-number) {
@@ -256,32 +278,38 @@
 :global(.fc .pz-holiday-tip) {
   position: relative;
 }
+
+
 :global(.fc .pz-holiday-tip:hover::after) {
   content: attr(data-holiday);
   position: absolute;
-  left: 50%;
-  top: 4px;
+  left: 55%;
+  top: 5px;
   transform: translateX(-50%);
   z-index: 999999;
-  padding: 6px 8px;
-  border-radius: 10px;
-  border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(0,0,0,0.85);
-  color: #fff;
+  padding: 7px 10px;
+  /* border-radius: 8px; */
+  /* border: 1px solid #232a35; */
+  border: none;
+  background: #2f3948;
+  color: #f8fafc;
+
   font-size: 12px;
   font-weight: 800;
+  letter-spacing: -0.2px;
   white-space: nowrap;
   pointer-events: none;
+  /* box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28); */
 }
 :global(.fc .pz-holiday-tip:hover::before) {
   content: "";
   position: absolute;
-  left: 50%;
+  left: 55%;
   top: 0px;
   transform: translateX(-50%);
   z-index: 999999;
-  border: 6px solid transparent;
-  border-bottom-color: rgba(0,0,0,0.85);
+  border: 7px solid transparent;
+  border-top-color: #2f3948;
   pointer-events: none;
 }
 
@@ -348,4 +376,140 @@
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
+}
+
+.calendarTab:focus,
+.calendarTab:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.calendarTabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  padding: 0 4px;
+  margin-bottom: 0;
+  border-bottom: 1px solid #1d1e21;
+}
+
+.calendarTab {
+  border: 1px solid #1d1e21;
+  border-bottom: 1px solid #1d1e21;
+  background: #343e4d;
+  padding: 9px 16px;
+  color: #6b7280;
+  border-radius: 12px 12px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transform: translateY(1px);
+}
+
+.calendarTab:hover {
+  background: rgb(76, 81, 91);
+  color: #111827;
+}
+
+.activeCalendarTab {
+  background: #343e4d;
+  /* color: #a3a6ac; */
+  color: #e3e620;
+  border-color: #1d1e21;
+  border-bottom: none;
+  font-weight: 800;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
+  position: relative;
+  z-index: 1;
+}
+
+
+/* 이벤트별 툴팁 */
+.eventMemoTooltip {
+  position: relative;
+}
+.eventMemoTooltip:hover {
+  z-index: 99999;
+}
+.eventMemoTooltip:hover::after {
+  content: attr(data-memo);
+
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 8px);
+
+  transform: translateX(-50%);
+  z-index: 999999;
+
+  width: 150px;
+
+  padding: 6px 8px;
+  border-radius: 9px;
+
+  background: #2f3948;
+  color: #f8fafc;
+
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
+
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+
+  white-space: pre-wrap;
+  word-break: break-word;
+
+  pointer-events: none;
+}
+
+.eventMemoTooltip:hover::before {
+  content: "";
+
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 1px);
+
+  transform: translateX(-50%);
+  z-index: 1000000;
+
+  width: 0;
+  height: 0;
+
+  /* 바깥 테두리 삼각형 */
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-bottom: 7px solid rgba(148, 163, 184, 0.28);
+
+  pointer-events: none;
+}
+
+.eventMemoTooltip:hover::after {
+  content: attr(data-memo);
+
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 8px);
+
+  transform: translateX(-50%);
+  z-index: 999999;
+
+  width: 180px;
+
+  padding: 6px 8px;
+  border-radius: 9px;
+
+  background: #2f3948;
+  color: #f8fafc;
+
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
+
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+
+  white-space: pre-wrap;
+  word-break: break-word;
+
+  pointer-events: none;
 }

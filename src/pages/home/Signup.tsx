@@ -10,10 +10,11 @@ export default function Signup() {
     id: "",
     email: "",
     password: "",
-    familyCode: "",
+    passwordConfirm: "",
   });
 
   const [submitting, setSubmitting] = useState(false);
+
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -38,10 +39,15 @@ export default function Signup() {
         alert("비밀번호는 8자 이상 입력해주세요.");
         return;
       }
+      if (form.password !== form.passwordConfirm) {
+        alert("비밀번호가 일치하지 않습니다.");
+        return;
+      }
       if (!API_BASE) {
         alert("API 주소가 설정되지 않았습니다. (.env.local의 VITE_API_URL 확인)");
         return;
       }
+
 
       // Workers API 호출
       const res = await fetch(`${API_BASE}/api/auth/signup`, {
@@ -130,23 +136,20 @@ export default function Signup() {
             required
           />
         </div>
-
-        <div style={{ marginBottom: 16 }}>
+        <div style={{ marginBottom: 12 }}>
           <label style={{ display: "block", marginBottom: 6 }}>
-            가족 초대코드 (선택)
+            비밀번호 확인 *
           </label>
           <input
-            name="familyCode"
-            value={form.familyCode}
+            name="passwordConfirm"
+            type="password"
+            value={form.passwordConfirm}
             onChange={onChange}
-            placeholder="예: ABCD-1234"
+            placeholder="비밀번호를 한 번 더 입력"
             style={{ width: "100%", padding: 10 }}
+            required
           />
-          <div style={{ fontSize: 12, opacity: 0.7, marginTop: 6 }}>
-            * 현재는 서버 저장을 아직 안 합니다(다음 단계에서 추가)
-          </div>
         </div>
-
         <button
           type="submit"
           disabled={submitting}

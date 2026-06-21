@@ -1,0 +1,150 @@
+.card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.sectionTitle {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 5px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+
+.titleArea {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tableWrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  background: #ffffff;
+}
+
+.table th,
+.table td {
+  padding: 12px 14px;
+  border: 1px solid #e5e7eb;
+  font-size: 14px;
+  color: black;
+}
+
+.table td {
+  text-align: left;
+}
+
+.table th {
+  background: #f3f4f6;
+  font-weight: 700;
+  color: #111827;
+  text-align: center;
+}
+
+.emptyRow {
+  text-align: center !important;
+  color: #6b7280 !important;
+}
+
+.paging {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.paging button {
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  color: black;
+}
+
+.paging button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.paging span {
+  font-size: 14px;
+  color: #374151;
+}
+
+.totalCount {
+  font-weight: 500;
+  font-size: 12px;
+  color: rgb(144, 144, 144);
+  margin-bottom: 3px;
+}
+
+.center {
+  text-align: center !important;
+}
+
+.errorText {
+  margin-bottom: 12px;
+  color: #dc2626;
+  font-size: 14px;
+}
+
+.actionRow {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.acceptButton,
+.rejectButton {
+  border: none;
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.acceptButton {
+  background: #2563eb;
+  color: white;
+}
+
+.rejectButton {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.acceptedText {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.rejectedText {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.expiredText {
+  color: #6b7280;
+  font-weight: 700;
+}

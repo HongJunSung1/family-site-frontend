@@ -14,6 +14,7 @@ import { expandRecurringEvents } from "./calendar/utils/recurrence";
 import styles from "./Calendar.module.css";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
+
 dayjs.locale("ko");
 
 type MeResponse = {
@@ -23,6 +24,14 @@ type MeResponse = {
   calendarRole?: string | null;
   message?: string;
 };
+
+type MyCalendar = {
+  calendarId: number;
+  name: string;
+  role: string;
+  isDefault: number;
+};
+
 
 const Calendar: React.FC = () => {
   const calRef = useRef<FullCalendar | null>(null);
@@ -39,7 +48,90 @@ const Calendar: React.FC = () => {
 
   // 로그인/캘린더 정보
   const [userId, setUserId] = useState<string>("");
+
+  const [calendars, setCalendars] = useState<MyCalendar[]>([]);
   const [calendarId, setCalendarId] = useState<number | null>(null);
+  const [calendarName, setCalendarName] = useState<string>("");
+
+  useEffect(() => {
+    const fetchMyCalendars = async () => {
+      const token = localStorage.getItem("accessToken");
+      if (!token) return;
+
+      const res = await fetch(`${API_BASE}/api/auth/myCalender`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok || !data?.ok) return;
+
+      const list: MyCalendar[] = data.calendars ?? [];
+
+      setCalendars(list);
+
+      const defaultCalendar =
+        list.find((c) => c.isDefault === 1) ?? list[0];
+
+      if (defaultCalendar) {
+        setCalendarId(defaultCalendar.calendarId);
+        setCalendarName(defaultCalendar.name);
+      }
+    };
+
+    fetchMyCalendars();
+  }, []);
+
+  // 탭 클릭
+  const handleCalendarTabClick = (calendar: MyCalendar) => {
+    setCalendarId(calendar.calendarId);
+    setCalendarName(calendar.name);
+  };
+
+
+  // 데이터 업데이트 시 바로 툴팁 업데이트 되도록 
+  const makeTooltipText = (event: any) => {
+    const createdByName = String(event.extendedProps?.createdByName ?? "").trim();
+    const memo = String(event.extendedProps?.memo ?? "").trim();
+    const locationName = String(event.extendedProps?.locationName ?? "").trim();
+
+    const ellipsis = (text: string, max = 13) => {
+      if (!text) return "";
+      return text.length > max ? text.slice(0, max) + "..." : text;
+    };
+
+    return [
+      `${event.title}`,
+      createdByName ? `· 작성자: ${ellipsis(createdByName)}` : "",
+      memo ? `· 메모: ${ellipsis(memo)}` : "",
+      locationName ? `· 장소: ${ellipsis(locationName)}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n");
+  };
+
+  const applyTooltip = (info: any) => {
+    const tooltipText = makeTooltipText(info.event);
+
+    info.el.classList.add(styles.eventMemoTooltip);
+
+    if (tooltipText) {
+      info.el.setAttribute("data-memo", tooltipText);
+    } else {
+      info.el.removeAttribute("data-memo");
+    }
+  };
+
+  // 안의 이벤트 내용 간략하게 보여주기
+const onEventDidMount = (info: any) => {
+  applyTooltip(info);
+};
+
+const onEventMouseEnter = (info: any) => {
+  applyTooltip(info);
+};
 
   const [form, setForm] = useState<FormState>({
     id: "",
@@ -99,14 +191,6 @@ const Calendar: React.FC = () => {
 
       const uid = String(data.user?.id ?? "");
       setUserId(uid);
-
-      const cid = data.defaultCalendarId ?? null;
-      setCalendarId(cid);
-      // console.log("📅 [ME] parsed calendarId:", cid, "typeof:", typeof cid);
-
-      if (!cid) {
-        setFormError("이 계정은 가입된 캘린더가 없습니다. (calendar_members 확인 필요)");
-      }
     })();
   }, []);
 
@@ -143,6 +227,7 @@ const Calendar: React.FC = () => {
       memo: e.memo ?? "",
       color: e.color ?? "#1e2a78",
       createdBy: String(e.created_by),
+      createdByName: e.created_by_name ?? "",
 
       locationName: e.location_name ?? "",
       locationAddress: e.location_address ?? "",
@@ -182,6 +267,7 @@ const Calendar: React.FC = () => {
     () => expandRecurringEvents(events, viewRange.start, viewRange.end),
     [events, viewRange.start, viewRange.end]
   );
+
 
   const getDayType = React.useCallback(
     (d: Dayjs) => {
@@ -753,6 +839,23 @@ const Calendar: React.FC = () => {
     <div className={styles.root}>
       <div className={styles.container}>
         <div className={styles.card}>
+          {/* 탭  */}
+          <div className={styles.calendarTabs}>
+            {calendars.map((cal) => (
+              <button
+                key={cal.calendarId}
+                type="button"
+                className={
+                  cal.calendarId === calendarId
+                    ? `${styles.calendarTab} ${styles.activeCalendarTab}`
+                    : styles.calendarTab
+                }
+                onClick={() => handleCalendarTabClick(cal)}
+              >
+                {cal.name}
+              </button>
+            ))}
+          </div>
           <CalendarView
             calRef={calRef}
             expandedEvents={expandedEvents}
@@ -760,10 +863,13 @@ const Calendar: React.FC = () => {
             getDayType={getDayType}
             onDateClick={onDateClick}
             onEventClick={onEventClick}
+            onEventDidMount={onEventDidMount}
+            onEventMouseEnter={onEventMouseEnter}
             onDatesSet={(range, year) => {
               setHolidayYear(year);
               setViewRange(range);
             }}
+            calendarName={calendarName}
           />
 
           {mode !== "none" && (
