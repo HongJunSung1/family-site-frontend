@@ -2,12 +2,18 @@ import { useState } from "react";
 import styles from "./PersonalInfoPage.module.css";
 import BasicPersonalInfo from "./BasicPersonalInfo";
 import CalendarInfo from "../calendar-info/CalendarInfo";
+import CalendarSettings from "../calendar-info/CalendarSettings";
 import AlarmList from "../AlarmList/AlarmList";
 
-type MenuKey = "basic" | "calendar" | "AlarmList";
+type MenuKey = "basic" | "calendarList" | "calendarSettings" | "AlarmList";
 
 export default function PersonalInfoPage() {
   const [selectedMenu, setSelectedMenu] = useState<MenuKey>("basic");
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+
+  const onClickCalendarGroup = () => {
+    setIsCalendarOpen((prev) => !prev);
+  };
 
   return (
     <div className={styles.page}>
@@ -30,13 +36,45 @@ export default function PersonalInfoPage() {
 
             <button
               type="button"
-              className={`${styles.treeItem} ${
-                selectedMenu === "calendar" ? styles.active : ""
+              className={`${styles.treeItem} ${styles.treeParent} ${
+                selectedMenu === "calendarList" ||
+                selectedMenu === "calendarSettings"
+                  ? styles.active
+                  : ""
               }`}
-              onClick={() => setSelectedMenu("calendar")}
+              onClick={onClickCalendarGroup}
             >
-              2) 캘린더 정보
+              <span>2) 캘린더 정보</span>
+              <span className={styles.treeArrow}>
+                {isCalendarOpen ? "▴" : "▾"}
+              </span>
             </button>
+
+            <div
+              className={`${styles.treeSubMenu} ${
+                isCalendarOpen ? styles.treeSubMenuOpen : ""
+              }`}
+            >
+              <button
+                type="button"
+                className={`${styles.treeItem} ${styles.subTreeItem} ${
+                  selectedMenu === "calendarList" ? styles.active : ""
+                }`}
+                onClick={() => setSelectedMenu("calendarList")}
+              >
+                · 캘린더 리스트
+              </button>
+
+              <button
+                type="button"
+                className={`${styles.treeItem} ${styles.subTreeItem} ${
+                  selectedMenu === "calendarSettings" ? styles.active : ""
+                }`}
+                onClick={() => setSelectedMenu("calendarSettings")}
+              >
+                · 캘린더 환경설정
+              </button>
+            </div>
 
             <button
               type="button"
@@ -52,7 +90,8 @@ export default function PersonalInfoPage() {
 
         <section className={styles.content}>
           {selectedMenu === "basic" && <BasicPersonalInfo />}
-          {selectedMenu === "calendar" && <CalendarInfo />}
+          {selectedMenu === "calendarList" && <CalendarInfo />}
+          {selectedMenu === "calendarSettings" && <CalendarSettings />}
           {selectedMenu === "AlarmList" && <AlarmList />}
         </section>
       </div>

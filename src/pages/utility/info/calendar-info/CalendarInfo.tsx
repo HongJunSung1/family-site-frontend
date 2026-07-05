@@ -600,13 +600,20 @@ export default function CalendarInfo() {
       <div className={styles.tableWrap}>
         <table className={styles.table}>
           <colgroup>
-            <col style={{ width: "5%" }} />  {/* 순서이동 */}
-            <col style={{ width: "5%" }} />  {/* 메인 */}
-            <col style={{ width: "65%" }} /> {/* 캘린더명 */}
-            <col style={{ width: "7%" }} />  {/* 구분 */}
-            <col style={{ width: "7%" }} />  {/* 초대 */}
-            <col style={{ width: "7%" }} />  {/* 삭제 */}
-            <col style={{ width: "5%" }} /> {/* 회원정보 */}
+            {/* 순서이동 */}
+            <col style={{ width: "5%" }} />  
+            {/* 메인 */}
+            <col style={{ width: "5%" }} />  
+            {/* 캘린더명 */}
+            <col style={{ width: "65%" }} /> 
+            {/* 구분 */}
+            <col style={{ width: "7%" }} /> 
+            {/* 초대 */} 
+            <col style={{ width: "7%" }} />  
+            {/* 삭제 */}
+            <col style={{ width: "7%" }} />  
+            {/* 회원정보 */}
+            <col style={{ width: "5%" }} /> 
           </colgroup>
           
           <thead>
