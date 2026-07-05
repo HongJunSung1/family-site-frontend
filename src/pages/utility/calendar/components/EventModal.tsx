@@ -111,6 +111,199 @@ export function EventModal(props: Props) {
 
   const repeatUiDisabled = form.repeat === "none" || lockRepeatControls;
 
+  // 자주 쓰는 색상 변경
+  const [favoriteColorOpen, setFavoriteColorOpen] = useState(false);
+  // 자주 쓰는 색상 드롭다운
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // 자주 쓰는 색상 간편 저장
+  const addColorRef = useRef<HTMLDivElement>(null);
+
+  const [addColorOpen, setAddColorOpen] = useState(false);
+  const [newColor, setNewColor] = useState(form.color || "#3b82f6");
+  const [newColorLabel, setNewColorLabel] = useState("");
+  const [savingColor, setSavingColor] = useState(false);  
+
+  type FavoriteColorPreset = {
+    slot: number;
+    color: string;
+    label: string | null;
+  };
+
+  type GetColorPresetsResponse = {
+    ok: boolean;
+    presets?: FavoriteColorPreset[];
+    message?: string;
+  };
+
+  const API_BASE = import.meta.env.VITE_API_URL || "";
+  // 자주 쓰는 색상 조회
+  const [favoriteColors, setFavoriteColors] = useState<FavoriteColorPreset[]>([]);
+
+  useEffect(() => {
+    const fetchFavoriteColors = async () => {
+      const token = localStorage.getItem("accessToken");
+      if (!token) return;
+
+      try {
+        const res = await fetch(`${API_BASE}/api/calendars/getMyColorPresets`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = (await res.json()) as GetColorPresetsResponse;
+
+        if (!res.ok || !data.ok) return;
+
+        setFavoriteColors(data.presets ?? []);
+      } catch (err) {
+        console.error("자주 쓰는 색상 조회 실패", err);
+      }
+    };
+
+    fetchFavoriteColors();
+  }, []);
+
+  // 자주 쓰는 색상 저장
+  const saveFavoriteColorFromModal = async () => {
+    const label = newColorLabel.trim();
+
+    if (!label) {
+      alert("색상 이름을 입력해주세요.");
+      return;
+    }
+
+    const token = localStorage.getItem("accessToken");
+    if (!token) return;
+
+    const nextSlot =
+      Array.from({ length: 12 }, (_, i) => i + 1).find(
+        (slot) => !favoriteColors.some((c) => c.slot === slot)
+      ) ?? null;
+
+    if (!nextSlot) {
+      alert("자주 쓰는 색상은 최대 12개까지 저장할 수 있습니다.");
+      return;
+    }
+
+    const nextPresets = [
+      ...favoriteColors,
+      {
+        slot: nextSlot,
+        color: newColor,
+        label,
+      },
+    ].sort((a, b) => a.slot - b.slot);
+
+    setSavingColor(true);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/calendars/saveMyColorPresets`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          presets: nextPresets,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.ok) {
+        alert(data.message || "색상 저장에 실패했습니다.");
+        return;
+      }
+
+      setFavoriteColors(nextPresets);
+      setForm((p) => ({
+        ...p,
+        color: newColor,
+      }));
+
+      setNewColorLabel("");
+      setAddColorOpen(false);
+    } catch (err) {
+      console.error("색상 저장 실패", err);
+      alert("색상 저장 중 오류가 발생했습니다.");
+    } finally {
+      setSavingColor(false);
+    }
+  };  
+
+  // 자주 쓰는 색상 삭제
+  const deleteFavoriteColorFromModal = async (preset: FavoriteColorPreset) => {
+    const ok = window.confirm(
+      `"${preset.label?.trim() || preset.color}" 색상을 삭제하시겠습니까?`
+    );
+
+    if (!ok) return;
+
+    const token = localStorage.getItem("accessToken");
+    if (!token) return;
+
+    const nextPresets = favoriteColors
+      .filter((c) => c.slot !== preset.slot)
+      .map((c, index) => ({
+        ...c,
+        slot: index + 1,
+      }));
+
+    try {
+      const res = await fetch(`${API_BASE}/api/calendars/saveMyColorPresets`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          presets: nextPresets,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.ok) {
+        alert(data.message || "색상 삭제에 실패했습니다.");
+        return;
+      }
+
+      setFavoriteColors(nextPresets);
+    } catch (err) {
+      console.error("색상 삭제 실패", err);
+      alert("색상 삭제 중 오류가 발생했습니다.");
+    }
+  };
+  
+  // 자주 쓰는 색상 드롭다운 닫기
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(target)
+      ) {
+        setFavoriteColorOpen(false);
+      }
+
+      if (
+        addColorRef.current &&
+        !addColorRef.current.contains(target)
+      ) {
+        setAddColorOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   const dateTextColor = (d: Dayjs) => {
     const t = getDayType(d);
     if (t === "red") return "#dc2626";
@@ -1171,7 +1364,7 @@ export function EventModal(props: Props) {
           </>
         )}
 
-        <div className={styles.row}>
+        {/* <div className={styles.row}>
           <label className={styles.labelFixed}>색상</label>
           <input
             type="color"
@@ -1180,8 +1373,147 @@ export function EventModal(props: Props) {
             className={styles.colorInput}
           />
           <div className={styles.subNote}>내 고유색(추후 프로필로 이동)</div>
+        </div> */}
+        <div className={styles.row}>
+          <label className={styles.labelFixed}>색상</label>
+
+          <div className={styles.colorArea}>
+            <input
+              type="color"
+              value={form.color}
+              onChange={(e) => setForm((p) => ({ ...p, color: e.target.value }))}
+              className={styles.colorInput}
+            />
+
+            {favoriteColors.length > 0 && (
+              <div ref={dropdownRef} className={styles.favoriteColorDropdown}>
+                <button
+                  type="button"
+                  className={styles.favoriteColorTrigger}
+                  onClick={() => setFavoriteColorOpen((prev) => !prev)}
+                >
+                  <span
+                    className={styles.favoriteColorDot}
+                    style={{ backgroundColor: form.color }}
+                  />
+                  <span>
+                    {favoriteColors.find(
+                      (c) => c.color.toLowerCase() === form.color.toLowerCase()
+                    )?.label || "자주 쓰는 색상 선택"}
+                  </span>
+                  <span className={styles.dropdownArrow}>▾</span>
+                </button>
+
+                {favoriteColorOpen && (
+                  <div className={styles.favoriteColorMenu}>
+                    {favoriteColors.map((preset) => (
+                    <div
+                      key={preset.slot}
+                      className={styles.favoriteColorOption}
+                      onClick={() => {
+                        setForm((p) => ({
+                          ...p,
+                          color: preset.color,
+                        }));
+                        setFavoriteColorOpen(false);
+                      }}
+                    >
+                      <span
+                        className={styles.favoriteColorDot}
+                        style={{ backgroundColor: preset.color }}
+                      />
+
+                      <span className={styles.favoriteColorLabel}>
+                        {preset.label?.trim() || preset.color}
+                      </span>
+
+                      <button
+                        type="button"
+                        className={styles.favoriteColorDeleteButton}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteFavoriteColorFromModal(preset);
+                        }}
+                        title="색상 삭제"
+                      >
+                        ×
+                      </button>
+                    </div>
+                    ))}
+                  </div>
+                )}
+              </div>              
+            )}
+<div ref={addColorRef} className={styles.addColorBox}>
+  <button
+    type="button"
+    className={styles.addColorButton}
+    onClick={() => {
+      setNewColor(form.color || "#3b82f6");
+      setAddColorOpen((prev) => !prev);
+    }}
+  >
+    <span className={styles.addColorPlus}>+</span>
+  </button>
+
+  {addColorOpen && (
+    <div className={styles.addColorPopover}>
+      <div className={styles.addColorHeader}>
+        <div className={styles.addColorTitle}>
+          새 색상 추가
         </div>
 
+        <div className={styles.addColorActions}>
+          <button
+            type="button"
+            className={styles.addColorCancelButton}
+            onClick={() => {
+              setNewColorLabel("");
+              setAddColorOpen(false);
+            }}
+          >
+            취소
+          </button>
+
+          <button
+            type="button"
+            className={styles.addColorSaveButton}
+            disabled={savingColor || !newColorLabel.trim()}
+            onClick={saveFavoriteColorFromModal}
+          >
+            저장
+          </button>
+        </div>
+      </div>
+
+      <div className={styles.addColorRow}>
+        <label className={styles.addColorLabel}>색상</label>
+
+        <input
+          type="color"
+          value={newColor}
+          onChange={(e) => setNewColor(e.target.value)}
+          className={styles.addColorInput}
+        />
+
+        <input
+          type="text"
+          value={newColorLabel}
+          maxLength={20}
+          onChange={(e) => setNewColorLabel(e.target.value)}
+          placeholder="색상 이름 입력"
+          className={styles.addColorNameInput}
+        />
+      </div>
+
+      <div className={styles.addColorCount}>
+        {newColorLabel.length} / 20
+      </div>
+    </div>
+  )}
+</div>            
+          </div>
+        </div>
         {mode === "detail" && (form.repeatSnap.repeat ?? "none") !== "none" && (
           <div className={styles.card}>
             <div className={styles.cardTitle}>적용 범위</div>
