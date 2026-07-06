@@ -1,5 +1,5 @@
-// EventModal.tsx
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+﻿// EventModal.tsx
+import React, { useEffect, useMemo, useState } from "react";
 import dayjs, { Dayjs } from "dayjs";
 import "dayjs/locale/ko";
 
@@ -10,12 +10,15 @@ import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
 
 import type { ApplyScope, FormState, ModalMode, PickerTarget, RepeatType } from "../types";
 import { CustomDay } from "./CustomDay";
+import { ConfirmDialog } from "../../../../common/components/ConfirmDialog";
+import { EventColorPicker } from "./EventColorPicker";
+import { EventLocationPicker } from "./EventLocationPicker";
 import { WheelTimePicker } from "./WheelTimePicker";
+import { useDraggableModal } from "../hooks/useDraggableModal";
+import { useFavoriteColors } from "../hooks/useFavoriteColors";
 import { formatKoreanDateLabel, formatKoreanTimeLabel, toDayjs } from "../utils/date";
 
 import styles from "./EventModal.module.css";
-
-import {Dialog, DialogTitle, DialogContent, DialogActions, Button } from "@mui/material";
 
 type Props = {
   mode: ModalMode;
@@ -95,214 +98,33 @@ export function EventModal(props: Props) {
   const isMultiDateMode = (form.multiDates?.length ?? 0) >= 2;
   const blockRepeatBecauseMultiDates = isMultiDateMode;
 
-  // 삭제버튼
+  // 삭제 버튼
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   const RepeatUnitLabel =
     form.repeat === "none"
       ? ""
       : form.repeat === "daily"
-      ? "일마다　"
+      ? "일마다"
       : form.repeat === "weekly"
-      ? "주마다　"
+      ? "주마다"
       : form.repeat === "monthly"
       ? "개월마다"
-      : "년마다　";
+      : "년마다";
 
   const repeatUiDisabled = form.repeat === "none" || lockRepeatControls;
+  const { favoriteColors, savingColor, saveFavoriteColor, deleteFavoriteColor } =
+    useFavoriteColors();
 
   // 자주 쓰는 색상 변경
-  const [favoriteColorOpen, setFavoriteColorOpen] = useState(false);
   // 자주 쓰는 색상 드롭다운
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // 자주 쓰는 색상 간편 저장
-  const addColorRef = useRef<HTMLDivElement>(null);
 
-  const [addColorOpen, setAddColorOpen] = useState(false);
-  const [newColor, setNewColor] = useState(form.color || "#3b82f6");
-  const [newColorLabel, setNewColorLabel] = useState("");
-  const [savingColor, setSavingColor] = useState(false);  
 
-  type FavoriteColorPreset = {
-    slot: number;
-    color: string;
-    label: string | null;
-  };
 
-  type GetColorPresetsResponse = {
-    ok: boolean;
-    presets?: FavoriteColorPreset[];
-    message?: string;
-  };
-
-  const API_BASE = import.meta.env.VITE_API_URL || "";
   // 자주 쓰는 색상 조회
-  const [favoriteColors, setFavoriteColors] = useState<FavoriteColorPreset[]>([]);
 
-  useEffect(() => {
-    const fetchFavoriteColors = async () => {
-      const token = localStorage.getItem("accessToken");
-      if (!token) return;
-
-      try {
-        const res = await fetch(`${API_BASE}/api/calendars/getMyColorPresets`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        const data = (await res.json()) as GetColorPresetsResponse;
-
-        if (!res.ok || !data.ok) return;
-
-        setFavoriteColors(data.presets ?? []);
-      } catch (err) {
-        console.error("자주 쓰는 색상 조회 실패", err);
-      }
-    };
-
-    fetchFavoriteColors();
-  }, []);
-
-  // 자주 쓰는 색상 저장
-  const saveFavoriteColorFromModal = async () => {
-    const label = newColorLabel.trim();
-
-    if (!label) {
-      alert("색상 이름을 입력해주세요.");
-      return;
-    }
-
-    const token = localStorage.getItem("accessToken");
-    if (!token) return;
-
-    const nextSlot =
-      Array.from({ length: 12 }, (_, i) => i + 1).find(
-        (slot) => !favoriteColors.some((c) => c.slot === slot)
-      ) ?? null;
-
-    if (!nextSlot) {
-      alert("자주 쓰는 색상은 최대 12개까지 저장할 수 있습니다.");
-      return;
-    }
-
-    const nextPresets = [
-      ...favoriteColors,
-      {
-        slot: nextSlot,
-        color: newColor,
-        label,
-      },
-    ].sort((a, b) => a.slot - b.slot);
-
-    setSavingColor(true);
-
-    try {
-      const res = await fetch(`${API_BASE}/api/calendars/saveMyColorPresets`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          presets: nextPresets,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || !data.ok) {
-        alert(data.message || "색상 저장에 실패했습니다.");
-        return;
-      }
-
-      setFavoriteColors(nextPresets);
-      setForm((p) => ({
-        ...p,
-        color: newColor,
-      }));
-
-      setNewColorLabel("");
-      setAddColorOpen(false);
-    } catch (err) {
-      console.error("색상 저장 실패", err);
-      alert("색상 저장 중 오류가 발생했습니다.");
-    } finally {
-      setSavingColor(false);
-    }
-  };  
-
-  // 자주 쓰는 색상 삭제
-  const deleteFavoriteColorFromModal = async (preset: FavoriteColorPreset) => {
-    const ok = window.confirm(
-      `"${preset.label?.trim() || preset.color}" 색상을 삭제하시겠습니까?`
-    );
-
-    if (!ok) return;
-
-    const token = localStorage.getItem("accessToken");
-    if (!token) return;
-
-    const nextPresets = favoriteColors
-      .filter((c) => c.slot !== preset.slot)
-      .map((c, index) => ({
-        ...c,
-        slot: index + 1,
-      }));
-
-    try {
-      const res = await fetch(`${API_BASE}/api/calendars/saveMyColorPresets`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          presets: nextPresets,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || !data.ok) {
-        alert(data.message || "색상 삭제에 실패했습니다.");
-        return;
-      }
-
-      setFavoriteColors(nextPresets);
-    } catch (err) {
-      console.error("색상 삭제 실패", err);
-      alert("색상 삭제 중 오류가 발생했습니다.");
-    }
-  };
-  
-  // 자주 쓰는 색상 드롭다운 닫기
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node;
-
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(target)
-      ) {
-        setFavoriteColorOpen(false);
-      }
-
-      if (
-        addColorRef.current &&
-        !addColorRef.current.contains(target)
-      ) {
-        setAddColorOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
 
   const dateTextColor = (d: Dayjs) => {
     const t = getDayType(d);
@@ -319,259 +141,6 @@ export function EventModal(props: Props) {
   const [repeatOpen, setRepeatOpen] = useState(false);
   const [multiDateOpen, setMultiDateOpen] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
-
-  const mapSummary = form.locationName?.trim()
-                     ? form.locationName
-                     : form.locationAddress?.trim()
-                     ? "위치 선택됨"
-                     : "선택된 위치 없음";
-
-
-
-  // 카카오맵 =====================================================================================
-  const KAKAO_MAP_KEY = import.meta.env.VITE_KAKAO_MAP_JS_KEY;
-  const mapRef = useRef<HTMLDivElement | null>(null);
-  const mapInstance = useRef<any>(null);
-  const markerRef = useRef<any>(null);
-  const placesRef = useRef<any>(null);
-  const geocoderRef = useRef<any>(null);
-
-  const [placeKeyword, setPlaceKeyword] = useState("");
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-
-  const moveMarkerTo = (lat: number, lng: number) => {
-    if (!mapInstance.current || !window.kakao?.maps) return;
-
-    const position = new window.kakao.maps.LatLng(lat, lng);
-
-    if (!markerRef.current) {
-      markerRef.current = new window.kakao.maps.Marker({
-        position,
-      });
-      markerRef.current.setMap(mapInstance.current);
-    } else {
-      markerRef.current.setPosition(position);
-    }
-
-    mapInstance.current.setCenter(position);
-  };
-
-  const reverseGeocode = (lat: number, lng: number, placeName?: string) => {
-    if (!geocoderRef.current) return;
-
-    geocoderRef.current.coord2Address(
-      lng,
-      lat,
-      (result: any, status: any) => {
-        const ok = status === window.kakao.maps.services.Status.OK;
-
-        const address =
-          ok && result?.[0]
-            ? result[0].road_address?.address_name || result[0].address?.address_name || ""
-            : "";
-
-        const nextName = (placeName && placeName.trim()) || address || "선택한 위치";
-
-        setForm((p) => ({
-          ...p,
-          locationName: nextName,
-          locationAddress: address,
-          locationLat: lat,
-          locationLng: lng,
-        }));
-
-        setPlaceKeyword(nextName);
-      }
-    );
-  };
-
-  const applyLocation = (lat: number, lng: number, placeName: string, address?: string) => {
-    moveMarkerTo(lat, lng);
-
-    if (address && address.trim()) {
-      setForm((p) => ({
-        ...p,
-        locationName: placeName,
-        locationAddress: address,
-        locationLat: lat,
-        locationLng: lng,
-      }));
-    } else {
-      reverseGeocode(lat, lng, placeName);
-    }
-  };
-
-  const initMap = () => {
-    if (!mapRef.current || !window.kakao?.maps) return;
-
-    const lat = form.locationLat ?? 37.5665;
-    const lng = form.locationLng ?? 126.9780;
-    const center = new window.kakao.maps.LatLng(lat, lng);
-
-    const map = new window.kakao.maps.Map(mapRef.current, {
-      center,
-      level: 3,
-    });
-
-    mapInstance.current = map;
-    placesRef.current = new window.kakao.maps.services.Places();
-    geocoderRef.current = new window.kakao.maps.services.Geocoder();
-
-    if (form.locationLat != null && form.locationLng != null) {
-      const marker = new window.kakao.maps.Marker({
-        position: center,
-      });
-      marker.setMap(map);
-      markerRef.current = marker;
-    } else {
-      markerRef.current = null;
-    }
-
-    window.kakao.maps.event.addListener(map, "click", (mouseEvent: any) => {
-      const latlng = mouseEvent.latLng;
-      const nextLat = latlng.getLat();
-      const nextLng = latlng.getLng();
-
-      moveMarkerTo(nextLat, nextLng);
-      reverseGeocode(nextLat, nextLng);
-    });
-
-    setTimeout(() => {
-      map.relayout();
-      map.setCenter(center);
-    }, 0);
-  };
-
-  // 검색 함수
-  const searchPlaces = () => {
-    const keyword = placeKeyword.trim();
-
-    if (!keyword) {
-      setSearchResults([]);
-      return;
-    }
-
-    if (!placesRef.current) return;
-
-    setIsSearching(true);
-
-    placesRef.current.keywordSearch(keyword, (data: any[], status: any) => {
-      setIsSearching(false);
-
-      if (status === window.kakao.maps.services.Status.OK) {
-        setSearchResults(data);
-      } else {
-        setSearchResults([]);
-      }
-    });
-  };
-
-  const openInNaverMap = () => {
-    const keyword =
-      form.locationName?.trim() ||
-      form.locationAddress?.trim() ||
-      placeKeyword.trim();
-
-    if (!keyword) {
-      setFormError("먼저 장소를 검색하거나 지도에서 위치를 선택해주세요.");
-      return;
-    }
-
-    const url = `https://map.naver.com/p/search/${encodeURIComponent(keyword)}`;
-    window.open(url, "_blank", "noopener,noreferrer");
-  };
-
-  const handleSelectPlace = (place: any) => {
-    const lat = Number(place.y);
-    const lng = Number(place.x);
-
-    applyLocation(
-      lat,
-      lng,
-      place.place_name ?? "",
-      place.road_address_name || place.address_name || ""
-    );
-
-    setPlaceKeyword(place.place_name ?? "");
-    setSearchResults([]);
-  };
-
-  useEffect(() => {
-    if (mode === "none") return;
-    if (!mapOpen) return;
-
-    if (!KAKAO_MAP_KEY) {
-      console.error("VITE_KAKAO_MAP_JS_KEY is missing");
-      return;
-    }
-
-    const bootMap = () => {
-      if (!window.kakao?.maps) return;
-
-      window.kakao.maps.load(() => {
-        initMap();
-      });
-    };
-
-    if (window.kakao?.maps) {
-      bootMap();
-      return;
-    }
-
-    const existingScript = document.querySelector(
-      'script[data-kakao-map="true"]'
-    ) as HTMLScriptElement | null;
-
-    if (existingScript) {
-      existingScript.addEventListener("load", bootMap);
-      return () => {
-        existingScript.removeEventListener("load", bootMap);
-      };
-    }
-
-    const script = document.createElement("script");
-    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_MAP_KEY}&autoload=false&libraries=services`;
-    script.async = true;
-    script.setAttribute("data-kakao-map", "true");
-
-    script.onload = () => {
-      bootMap();
-    };
-
-    script.onerror = (e) => {
-      console.error("[kakao sdk] load error", e);
-    };
-
-    document.head.appendChild(script);
-
-    return () => {
-      script.onload = null;
-      script.onerror = null;
-    };
-  }, [KAKAO_MAP_KEY, mode, mapOpen]);
-
-  // form.locationName이 바뀌면 input도 따라오도록
-  useEffect(() => {
-    setPlaceKeyword(form.locationName || "");
-  }, [form.locationName]);
-
-
-  useEffect(() => {
-    if (!mapOpen) return;
-    if (!mapInstance.current || !window.kakao?.maps) return;
-
-    setTimeout(() => {
-      mapInstance.current.relayout();
-
-      const lat = form.locationLat ?? 37.5665;
-      const lng = form.locationLng ?? 126.9780;
-      const center = new window.kakao.maps.LatLng(lat, lng);
-      mapInstance.current.setCenter(center);
-    }, 0);
-  }, [mapOpen, form.locationLat, form.locationLng]);
-  // ==============================================================================================
-
 
   useEffect(() => {
     if (picker === "repeatStartDate" || picker === "repeatEndDate") {
@@ -600,99 +169,7 @@ export function EventModal(props: Props) {
       ? `${form.multiDates?.length ?? 0}개 날짜 선택됨`
       : "선택된 날짜 없음";
 
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const modalRef = useRef<HTMLDivElement | null>(null);
-
-  const dragRef = useRef({
-    dragging: false,
-    startX: 0,
-    startY: 0,
-    originX: 0,
-    originY: 0,
-  });
-
-  const clampDragOffset = (nextX: number, nextY: number) => {
-    const el = modalRef.current;
-    if (!el) return { x: nextX, y: nextY };
-
-    const rect = el.getBoundingClientRect();
-    const modalWidth = rect.width;
-    const modalHeight = rect.height;
-
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-
-    const baseLeft = (vw - modalWidth) / 2;
-    const baseTop = (vh - modalHeight) / 2;
-
-    const minX = -baseLeft;
-    const maxX = vw - modalWidth - baseLeft;
-
-    const minY = -baseTop;
-    const maxY = vh - modalHeight - baseTop;
-
-    return {
-      x: Math.min(Math.max(nextX, minX), maxX),
-      y: Math.min(Math.max(nextY, minY), maxY),
-    };
-  };
-
-  const handleDragStart = (e: React.MouseEvent<HTMLDivElement>) => {
-    const target = e.target as HTMLElement;
-
-    if (
-      target.closest("button, input, textarea, select, option, label") ||
-      target.closest(".MuiSwitch-root")
-    ) {
-      return;
-    }
-
-    dragRef.current = {
-      dragging: true,
-      startX: e.clientX,
-      startY: e.clientY,
-      originX: dragOffset.x,
-      originY: dragOffset.y,
-    };
-
-    e.preventDefault();
-  };
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!dragRef.current.dragging) return;
-
-      const dx = e.clientX - dragRef.current.startX;
-      const dy = e.clientY - dragRef.current.startY;
-
-      const nextX = dragRef.current.originX + dx;
-      const nextY = dragRef.current.originY + dy;
-
-      setDragOffset(clampDragOffset(nextX, nextY));
-    };
-
-    const handleMouseUp = () => {
-      dragRef.current.dragging = false;
-    };
-
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
-
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
-    };
-  }, [dragOffset.x, dragOffset.y]);
-
-  useLayoutEffect(() => {
-    const handleResize = () => {
-      setDragOffset((prev) => clampDragOffset(prev.x, prev.y));
-    };
-
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  const { dragOffset, modalRef, handleDragStart } = useDraggableModal();
 
   const onChangeRepeat = (next: RepeatType) => {
     setFormError("");
@@ -716,7 +193,7 @@ export function EventModal(props: Props) {
 
   const openMultiDatesPicker = () => {
     if (disableMultiDates) {
-      setFormError("반복 일정에서는 ‘여러 날짜 선택’을 사용할 수 없습니다.");
+      setFormError("반복 일정에서는 여러 날짜 선택을 사용할 수 없습니다.");
       return;
     }
     setMultiDateOpen(true);
@@ -778,7 +255,7 @@ export function EventModal(props: Props) {
         style={{ transform: `translate(${dragOffset.x}px, ${dragOffset.y}px)` }}
       >
         <button onClick={closeModal} className={styles.closeBtn} aria-label="close">
-          ✕
+          ×
         </button>
 
         <div className={styles.header} onMouseDown={handleDragStart}>
@@ -804,7 +281,7 @@ export function EventModal(props: Props) {
                   </div>
                 </div>
 
-                <div className={styles.rangeArrow}>→</div>
+                <div className={styles.rangeArrow}>~</div>
 
                 <div className={styles.rangeCol}>
                   <div className={styles.rangeHint}>종료</div>
@@ -885,7 +362,7 @@ export function EventModal(props: Props) {
 
                         {form.allDay && (
                           <div className={styles.expandHint}>
-                            * 하루 종일이 켜져있어서 시간 변경은 비활성화됩니다.
+                            * 하루 종일이 켜져 있어 시간 변경은 비활성화됩니다.
                           </div>
                         )}
                       </div>
@@ -916,134 +393,18 @@ export function EventModal(props: Props) {
             value={form.memo}
             onChange={(e) => setForm((p) => ({ ...p, memo: e.target.value }))}
             rows={3}
-            placeholder="일정과 관련한 상세 내용을 기재해주세요."
+            placeholder="일정에 관한 상세 내용을 기재해주세요."
             className={styles.textarea}
           />
         </div>
-        <div className={styles.section}>
-          
-            {(form.locationAddress || (form.locationLat != null && form.locationLng != null)) && (
-              <div className={styles.placeInfoBox}>
-                <div className={styles.placeInfoTitle}>
-                  {form.locationName || "선택된 장소"}
-                </div>
-  
-                {form.locationAddress && (
-                  <div className={styles.placeInfoAddress}>{form.locationAddress}</div>
-                )}
-  
-                {/* <div className={styles.placeInfoCoord}>
-                  위도: {form.locationLat ?? "-"} / 경도: {form.locationLng ?? "-"}
-                </div> */}
-              </div>
-            )}
-
-
-        </div>
-        <>
-            <div
-              className={styles.sectionRow}
-              onClick={() => {
-                setMapOpen((prev) => !prev);
-              }}
-            >
-            <div className={styles.sectionTitle}>지도</div>
-
-            <div className={styles.sectionRight}>
-              <span className={styles.sectionSummary}>{mapSummary}</span>
-              <span className={styles.sectionArrow}>{mapOpen ? "▴" : "▾"}</span>
-            </div>
-          </div>
-
-          {mapOpen && (
-            <div className={styles.sectionGrid}>
-
-              <div className={styles.placeSearchRow}>
-                <input
-                  type="text"
-                  value={placeKeyword}
-                  onChange={(e) => setPlaceKeyword(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      searchPlaces();
-                    }
-                  }}
-                  placeholder="장소명을 입력해주세요."
-                  className={styles.textInput}
-                />
-
-                <button
-                  type="button"
-                  className={styles.placeSearchBtn}
-                  onClick={searchPlaces}
-                >
-                  검색
-                </button>
-
-                <button
-                  type="button"
-                  className={styles.naverMapBtn}
-                  onClick={openInNaverMap}
-                >
-                  N
-                </button>
-              </div>
-  
-            {isSearching && <div className={styles.placeSearchHint}>검색 중...</div>}
-  
-            {searchResults.length > 0 && (
-              <div className={styles.placeResultList}>
-                {searchResults.map((place, idx) => (
-                  <button
-                    key={`${place.id ?? place.place_name}-${idx}`}
-                    type="button"
-                    className={styles.placeResultItem}
-                    onClick={() => handleSelectPlace(place)}
-                  >
-                    <div className={styles.placeResultName}>{place.place_name}</div>
-                    <div className={styles.placeResultAddress}>
-                      {place.road_address_name || place.address_name || "주소 정보 없음"}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-              <div ref={mapRef} className={styles.kakaoMap}></div>
-
-              <div className={styles.mapCoordActions}>
-                <button
-                  type="button"
-                  className={styles.linkBtn}
-                  onClick={(e) => {
-                    e.stopPropagation();
-
-                    setForm((p) => ({
-                      ...p,
-                      locationName: "",
-                      locationAddress: "",
-                      locationLat: null,
-                      locationLng: null,
-                    }));
-
-                    setPlaceKeyword("");
-                    setSearchResults([]);
-
-                    markerRef.current?.setMap?.(null);
-                    markerRef.current = null;
-
-                    if (mapInstance.current && window.kakao?.maps) {
-                      const center = new window.kakao.maps.LatLng(37.5665, 126.9780);
-                      mapInstance.current.setCenter(center);
-                    }
-                  }}
-                >
-                  위치 초기화
-                </button>
-              </div>
-            </div>
-          )}
-        </>
+        <EventLocationPicker
+          mode={mode}
+          form={form}
+          setForm={setForm}
+          mapOpen={mapOpen}
+          setMapOpen={setMapOpen}
+          setFormError={setFormError}
+        />
         <>
           <div
             className={styles.sectionRow}
@@ -1060,7 +421,7 @@ export function EventModal(props: Props) {
 
             <div className={styles.sectionRight}>
               <span className={styles.sectionSummary}>{repeatSummary}</span>
-              <span className={styles.sectionArrow}>{repeatOpen ? "▴" : "▾"}</span>
+              <span className={styles.sectionArrow}>{repeatOpen ? "▲" : "▼"}</span>
             </div>
           </div>
 
@@ -1120,7 +481,7 @@ export function EventModal(props: Props) {
                   >
                     {form.repeatRangeStart
                       ? dayjs(form.repeatRangeStart).format("M월 D일")
-                      : "시작일(없음)"}
+                      : "시작일 없음"}
                   </button>
 
                   <span className={styles.tilde}>~</span>
@@ -1134,7 +495,7 @@ export function EventModal(props: Props) {
                   >
                     {form.repeatRangeEnd
                       ? dayjs(form.repeatRangeEnd).format("M월 D일")
-                      : "종료일(없음)"}
+                      : "종료일 없음"}
                   </button>
 
                   <button
@@ -1156,18 +517,18 @@ export function EventModal(props: Props) {
 
               {lockRepeatControls && (
                 <div className={styles.hint}>
-                  * “이 일정만”에서는 반복 규칙을 변경할 수 없습니다. (전체/이후에서 변경 가능)
+                  * 이 일정만에서는 반복 규칙을 변경할 수 없습니다. (전체/이후에서 변경 가능)
                 </div>
               )}
               {blockRepeatBecauseMultiDates && (
                 <div className={styles.hint}>
                   * 여러 날짜에 동일 일정 추가(복제 포함)에서는 반복 설정을 사용할 수 없습니다.
-                  (단건 날짜일 때만 가능)
+                  (단건 날짜에서만 가능)
                 </div>
               )}
               {disableMultiDates && (
                 <div className={styles.hint}>
-                  * 반복 일정에서는 “여러 날짜에 동일 일정 추가”를 사용할 수 없습니다.
+                  * 반복 일정에서는 여러 날짜에 동일 일정 추가를 사용할 수 없습니다.
                 </div>
               )}
 
@@ -1249,7 +610,7 @@ export function EventModal(props: Props) {
 
               <div className={styles.sectionRight}>
                 <span className={styles.sectionSummary}>{multiDateSummary}</span>
-                <span className={styles.sectionArrow}>{multiDateOpen ? "▴" : "▾"}</span>
+                <span className={styles.sectionArrow}>{multiDateOpen ? "▲" : "▼"}</span>
               </div>
             </div>
 
@@ -1273,7 +634,7 @@ export function EventModal(props: Props) {
                     onClick={(e) => {
                       e.stopPropagation();
                       if (disableMultiDates) {
-                        setFormError("반복 일정에서는 ‘여러 날짜 선택’을 사용할 수 없습니다.");
+                        setFormError("반복 일정에서는 여러 날짜 선택을 사용할 수 없습니다.");
                         return;
                       }
 
@@ -1294,13 +655,13 @@ export function EventModal(props: Props) {
                 </div>
 
                 <div className={styles.cardText}>
-                  선택된 날짜: {(form.multiDates?.length ?? 0) > 0 ? form.multiDates.join(", ") : "없음"}
+                  선택한 날짜: {(form.multiDates?.length ?? 0) > 0 ? form.multiDates.join(", ") : "없음"}
                 </div>
 
                 <div className={styles.cardSubText}>
                   {mode === "create"
-                    ? "* 저장을 누르면 선택된 날짜 각각에 동일한 일정이 생성됩니다."
-                    : "* ‘수정’ 버튼을 누르면 선택된 날짜들로 동일 일정이 복제 생성됩니다. (원본 일정은 그대로 유지)"}
+                    ? "* 저장을 누르면 선택한 날짜 각각에 동일한 일정이 생성됩니다."
+                    : "* 수정 버튼을 누르면 선택한 날짜로 동일 일정의 복제가 생성됩니다. (원본 일정은 그대로 유지)"}
                 </div>
 
                 {disableMultiDates && (
@@ -1329,7 +690,7 @@ export function EventModal(props: Props) {
                             onChange={(d) => {
                               if (!d) return;
                               if (disableMultiDates) {
-                                setFormError("반복 일정에서는 ‘여러 날짜 선택’을 사용할 수 없습니다.");
+                                setFormError("반복 일정에서는 여러 날짜 선택을 사용할 수 없습니다.");
                                 return;
                               }
                               toggleMultiDate(d.format("YYYY-MM-DD"));
@@ -1372,147 +733,19 @@ export function EventModal(props: Props) {
             onChange={(e) => setForm((p) => ({ ...p, color: e.target.value }))}
             className={styles.colorInput}
           />
-          <div className={styles.subNote}>내 고유색(추후 프로필로 이동)</div>
+          <div className={styles.subNote}>※ 고유색 추후 프로필로 이동)</div>
         </div> */}
         <div className={styles.row}>
           <label className={styles.labelFixed}>색상</label>
 
-          <div className={styles.colorArea}>
-            <input
-              type="color"
-              value={form.color}
-              onChange={(e) => setForm((p) => ({ ...p, color: e.target.value }))}
-              className={styles.colorInput}
-            />
-
-            {favoriteColors.length > 0 && (
-              <div ref={dropdownRef} className={styles.favoriteColorDropdown}>
-                <button
-                  type="button"
-                  className={styles.favoriteColorTrigger}
-                  onClick={() => setFavoriteColorOpen((prev) => !prev)}
-                >
-                  <span
-                    className={styles.favoriteColorDot}
-                    style={{ backgroundColor: form.color }}
-                  />
-                  <span>
-                    {favoriteColors.find(
-                      (c) => c.color.toLowerCase() === form.color.toLowerCase()
-                    )?.label || "자주 쓰는 색상 선택"}
-                  </span>
-                  <span className={styles.dropdownArrow}>▾</span>
-                </button>
-
-                {favoriteColorOpen && (
-                  <div className={styles.favoriteColorMenu}>
-                    {favoriteColors.map((preset) => (
-                    <div
-                      key={preset.slot}
-                      className={styles.favoriteColorOption}
-                      onClick={() => {
-                        setForm((p) => ({
-                          ...p,
-                          color: preset.color,
-                        }));
-                        setFavoriteColorOpen(false);
-                      }}
-                    >
-                      <span
-                        className={styles.favoriteColorDot}
-                        style={{ backgroundColor: preset.color }}
-                      />
-
-                      <span className={styles.favoriteColorLabel}>
-                        {preset.label?.trim() || preset.color}
-                      </span>
-
-                      <button
-                        type="button"
-                        className={styles.favoriteColorDeleteButton}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteFavoriteColorFromModal(preset);
-                        }}
-                        title="색상 삭제"
-                      >
-                        ×
-                      </button>
-                    </div>
-                    ))}
-                  </div>
-                )}
-              </div>              
-            )}
-<div ref={addColorRef} className={styles.addColorBox}>
-  <button
-    type="button"
-    className={styles.addColorButton}
-    onClick={() => {
-      setNewColor(form.color || "#3b82f6");
-      setAddColorOpen((prev) => !prev);
-    }}
-  >
-    <span className={styles.addColorPlus}>+</span>
-  </button>
-
-  {addColorOpen && (
-    <div className={styles.addColorPopover}>
-      <div className={styles.addColorHeader}>
-        <div className={styles.addColorTitle}>
-          새 색상 추가
-        </div>
-
-        <div className={styles.addColorActions}>
-          <button
-            type="button"
-            className={styles.addColorCancelButton}
-            onClick={() => {
-              setNewColorLabel("");
-              setAddColorOpen(false);
-            }}
-          >
-            취소
-          </button>
-
-          <button
-            type="button"
-            className={styles.addColorSaveButton}
-            disabled={savingColor || !newColorLabel.trim()}
-            onClick={saveFavoriteColorFromModal}
-          >
-            저장
-          </button>
-        </div>
-      </div>
-
-      <div className={styles.addColorRow}>
-        <label className={styles.addColorLabel}>색상</label>
-
-        <input
-          type="color"
-          value={newColor}
-          onChange={(e) => setNewColor(e.target.value)}
-          className={styles.addColorInput}
-        />
-
-        <input
-          type="text"
-          value={newColorLabel}
-          maxLength={20}
-          onChange={(e) => setNewColorLabel(e.target.value)}
-          placeholder="색상 이름 입력"
-          className={styles.addColorNameInput}
-        />
-      </div>
-
-      <div className={styles.addColorCount}>
-        {newColorLabel.length} / 20
-      </div>
-    </div>
-  )}
-</div>            
-          </div>
+          <EventColorPicker
+            color={form.color}
+            favoriteColors={favoriteColors}
+            savingColor={savingColor}
+            onColorChange={(color) => setForm((p) => ({ ...p, color }))}
+            onSaveFavoriteColor={saveFavoriteColor}
+            onDeleteFavoriteColor={deleteFavoriteColor}
+          />
         </div>
         {mode === "detail" && (form.repeatSnap.repeat ?? "none") !== "none" && (
           <div className={styles.card}>
@@ -1522,7 +755,7 @@ export function EventModal(props: Props) {
               [
                 { v: "this", label: "이 일정만" },
                 { v: "following", label: "이 일정과 이후" },
-                { v: "all", label: "전체 일정(모두)" },
+                { v: "all", label: "전체 일정" },
               ] as const
             ).map((opt) => (
               <label key={opt.v} className={styles.radioRow}>
@@ -1552,7 +785,7 @@ export function EventModal(props: Props) {
               </label>
             ))}
 
-            <div className={styles.cardSubText}>* “이 일정과 이후”는 과거 일정이 유지됩니다.</div>
+            <div className={styles.cardSubText}>* 이 일정과 이후는 과거 일정을 제외합니다.</div>
           </div>
         )}
 
@@ -1589,41 +822,20 @@ export function EventModal(props: Props) {
           <div className={styles.bottomHint}>* 다른 사람이 만든 일정은 수정/삭제할 수 없습니다.</div>
         )}
 
-        <Dialog open={deleteOpen} 
-        onClose={() => setDeleteOpen(false)}  
-                       sx={{zIndex: 9999, 
-                            "& .MuiBackdrop-root": { borderRadius: "16px",
-                                                     padding: "8px 4px",
-                                                     minWidth: "320px",
-                                                     boxShadow: "0 20px 50px rgba(0,0,0,0.28)",},
-                           }}
-        >
-          <DialogTitle>삭제 확인</DialogTitle>
-
-          <DialogContent>
-            정말 삭제하시겠습니까?
-          </DialogContent>
-
-          <DialogActions sx={{ justifyContent: "center",
-                               gap: 1, // 버튼 사이 간격
-                               paddingBottom: "5px",
-                               marginBottom: "2px"
-                            }}
-          >
-            <Button onClick={() => setDeleteOpen(false)}>취소</Button>
-
-            <Button
-              color="error"
-              onClick={() => {
-                setDeleteOpen(false);
-                deleteEvent();
-              }}
-            >
-              삭제
-            </Button>
-          </DialogActions>
-        </Dialog>
+        <ConfirmDialog
+          open={deleteOpen}
+          title="삭제 확인"
+          message="정말 삭제하시겠습니까?"
+          cancelLabel="취소"
+          confirmLabel="삭제"
+          onClose={() => setDeleteOpen(false)}
+          onConfirm={() => {
+            setDeleteOpen(false);
+            deleteEvent();
+          }}
+        />
       </div>
     </div>
   );
 }
+

@@ -72,7 +72,7 @@ export const expandRecurringEvents = (items: CalEvent[], viewStart: Dayjs, viewE
       const anchorStart = rangeStart; // 반복 기준 시작
       const anchorDOM = Math.max(
         1,
-        Math.min(31, (master as any).repeatAnchorDom ?? anchorStart.date())
+        Math.min(31, master.repeatAnchorDom ?? anchorStart.date())
       );
 
       // genStart 이전까지 month index를 이동

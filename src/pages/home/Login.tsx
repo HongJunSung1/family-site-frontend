@@ -1,38 +1,25 @@
-import { useState, useEffect } from "react";
+﻿import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-
-type LoginResponse = {
-  ok: boolean;
-  accessToken?: string;
-  user?: { id: number; email: string; name: string | null };
-  message?: string;
-};
-
-const API_BASE = import.meta.env.VITE_API_URL || "";
+import { ApiError } from "../../api/client";
+import { loginAndStoreSession } from "../../api/authApi";
 
 type Props = {
   onLogin: () => void;
 };
 
-
 export default function Login({ onLogin }: Props) {
-
   const navigate = useNavigate();
-  const location = useLocation() as any;
+  const location = useLocation() as { state?: { from?: string } };
 
-  // const [email, setEmail] = useState("");
   const [id, setId] = useState("");
   const [password, setPassword] = useState("");
-
-  const [errorMsg, setErrorMsg] = useState<string>("");
+  const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(false);
   const [rememberId, setRememberId] = useState(false);
 
-  // 아이디 저장하기
   useEffect(() => {
     const savedId = localStorage.getItem("rememberId");
     if (savedId) {
-      // setEmail(savedEmail);
       setId(savedId);
       setRememberId(true);
     }
@@ -44,59 +31,39 @@ export default function Login({ onLogin }: Props) {
     if (!id.trim() || !password.trim()) {
       setErrorMsg("아이디와 비밀번호를 입력해주세요.");
       return;
-    }    
-    
+    }
+
     try {
       setLoading(true);
 
-      // ✅ 백엔드 로그인 API 호출 (URL은 본인 환경에 맞게)
-      // 예: Vite proxy면 "/api/login" 가능
-      const res = await fetch(`${API_BASE}/api/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ login_id: id.trim(), 
-                               password 
-                            }),
-      });
+      const data = await loginAndStoreSession(id.trim(), password);
 
-      const data = (await res.json().catch(() => null)) as LoginResponse | null;
-
-      // 백엔드가 메세지를 주고 있으니 그걸 사용
-      if (!res.ok) {
-        if (res.status === 401) {
-          // 아이디/비번 불일치
-          setErrorMsg("아이디 또는 비밀번호가 다릅니다.");
-          return;
-        }
-                
-        setErrorMsg(data?.message ?? "로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
-        return;
-      }
-      
-      if (!data?.ok || !data.accessToken) {
-        setErrorMsg(data?.message ?? "로그인 응답이 올바르지 않습니다.");
+      if (!data.ok || !data.accessToken) {
+        setErrorMsg(data.message ?? "로그인 응답이 올바르지 않습니다.");
         return;
       }
 
-
-
-      // 토큰 저장
-      localStorage.setItem("accessToken", data.accessToken);
-
-      // ID 저장
       if (rememberId) {
         localStorage.setItem("rememberId", id.trim());
       } else {
         localStorage.removeItem("rememberId");
       }
 
-      // App 상태 갱신
       onLogin();
 
-      // 원래 가려던 페이지가 있으면 복귀, 없으면 /home
       const to = location.state?.from || "/home";
       navigate(to, { replace: true });
-    } catch (e) {
+    } catch (error) {
+      if (error instanceof ApiError) {
+        if (error.status === 401) {
+          setErrorMsg("아이디 또는 비밀번호가 올바르지 않습니다.");
+          return;
+        }
+
+        setErrorMsg(error.data?.message ?? "로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+        return;
+      }
+
       setErrorMsg("네트워크 오류가 발생했습니다. 서버 연결을 확인해주세요.");
     } finally {
       setLoading(false);
@@ -106,8 +73,6 @@ export default function Login({ onLogin }: Props) {
   const onKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
     if (e.key === "Enter") handleLogin();
   };
-
-
 
   return (
     <div style={{ padding: 24, maxWidth: 420 }}>
@@ -138,6 +103,7 @@ export default function Login({ onLogin }: Props) {
             style={{ width: "100%", padding: 10, marginTop: 6 }}
           />
         </label>
+
         <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <input
             type="checkbox"
@@ -146,11 +112,8 @@ export default function Login({ onLogin }: Props) {
           />
           ID 저장
         </label>
-        {errorMsg && (
-          <div style={{ color: "crimson", fontSize: 14 }}>
-            {errorMsg}
-          </div>
-        )}
+
+        {errorMsg && <div style={{ color: "crimson", fontSize: 14 }}>{errorMsg}</div>}
 
         <button onClick={handleLogin} disabled={loading} style={{ padding: 10 }}>
           {loading ? "로그인 중..." : "로그인"}
@@ -163,3 +126,4 @@ export default function Login({ onLogin }: Props) {
     </div>
   );
 }
+

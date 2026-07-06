@@ -1,0 +1,145 @@
+import type { Dispatch, SetStateAction } from "react";
+
+import type { FormState, ModalMode } from "../types";
+import { useKakaoMapLocation } from "../hooks/useKakaoMapLocation";
+
+import styles from "./EventModal.module.css";
+
+type EventLocationPickerProps = {
+  mode: ModalMode;
+  form: FormState;
+  setForm: Dispatch<SetStateAction<FormState>>;
+  mapOpen: boolean;
+  setMapOpen: Dispatch<SetStateAction<boolean>>;
+  setFormError: (message: string) => void;
+};
+
+export function EventLocationPicker({
+  mode,
+  form,
+  setForm,
+  mapOpen,
+  setMapOpen,
+  setFormError,
+}: EventLocationPickerProps) {
+  const {
+    mapRef,
+    placeKeyword,
+    setPlaceKeyword,
+    searchResults,
+    isSearching,
+    searchPlaces,
+    openInNaverMap,
+    handleSelectPlace,
+    clearLocation,
+  } = useKakaoMapLocation({
+    mode,
+    form,
+    setForm,
+    mapOpen,
+    setFormError,
+  });
+
+  const mapSummary = form.locationName?.trim()
+    ? form.locationName
+    : form.locationAddress?.trim()
+    ? "위치 선택됨"
+    : "선택된 위치 없음";
+
+  return (
+    <>
+      <div className={styles.section}>
+        {(form.locationAddress || (form.locationLat != null && form.locationLng != null)) && (
+          <div className={styles.placeInfoBox}>
+            <div className={styles.placeInfoTitle}>{form.locationName || "선택한 장소"}</div>
+
+            {form.locationAddress && (
+              <div className={styles.placeInfoAddress}>{form.locationAddress}</div>
+            )}
+
+            {/* <div className={styles.placeInfoCoord}>
+              위도: {form.locationLat ?? "-"} / 경도: {form.locationLng ?? "-"}
+            </div> */}
+          </div>
+        )}
+      </div>
+
+      <div
+        className={styles.sectionRow}
+        onClick={() => {
+          setMapOpen((prev) => !prev);
+        }}
+      >
+        <div className={styles.sectionTitle}>지도</div>
+
+        <div className={styles.sectionRight}>
+          <span className={styles.sectionSummary}>{mapSummary}</span>
+          <span className={styles.sectionArrow}>{mapOpen ? "▲" : "▼"}</span>
+        </div>
+      </div>
+
+      {mapOpen && (
+        <div className={styles.sectionGrid}>
+          <div className={styles.placeSearchRow}>
+            <input
+              type="text"
+              value={placeKeyword}
+              onChange={(e) => setPlaceKeyword(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  searchPlaces();
+                }
+              }}
+              placeholder="장소명을 입력해주세요."
+              className={styles.textInput}
+            />
+
+            <button type="button" className={styles.placeSearchBtn} onClick={searchPlaces}>
+              검색
+            </button>
+
+            <button type="button" className={styles.naverMapBtn} onClick={openInNaverMap}>
+              N
+            </button>
+          </div>
+
+          {isSearching && <div className={styles.placeSearchHint}>검색 중...</div>}
+
+          {searchResults.length > 0 && (
+            <div className={styles.placeResultList}>
+              {searchResults.map((place, idx) => (
+                <button
+                  key={`${place.id ?? place.place_name}-${idx}`}
+                  type="button"
+                  className={styles.placeResultItem}
+                  onClick={() => handleSelectPlace(place)}
+                >
+                  <div className={styles.placeResultName}>{place.place_name}</div>
+                  <div className={styles.placeResultAddress}>
+                    {place.road_address_name || place.address_name || "주소 정보 없음"}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div ref={mapRef} className={styles.kakaoMap}></div>
+
+          <div className={styles.mapCoordActions}>
+            <button
+              type="button"
+              className={styles.linkBtn}
+              onClick={(e) => {
+                e.stopPropagation();
+                clearLocation();
+              }}
+            >
+              위치 초기화
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

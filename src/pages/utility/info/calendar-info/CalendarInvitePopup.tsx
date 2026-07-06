@@ -1,14 +1,11 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
+import { hasAccessToken } from "../../../../api/client";
+import {
+  inviteCalendarUsers,
+  searchCalendarInviteUsers,
+  type InviteSearchUser,
+} from "../../../../api/calendarApi";
 import styles from "./CalendarInvitePopup.module.css";
-
-const API_BASE = import.meta.env.VITE_API_URL || "";
-
-type InviteSearchUser = {
-  id: number;
-  login_id: string;
-  email: string;
-  name: string | null;
-};
 
 type Props = {
   open: boolean;
@@ -17,12 +14,7 @@ type Props = {
   onClose: () => void;
 };
 
-export default function CalendarInvitePopup({
-  open,
-  calendarId,
-  calendarName,
-  onClose,
-}: Props) {
+export default function CalendarInvitePopup({ open, calendarId, calendarName, onClose }: Props) {
   const [keyword, setKeyword] = useState("");
   const [users, setUsers] = useState<InviteSearchUser[]>([]);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -31,7 +23,6 @@ export default function CalendarInvitePopup({
   const [message, setMessage] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
 
-  // 새로 열 때마다 초기화한 상태로 열기
   useEffect(() => {
     if (!open) {
       setKeyword("");
@@ -46,9 +37,7 @@ export default function CalendarInvitePopup({
 
   if (!open) return null;
 
-  const token = localStorage.getItem("accessToken");
- 
-
+  const token = hasAccessToken();
 
   const handleSearch = async () => {
     setMessage("");
@@ -75,32 +64,14 @@ export default function CalendarInvitePopup({
     try {
       setLoading(true);
 
-      const res = await fetch(
-        `${API_BASE}/api/calendars/${calendarId}/invite/search-users?keyword=${encodeURIComponent(trimmed)}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const result = await searchCalendarInviteUsers(calendarId, trimmed);
 
-      const result = (await res.json()) as {
-        ok: boolean;
-        users?: InviteSearchUser[];
-        message?: string;
-      };
-
-      if (!res.ok || !result.ok) {
+      if (!result.ok) {
         setErrorMsg(result.message ?? "회원 검색 중 오류가 발생했습니다.");
         return;
       }
 
       setUsers(result.users ?? []);
-
-    //   if ((result.users ?? []).length === 0) {
-    //     setMessage("검색된 회원이 없습니다.");
-    //   }
     } catch (err: any) {
       setErrorMsg(err?.message ?? "회원 검색 중 오류가 발생했습니다.");
     } finally {
@@ -141,23 +112,9 @@ export default function CalendarInvitePopup({
     try {
       setSending(true);
 
-      const res = await fetch(`${API_BASE}/api/calendars/${calendarId}/invite`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          inviteeIds: selectedIds,
-        }),
-      });
+      const result = await inviteCalendarUsers(calendarId, selectedIds);
 
-      const result = (await res.json()) as {
-        ok: boolean;
-        message?: string;
-      };
-
-      if (!res.ok || !result.ok) {
+      if (!result.ok) {
         setErrorMsg(result.message ?? "초대 중 오류가 발생했습니다.");
         return;
       }
@@ -181,7 +138,7 @@ export default function CalendarInvitePopup({
           </div>
 
           <button type="button" className={styles.closeButton} onClick={onClose}>
-            ×
+            닫기
           </button>
         </div>
 

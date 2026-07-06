@@ -1,15 +1,13 @@
-import { useEffect, useState } from "react";
-import { BrowserRouter, Routes, Route, Link, Navigate, useNavigate  } from "react-router-dom";
+﻿import { useEffect, useState } from "react";
+import { BrowserRouter, Link, Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { verifyStoredSession } from "./api/authApi";
 import Home from "./pages/home/Home";
 import Login from "./pages/home/Login";
 import Signup from "./pages/home/Signup";
-import ProtectedRoute from "./routes/ProtectedRoute";
 import NotificationBell from "./pages/utility/notification-bell/NotificationBell";
 import PersonalInfoPage from "./pages/utility/info/user-info/PersonalInfoPage";
+import ProtectedRoute from "./routes/ProtectedRoute";
 
-const API_BASE = import.meta.env.VITE_API_URL;
-
-// 네비게이션 바
 function TopNav() {
   const navigate = useNavigate();
 
@@ -29,30 +27,30 @@ function TopNav() {
         </Link>
       </div>
 
-<div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-  <NotificationBell />
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <NotificationBell />
 
-  <button
-    type="button"
-    onClick={() => navigate("/profile")}
-    style={{
-      width: 38,
-      height: 38,
-      borderRadius: "50%",
-      border: "1px solid #ccc",
-      background: "#f3f4f6",
-      cursor: "pointer",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontSize: 18,
-    }}
-    aria-label="개인정보"
-    title="개인정보"
-  >
-    👤
-  </button>
-</div>
+        <button
+          type="button"
+          onClick={() => navigate("/profile")}
+          style={{
+            width: 38,
+            height: 38,
+            borderRadius: "50%",
+            border: "1px solid #ccc",
+            background: "#f3f4f6",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 18,
+          }}
+          aria-label="개인정보"
+          title="개인정보"
+        >
+          내
+        </button>
+      </div>
     </nav>
   );
 }
@@ -61,34 +59,12 @@ export default function App() {
   const [checking, setChecking] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // 앱 시작 시 로그인 유효성 검사
   useEffect(() => {
     const checkLogin = async () => {
-      const token = localStorage.getItem("accessToken");
-
-      if (!token) {
-        setIsLoggedIn(false);
-        setChecking(false);
-        return;
-      }
-
       try {
-        const res = await fetch(`${API_BASE}/api/auth/me`, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (res.ok) {
-          setIsLoggedIn(true);
-        } else {
-          localStorage.removeItem("accessToken");
-          setIsLoggedIn(false);
-        }
+        const session = await verifyStoredSession();
+        setIsLoggedIn(!!session);
       } catch {
-        // 네트워크 오류 → 안전하게 로그아웃 처리
-        localStorage.removeItem("accessToken");
         setIsLoggedIn(false);
       } finally {
         setChecking(false);
@@ -96,9 +72,8 @@ export default function App() {
     };
 
     checkLogin();
-  }, [API_BASE]);
+  }, []);
 
-  // 서버 확인 중에는 아무 화면도 안 띄움
   if (checking) {
     return <div style={{ padding: 24 }}>로그인 상태 확인 중...</div>;
   }
@@ -108,20 +83,14 @@ export default function App() {
       {isLoggedIn && <TopNav />}
 
       <Routes>
-        {/* 최초 진입 */}
         <Route
           path="/"
-          element={
-            isLoggedIn
-              ? <Navigate to="/home" replace />
-              : <Navigate to="/login" replace />
-          }
+          element={isLoggedIn ? <Navigate to="/home" replace /> : <Navigate to="/login" replace />}
         />
 
         <Route path="/login" element={<Login onLogin={() => setIsLoggedIn(true)} />} />
         <Route path="/signup" element={<Signup />} />
 
-        {/* 보호 라우트 */}
         <Route
           path="/home"
           element={
@@ -145,3 +114,4 @@ export default function App() {
     </BrowserRouter>
   );
 }
+

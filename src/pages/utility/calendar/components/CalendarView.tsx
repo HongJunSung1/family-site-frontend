@@ -1,6 +1,8 @@
 import FullCalendar from "@fullcalendar/react";
+import type { EventClickArg, EventHoveringArg, EventMountArg } from "@fullcalendar/core";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
+import type { DateClickArg } from "@fullcalendar/interaction";
 import dayjs from "dayjs";
 import type { Dayjs } from "dayjs";
 
@@ -38,10 +40,10 @@ type Props = {
   expandedEvents: ExpandedEvent[];
   holidayMap: Map<string, string>;
   getDayType: (d: Dayjs) => DayType;
-  onDateClick: (info: any) => void;
-  onEventClick: (info: any) => void;
-  onEventMouseEnter: (info: any) => void;
-  onEventDidMount?: (info: any) => void;
+  onDateClick: (info: DateClickArg) => void;
+  onEventClick: (info: EventClickArg) => void;
+  onEventMouseEnter: (info: EventHoveringArg) => void;
+  onEventDidMount?: (info: EventMountArg) => void;
   onDatesSet: (range: ViewRange, holidayYear: number) => void;
 
   calendarName: string;

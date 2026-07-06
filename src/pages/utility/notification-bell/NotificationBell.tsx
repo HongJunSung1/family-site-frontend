@@ -1,20 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
+import { hasAccessToken } from "../../../api/client";
+import {
+  getNotifications,
+  markNotificationRead,
+  respondCalendarInvitation,
+  type NotificationItem,
+} from "../../../api/notificationApi";
 import styles from "./NotificationBell.module.css";
-
-const API_BASE = import.meta.env.VITE_API_URL || "";
-
-type NotificationItem = {
-  id: number;
-  type: string;
-  title: string;
-  message: string;
-  ref_id: number | null;
-  is_read: number;
-  status: string;
-  created_at: string;
-
-  invitation_status?: string | null;
-};
 
 export default function NotificationBell() {
   const [open, setOpen] = useState(false);
@@ -23,24 +15,13 @@ export default function NotificationBell() {
   const [loading, setLoading] = useState(false);
   const wrapRef = useRef<HTMLDivElement | null>(null);
 
-  const token = localStorage.getItem("accessToken");
-
   const loadNotifications = async () => {
-    if (!token) return;
+    if (!hasAccessToken()) return;
 
     try {
       setLoading(true);
 
-      const res = await fetch(`${API_BASE}/api/notifications`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const result = await res.json();
-
-      if (!res.ok || !result.ok) return;
+      const result = await getNotifications();
 
       setNotifications(result.notifications ?? []);
       setUnreadCount(result.unreadCount ?? 0);
@@ -50,45 +31,23 @@ export default function NotificationBell() {
   };
 
   const markRead = async (notificationId: number) => {
-    if (!token) return;
+    if (!hasAccessToken()) return;
 
-    await fetch(`${API_BASE}/api/notifications/${notificationId}/read`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    await markNotificationRead(notificationId);
 
     setNotifications((prev) =>
-      prev.map((item) =>
-        item.id === notificationId ? { ...item, is_read: 1 } : item
-      )
+      prev.map((item) => (item.id === notificationId ? { ...item, is_read: 1 } : item))
     );
 
     setUnreadCount((prev) => Math.max(0, prev - 1));
   };
 
-  const respondInvite = async (
-    notification: NotificationItem,
-    action: "accept" | "reject"
-  ) => {
-    if (!token || !notification.ref_id) return;
+  const respondInvite = async (notification: NotificationItem, action: "accept" | "reject") => {
+    if (!hasAccessToken() || !notification.ref_id) return;
 
-    const res = await fetch(
-      `${API_BASE}/api/calendar-invitations/${notification.ref_id}/respond`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ action }),
-      }
-    );
+    const result = await respondCalendarInvitation(notification.ref_id, action);
 
-    const result = await res.json();
-
-    if (!res.ok || !result.ok) {
+    if (!result.ok) {
       alert(result.message ?? "처리 중 오류가 발생했습니다.");
       return;
     }
@@ -130,7 +89,7 @@ export default function NotificationBell() {
         aria-label="알림"
         title="알림"
       >
-        🔔
+        알림
         {unreadCount > 0 && <span className={styles.badge}>{unreadCount}</span>}
       </button>
 
@@ -153,9 +112,7 @@ export default function NotificationBell() {
             notifications.map((item) => (
               <div
                 key={item.id}
-                className={`${styles.item} ${
-                  item.is_read === 0 ? styles.unread : ""
-                }`}
+                className={`${styles.item} ${item.is_read === 0 ? styles.unread : ""}`}
                 onClick={() => {
                   if (item.is_read === 0) markRead(item.id);
                 }}

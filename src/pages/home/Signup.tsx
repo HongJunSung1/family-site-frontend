@@ -1,8 +1,9 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { ApiError, isApiBaseConfigured } from "../../api/client";
+import { signup } from "../../api/authApi";
 
 export default function Signup() {
-  const API_BASE = import.meta.env.VITE_API_URL || "";
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
@@ -15,7 +16,6 @@ export default function Signup() {
 
   const [submitting, setSubmitting] = useState(false);
 
-
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -26,7 +26,6 @@ export default function Signup() {
 
     setSubmitting(true);
     try {
-      // 간단한 프론트 검증(선택)
       if (!form.email || !form.password) {
         alert("이메일과 비밀번호는 필수입니다.");
         return;
@@ -34,7 +33,7 @@ export default function Signup() {
       if (!form.id) {
         alert("아이디는 필수입니다.");
         return;
-      }      
+      }
       if (form.password.length < 8) {
         alert("비밀번호는 8자 이상 입력해주세요.");
         return;
@@ -43,48 +42,36 @@ export default function Signup() {
         alert("비밀번호가 일치하지 않습니다.");
         return;
       }
-      if (!API_BASE) {
+      if (!isApiBaseConfigured()) {
         alert("API 주소가 설정되지 않았습니다. (.env.local의 VITE_API_URL 확인)");
         return;
       }
 
-
-      // Workers API 호출
-      const res = await fetch(`${API_BASE}/api/auth/signup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        // 서버는 name/email/password만 받음 (familyCode는 아직 저장 안 함)
-        body: JSON.stringify({
-          name: form.name,
-          id: form.id,
-          email: form.email,
-          password: form.password,
-        }),
+      await signup({
+        name: form.name,
+        id: form.id,
+        email: form.email,
+        password: form.password,
       });
 
-      const data = (await res.json().catch(() => ({}))) as any;
-
-      if (!res.ok) {
-        // 서버에서 내려주는 메시지 사용
-        alert(data?.message ?? "회원가입 실패");
+      alert("회원가입 성공! 로그인 화면으로 이동합니다.");
+      navigate("/login");
+    } catch (err) {
+      if (err instanceof ApiError) {
+        alert(err.data?.message ?? "회원가입 실패");
         return;
       }
 
-      alert("✅ 회원가입 성공! 로그인 화면으로 이동합니다.");
-      navigate("/login");
-    } catch (err: any) {
-      alert(`네트워크 오류: ${String(err?.message ?? err)}`);
+      alert(`네트워크 오류: ${String(err instanceof Error ? err.message : err)}`);
     } finally {
       setSubmitting(false);
     }
   };
 
-   return (
+  return (
     <div style={{ padding: 24, maxWidth: 520 }}>
       <h1>회원가입</h1>
-      <p style={{ opacity: 0.8 }}>
-        가족 사이트 계정을 생성합니다.
-      </p>
+      <p style={{ opacity: 0.8 }}>가족 사이트 계정을 생성합니다.</p>
 
       <form onSubmit={onSubmit} style={{ marginTop: 16 }}>
         <div style={{ marginBottom: 12 }}>
@@ -93,7 +80,7 @@ export default function Signup() {
             name="name"
             value={form.name}
             onChange={onChange}
-            placeholder="홍준성"
+            placeholder="홍길동"
             style={{ width: "100%", padding: 10 }}
           />
         </div>
@@ -107,7 +94,7 @@ export default function Signup() {
             placeholder="jshong"
             style={{ width: "100%", padding: 10 }}
           />
-        </div>        
+        </div>
 
         <div style={{ marginBottom: 12 }}>
           <label style={{ display: "block", marginBottom: 6 }}>이메일 *</label>
@@ -123,9 +110,7 @@ export default function Signup() {
         </div>
 
         <div style={{ marginBottom: 12 }}>
-          <label style={{ display: "block", marginBottom: 6 }}>
-            비밀번호 *
-          </label>
+          <label style={{ display: "block", marginBottom: 6 }}>비밀번호 *</label>
           <input
             name="password"
             type="password"
@@ -136,10 +121,9 @@ export default function Signup() {
             required
           />
         </div>
+
         <div style={{ marginBottom: 12 }}>
-          <label style={{ display: "block", marginBottom: 6 }}>
-            비밀번호 확인 *
-          </label>
+          <label style={{ display: "block", marginBottom: 6 }}>비밀번호 확인 *</label>
           <input
             name="passwordConfirm"
             type="password"
@@ -150,6 +134,7 @@ export default function Signup() {
             required
           />
         </div>
+
         <button
           type="submit"
           disabled={submitting}
@@ -168,7 +153,7 @@ export default function Signup() {
       </div>
 
       <div style={{ marginTop: 8 }}>
-        <Link to="/">← 홈으로</Link>
+        <Link to="/">처음으로</Link>
       </div>
     </div>
   );

@@ -1,8 +1,6 @@
-import { useNavigate } from "react-router-dom";
+﻿import { useNavigate } from "react-router-dom";
 import Calendar from "../utility/Calendar";
-
-
-const API_BASE = import.meta.env.VITE_API_URL;
+import { logoutAndClearSession } from "../../api/authApi";
 
 type Props = {
   onLogout: () => void;
@@ -12,20 +10,9 @@ export default function Home({ onLogout }: Props) {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    const token = localStorage.getItem("accessToken");
-
     try {
-      if (token) {
-        await fetch(`${API_BASE}/api/auth/logout`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-      }
+      await logoutAndClearSession();
     } finally {
-      // ✅ 프론트 토큰 제거 + App 상태 갱신
-      localStorage.removeItem("accessToken");
       onLogout();
       navigate("/login", { replace: true });
     }
@@ -38,3 +25,4 @@ export default function Home({ onLogout }: Props) {
     </div>
   );
 }
+

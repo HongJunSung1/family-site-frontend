@@ -1,68 +1,30 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
+import { hasAccessToken } from "../../../../api/client";
+import { getPersonalInfo, updateProfile, type PersonalInfoResponse } from "../../../../api/userApi";
 import styles from "./BasicPersonalInfo.module.css";
-
-const API_BASE = import.meta.env.VITE_API_URL || "";
-
-type PersonalInfoResponse = {
-  ok: boolean;
-  user: {
-    login_id: string;
-    email: string;
-    name: string | null;
-    created_at: string;
-    defaultCalendarId: number | null;
-  };
-  defaultCalendarId: number | null;
-  calendarRole: string | null;
-};
-
-type UpdateProfileResponse = {
-  ok: boolean;
-  message?: string;
-  user?: {
-    login_id: string;
-    email: string;
-    name: string | null;
-    created_at: string;
-    defaultCalendarId: number | null;
-  };
-};
 
 export default function BasicPersonalInfo() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
-
   const [user, setUser] = useState<PersonalInfoResponse["user"] | null>(null);
-
   const [editName, setEditName] = useState("");
   const [editEmail, setEditEmail] = useState("");
-
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     const fetchPersonalInfo = async () => {
-      const token = localStorage.getItem("accessToken");
-
-      if (!token) {
+      if (!hasAccessToken()) {
         setErrorMsg("로그인 정보가 없습니다.");
         setLoading(false);
         return;
       }
 
       try {
-        const res = await fetch(`${API_BASE}/api/auth/personalInfo`, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const data = await getPersonalInfo();
 
-        const data = (await res.json()) as PersonalInfoResponse;
-
-        if (!res.ok || !data.ok) {
+        if (!data.ok) {
           setErrorMsg("개인정보를 불러오지 못했습니다.");
           return;
         }
@@ -109,9 +71,7 @@ export default function BasicPersonalInfo() {
   };
 
   const saveBasicInfo = async () => {
-    const token = localStorage.getItem("accessToken");
-
-    if (!token) {
+    if (!hasAccessToken()) {
       setErrorMsg("로그인 정보가 없습니다.");
       setConfirmOpen(false);
       return;
@@ -125,22 +85,13 @@ export default function BasicPersonalInfo() {
     setSuccessMsg("");
 
     try {
-      const res = await fetch(`${API_BASE}/api/auth/profile`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          name: trimmedName,
-          email: trimmedEmail,
-        }),
+      const data = await updateProfile({
+        name: trimmedName,
+        email: trimmedEmail,
       });
 
-      const data = (await res.json()) as UpdateProfileResponse;
-
-      if (!res.ok || !data.ok) {
-        setErrorMsg(data?.message ?? "개인정보 수정에 실패했습니다.");
+      if (!data.ok) {
+        setErrorMsg(data.message ?? "개인정보 수정에 실패했습니다.");
         return;
       }
 
@@ -170,19 +121,11 @@ export default function BasicPersonalInfo() {
   };
 
   if (loading) {
-    return (
-      <div className={styles.pageStateBox}>
-        개인정보를 불러오는 중...
-      </div>
-    );
+    return <div className={styles.pageStateBox}>개인정보를 불러오는 중...</div>;
   }
 
   if (errorMsg && !user) {
-    return (
-      <div className={styles.pageStateBoxError}>
-        {errorMsg}
-      </div>
-    );
+    return <div className={styles.pageStateBoxError}>{errorMsg}</div>;
   }
 
   return (

@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
+import { getHolidays, type HolidayItem } from "../../../../api/calendarApi";
 
-type HolidayItem = { date: string; name?: string };
-
-export function useHolidays(apiBase: string, holidayYear: number) {
+export function useHolidays(holidayYear: number) {
   const [holidaySet, setHolidaySet] = useState<Set<string>>(new Set());
   const [holidayMap, setHolidayMap] = useState<Map<string, string>>(new Map());
 
@@ -11,12 +10,11 @@ export function useHolidays(apiBase: string, holidayYear: number) {
 
     (async () => {
       try {
-        const res = await fetch(`${apiBase}/api/holidays?year=${holidayYear}`);
-        const data = await res.json();
+        const data = await getHolidays(holidayYear);
 
         if (!alive) return;
 
-        if (!res.ok || !data?.ok) {
+        if (!data?.ok) {
           setHolidaySet(new Set());
           setHolidayMap(new Map());
           return;
@@ -43,7 +41,7 @@ export function useHolidays(apiBase: string, holidayYear: number) {
     return () => {
       alive = false;
     };
-  }, [apiBase, holidayYear]);
+  }, [holidayYear]);
 
   return { holidaySet, holidayMap };
 }

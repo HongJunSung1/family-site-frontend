@@ -1,5 +1,11 @@
-// 캘린더 환경설정
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
+import { hasAccessToken } from "../../../../api/client";
+import {
+  deleteMyColorPreset,
+  getMyColorPresets,
+  saveMyColorPresets,
+  type FavoriteColorPreset,
+} from "../../../../api/calendarApi";
 import styles from "./CalendarSettings.module.css";
 
 type FavoriteColorRow = {
@@ -8,25 +14,6 @@ type FavoriteColorRow = {
   color: string;
   title: string;
 };
-
-type ColorPresetResponseItem = {
-  slot: number;
-  color: string;
-  label: string | null;
-};
-
-type GetColorPresetsResponse = {
-  ok: boolean;
-  presets?: ColorPresetResponseItem[];
-  message?: string;
-};
-
-type SaveColorPresetsResponse = {
-  ok: boolean;
-  message?: string;
-};
-
-const API_BASE = import.meta.env.VITE_API_URL || "";
 
 const createEmptyRow = (): FavoriteColorRow => ({
   tempId: crypto.randomUUID(),
@@ -40,35 +27,26 @@ export default function CalendarSettings() {
   const [saving, setSaving] = useState(false);
 
   const fetchColorPresets = async () => {
-    const token = localStorage.getItem("accessToken");    
-
-    if (!token) {
+    if (!hasAccessToken()) {
       alert("로그인 정보가 없습니다.");
       setLoading(false);
       return;
     }
 
     try {
-      const res = await fetch(`${API_BASE}/api/calendars/getMyColorPresets`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const data = await getMyColorPresets();
 
-      const data = (await res.json()) as GetColorPresetsResponse;
-
-      if (!res.ok || !data.ok) {
+      if (!data.ok) {
         alert(data.message || "자주 쓰는 색상 정보를 불러오지 못했습니다.");
         return;
       }
 
       const rows =
         data.presets?.map((preset) => ({
-            tempId: crypto.randomUUID(),
-            slot: preset.slot,
-            color: preset.color,
-            title: preset.label || "",
+          tempId: crypto.randomUUID(),
+          slot: preset.slot,
+          color: preset.color,
+          title: preset.label || "",
         })) ?? [];
 
       setColors(rows);
@@ -93,65 +71,43 @@ export default function CalendarSettings() {
     setColors((prev) => [...prev, createEmptyRow()]);
   };
 
-  const handleChangeColor = (
-    tempId: string,
-    field: "color" | "title",
-    value: string
-  ) => {
+  const handleChangeColor = (tempId: string, field: "color" | "title", value: string) => {
     setColors((prev) =>
-      prev.map((row) =>
-        row.tempId === tempId ? { ...row, [field]: value } : row
-      )
+      prev.map((row) => (row.tempId === tempId ? { ...row, [field]: value } : row))
     );
   };
 
   const handleDeleteColor = async (row: FavoriteColorRow) => {
     if (!confirm("이 색상을 삭제하시겠습니까?")) {
-        return;
+      return;
     }
 
-    // 아직 저장되지 않은 신규 행은 화면에서만 삭제
     if (!row.slot) {
-        setColors((prev) => prev.filter((item) => item.tempId !== row.tempId));
-        return;
+      setColors((prev) => prev.filter((item) => item.tempId !== row.tempId));
+      return;
     }
 
-    const token = localStorage.getItem("accessToken");  
     try {
-        const res = await fetch(`${API_BASE}/api/calendars/deleteMyColorPreset`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-                slot: row.slot,
-            }),
-        });
-        const data = (await res.json()) as {
-            ok: boolean;
-            message?: string;
-        };
+      const data = await deleteMyColorPreset(row.slot);
 
-        if (!res.ok || !data.ok) {
-            alert(data.message || "색상 삭제에 실패했습니다.");
-            return;
-        }
+      if (!data.ok) {
+        alert(data.message || "색상 삭제에 실패했습니다.");
+        return;
+      }
 
-        setColors((prev) => prev.filter((item) => item.tempId !== row.tempId));
+      setColors((prev) => prev.filter((item) => item.tempId !== row.tempId));
     } catch (error) {
-        console.error(error);
-        alert("색상 삭제 중 오류가 발생했습니다.");
+      console.error(error);
+      alert("색상 삭제 중 오류가 발생했습니다.");
     }
   };
 
   const handleSave = async () => {
     const invalidTitle = colors.some((row) => row.title.trim() === "");
-    const token = localStorage.getItem("accessToken");
 
-    if(!token){
-        alert("로그인 정보가 없습니다.");
-        return;
+    if (!hasAccessToken()) {
+      alert("로그인 정보가 없습니다.");
+      return;
     }
 
     if (invalidTitle) {
@@ -162,23 +118,15 @@ export default function CalendarSettings() {
     setSaving(true);
 
     try {
-      const res = await fetch(`${API_BASE}/api/calendars/saveMyColorPresets`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          presets: colors.map((row) => ({
-            color: row.color,
-            label: row.title.trim(),
-          })),
-        }),
-      });
+      const data = await saveMyColorPresets(
+        colors.map((row, index) => ({
+          slot: row.slot ?? index + 1,
+          color: row.color,
+          label: row.title.trim(),
+        })) satisfies FavoriteColorPreset[]
+      );
 
-      const data = (await res.json()) as SaveColorPresetsResponse;
-
-      if (!res.ok || !data.ok) {
+      if (!data.ok) {
         alert(data.message || "자주 쓰는 색상 저장에 실패했습니다.");
         return;
       }
@@ -203,7 +151,7 @@ export default function CalendarSettings() {
         <div>
           <h3 className={styles.sectionTitle}>캘린더 환경설정</h3>
           <p className={styles.description}>
-            캘린더 입력 시 자주 사용할 색상을 미리 등록합니다.
+            캘린더 입력 시 자주 사용하는 색상을 미리 등록합니다.
           </p>
         </div>
 
@@ -260,9 +208,7 @@ export default function CalendarSettings() {
                         type="color"
                         value={row.color}
                         className={styles.colorInput}
-                        onChange={(e) =>
-                          handleChangeColor(row.tempId, "color", e.target.value)
-                        }
+                        onChange={(e) => handleChangeColor(row.tempId, "color", e.target.value)}
                         disabled={saving}
                       />
                       <span className={styles.colorText}>{row.color}</span>
@@ -275,21 +221,19 @@ export default function CalendarSettings() {
                       value={row.title}
                       className={styles.textInput}
                       placeholder="예: 가족 일정, 병원, 회사"
-                      onChange={(e) =>
-                        handleChangeColor(row.tempId, "title", e.target.value)
-                      }
+                      onChange={(e) => handleChangeColor(row.tempId, "title", e.target.value)}
                       disabled={saving}
                     />
                   </td>
 
                   <td>
                     <button
-                    type="button"
-                    className={styles.dangerButton}
-                    onClick={() => handleDeleteColor(row)}
-                    disabled={saving}
+                      type="button"
+                      className={styles.dangerButton}
+                      onClick={() => handleDeleteColor(row)}
+                      disabled={saving}
                     >
-                    삭제
+                      삭제
                     </button>
                   </td>
                 </tr>
