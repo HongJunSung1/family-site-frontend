@@ -27,6 +27,7 @@
   white-space: nowrap;
 
   z-index: 5;
+  pointer-events: none;
 }
 
 /* wrapper */
@@ -78,6 +79,7 @@
   flex: 1 1 auto;
   flex-direction: column;
   min-height: 0;
+  position: relative;
 }
 
 /* 캘린더 바깥 패널 느낌 */
@@ -281,7 +283,7 @@
 }
 
 :global(.fc .fc-daygrid-more-link) {
-  display: inline-flex;
+  display: none;
   align-items: center;
   justify-content: center;
   min-width: 38px;
@@ -296,6 +298,66 @@
   font-weight: 900;
   line-height: 1;
   text-decoration: none;
+}
+
+.dayCellContent {
+  width: 100%;
+  min-height: 30px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 0 4px;
+  box-sizing: border-box;
+}
+
+.dayNumberText {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.dayEventCount {
+  align-self: flex-end;
+  margin-top: auto;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--cal-accent) 16%, var(--cal-panel) 84%);
+  color: var(--cal-accent);
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.eventColorMarker {
+  display: block;
+  width: 100%;
+  height: 7px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0.95;
+}
+
+:global(.fc .fc-daygrid-event) {
+  min-height: 7px;
+  padding: 0 6px;
+  background: transparent !important;
+  border-color: transparent !important;
+}
+
+:global(.fc .fc-daygrid-event .fc-event-main) {
+  color: inherit !important;
+}
+
+:global(.fc .fc-daygrid-day.pz-day-selected) {
+  background: color-mix(in srgb, var(--cal-accent) 10%, var(--cal-panel) 90%) !important;
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--cal-accent) 48%, transparent);
 }
 
 :global(.fc .fc-daygrid-more-link:hover),
@@ -657,6 +719,41 @@
     line-height: 1.25;
   }
 
+  .dayCellContent {
+    min-height: 24px;
+    padding: 0 2px;
+  }
+
+  .dayNumberText {
+    min-width: 22px;
+    height: 22px;
+    font-size: 10px;
+  }
+
+  .dayEventCount {
+    padding: 1px 5px;
+    font-size: 9px;
+  }
+
+  .eventColorMarker {
+    height: 5px;
+  }
+
+  .dayEventPanel {
+    top: auto;
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    width: auto;
+    max-height: min(42dvh, 320px);
+    padding: 12px;
+    border-radius: 14px;
+  }
+
+  .dayEventPanelHeader {
+    margin-bottom: 10px;
+  }
+
   :global(.fc .fc-daygrid-more-link) {
     display: inline-flex;
     align-items: center;
@@ -848,7 +945,7 @@
   height: 100%;
   min-height: 0;
   max-height: 100%;
-  overflow: visible;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -860,6 +957,135 @@
   overflow: hidden;
   position: relative;
   z-index: 1;
+}
+
+.dayEventPanel {
+  position: absolute;
+  top: 72px;
+  right: 16px;
+  z-index: 40;
+  width: min(320px, calc(100% - 32px));
+  max-height: min(360px, calc(100% - 100px));
+  display: flex;
+  flex-direction: column;
+  padding: 14px;
+  border: 1px solid var(--cal-line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--cal-panel) 94%, #000 6%);
+  color: var(--cal-text);
+  box-shadow: var(--shadow-floating);
+  box-sizing: border-box;
+}
+
+.dayEventPanelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.dayEventPanelDate {
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.dayEventPanelCount {
+  margin-top: 2px;
+  color: var(--cal-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.dayEventAddButton {
+  flex: 0 0 auto;
+  min-width: 54px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--cal-accent) 42%, var(--cal-line) 58%);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--cal-accent) 16%, var(--cal-panel) 84%);
+  color: var(--cal-accent);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.dayEventAddButton:focus,
+.dayEventAddButton:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.dayEventList {
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  gap: 8px;
+  scrollbar-width: none;
+}
+
+.dayEventList::-webkit-scrollbar {
+  display: none;
+}
+
+.dayEventEmpty {
+  padding: 18px 8px;
+  color: var(--cal-muted);
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.dayEventItem {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 10px;
+  border: 1px solid var(--cal-line);
+  border-radius: 10px;
+  background: var(--color-surface-muted);
+  color: var(--cal-text);
+  text-align: left;
+}
+
+.dayEventItem:hover {
+  border-color: var(--cal-accent);
+  background: var(--cal-hover);
+}
+
+.dayEventDot {
+  width: 11px;
+  height: 11px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.08);
+}
+
+.dayEventText {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.dayEventTitle,
+.dayEventTime {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dayEventTitle {
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.dayEventTime {
+  color: var(--cal-muted);
+  font-size: 12px;
+  font-weight: 700;
 }
 
 :global(.fc .fc-daygrid-event-harness) {
@@ -896,20 +1122,12 @@
   z-index: 2147482500 !important;
 }
 
-:global(.fc .fc-daygrid-day.pz-tooltip-layer-open),
-:global(.fc .fc-daygrid-day-frame.pz-tooltip-layer-open),
-:global(.fc .fc-daygrid-day-events.pz-tooltip-layer-open),
-:global(.fc .fc-daygrid-event-harness.pz-tooltip-layer-open) {
-  overflow: visible !important;
-}
-
 :global(.fc .fc-popover .pz-tooltip-layer-open) {
   z-index: 2147483002 !important;
 }
 
 .eventMemoTooltip:hover {
   z-index: 2147483003 !important;
-  overflow: visible !important;
 }
 
 :global(.pz-floating-event-tooltip) {
@@ -1003,7 +1221,7 @@
 }
 
 :global(.fc .fc-scroller) {
-  overflow: visible !important;
+  overflow: hidden !important;
   scrollbar-width: none;
 }
 
@@ -1192,4 +1410,584 @@
   word-break: break-word;
 
   pointer-events: none;
+}
+
+/* Calendar side-panel layout */
+.root {
+  justify-content: stretch;
+  overflow: hidden;
+}
+
+.container {
+  max-width: none;
+  padding: 12px 16px;
+}
+
+.card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(320px, 26vw, 420px);
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: stretch;
+  overflow: hidden;
+}
+
+.calendarTabs {
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+}
+
+.calendarShell {
+  grid-column: 1;
+  grid-row: 2;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.dayEventPanel {
+  position: static;
+  grid-column: 2;
+  grid-row: 1;
+  z-index: 1;
+  width: auto;
+  max-height: 260px;
+  align-self: start;
+  box-shadow: var(--shadow-soft);
+}
+
+:global(.fc .fc-daygrid-day-frame) {
+  position: relative;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
+}
+
+:global(.fc .fc-daygrid-day-events) {
+  flex: 1 1 auto;
+  min-height: 0 !important;
+  max-height: 100%;
+  overflow: hidden !important;
+  padding: 1px 5px 18px;
+  box-sizing: border-box;
+}
+
+:global(.fc .fc-daygrid-event-harness) {
+  max-width: 100%;
+  margin-top: 3px !important;
+}
+
+:global(.fc .fc-daygrid-event) {
+  pointer-events: auto;
+}
+
+.dayCellContent {
+  min-height: 26px;
+  padding: 0 4px;
+  justify-content: flex-start;
+}
+
+.dayEventCount {
+  position: absolute;
+  right: 5px;
+  bottom: 4px;
+  z-index: 3;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  background: color-mix(in srgb, var(--cal-accent) 18%, var(--cal-panel) 82%);
+  border: 1px solid color-mix(in srgb, var(--cal-accent) 36%, transparent);
+  font-size: 10px;
+  line-height: 1;
+}
+
+.eventColorMarker {
+  height: 6px;
+}
+
+.dayEventItem {
+  position: relative;
+}
+
+@media (max-width: 980px) {
+  .container {
+    padding: 0;
+  }
+
+  .card {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: 0;
+    border-radius: 0;
+  }
+
+  .calendarTabs,
+  .calendarShell,
+  .dayEventPanel {
+    grid-column: 1;
+  }
+
+  .calendarTabs {
+    grid-row: 1;
+  }
+
+  .calendarShell {
+    grid-row: 2;
+  }
+
+  .dayEventPanel {
+    grid-row: 3;
+    max-height: 220px;
+    margin: 8px;
+  }
+}
+
+/* Direct month-cell event bars */
+:global(.fc .fc-daygrid-day-events) {
+  display: none !important;
+}
+
+.dayCellContent {
+  position: static;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  pointer-events: none;
+}
+
+.dayEventBars {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 40px;
+  bottom: 28px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.dayEventBar {
+  position: relative;
+  display: block;
+  flex: 0 0 9px;
+  min-height: 9px;
+  opacity: 0.96;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.dayEventBarStart {
+  margin-left: 10px;
+  margin-right: -1px;
+  border-radius: 999px 0 0 999px;
+}
+
+.dayEventBarMiddle {
+  margin-left: -1px;
+  margin-right: -1px;
+  border-radius: 0;
+}
+
+.dayEventBarEnd {
+  margin-left: -1px;
+  margin-right: 10px;
+  border-radius: 0 999px 999px 0;
+}
+
+.dayEventBarStart.dayEventBarEnd {
+  margin-left: 10px;
+  margin-right: 10px;
+  border-radius: 999px;
+}
+
+.dayEventCount {
+  position: absolute !important;
+  top: auto !important;
+  right: 10px !important;
+  bottom: 8px !important;
+  z-index: 4;
+  pointer-events: none;
+}
+
+@media (max-width: 768px) {
+  .dayEventBars {
+    top: 32px;
+    bottom: 20px;
+    gap: 1px;
+  }
+
+  .dayEventBar {
+    flex-basis: 6px;
+    min-height: 6px;
+  }
+
+  .dayEventCount {
+    right: 5px !important;
+    bottom: 4px !important;
+  }
+}
+
+/* Final calendar rail corrections */
+.card {
+  grid-template-columns: minmax(0, 1fr) clamp(320px, 26vw, 420px);
+  grid-template-rows: minmax(0, 1fr);
+  gap: 12px;
+}
+
+.calendarPane {
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.calendarPane .calendarTabs {
+  grid-column: auto;
+  grid-row: auto;
+  flex: 0 0 auto;
+}
+
+.calendarPane .calendarShell {
+  grid-column: auto;
+  grid-row: auto;
+  flex: 1 1 auto;
+}
+
+.sideRail {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.sideRail .dayEventPanel {
+  position: static;
+  width: auto;
+  max-height: 260px;
+  flex: 0 0 auto;
+  align-self: stretch;
+}
+
+:global(.fc .fc-daygrid-day-frame) {
+  position: relative !important;
+}
+
+:global(.fc .fc-daygrid-day-top) {
+  position: static;
+  z-index: 2;
+}
+
+:global(.fc .fc-daygrid-day-events) {
+  padding: 3px 10px 22px !important;
+}
+
+:global(.fc .fc-daygrid-event-harness) {
+  margin-top: 1px !important;
+  margin-bottom: 0 !important;
+}
+
+:global(.fc .fc-daygrid-event) {
+  width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding: 0 !important;
+}
+
+:global(.fc .fc-daygrid-block-event .fc-event-main),
+:global(.fc .fc-h-event .fc-event-main) {
+  display: block;
+  width: 100%;
+}
+
+.eventColorMarker {
+  width: 100%;
+  height: 5px;
+}
+
+.dayCellContent {
+  position: static;
+}
+
+.dayEventCount {
+  top: auto !important;
+  right: 7px !important;
+  bottom: 5px !important;
+}
+
+@media (max-width: 980px) {
+  .card {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+
+  .calendarPane {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .sideRail {
+    grid-column: 1;
+    grid-row: 2;
+    max-height: 46dvh;
+    padding: 8px;
+    overflow-y: auto;
+  }
+
+  .sideRail .dayEventPanel {
+    margin: 0;
+    max-height: 220px;
+  }
+}
+
+/* Final event-bar continuity fixes */
+:global(.fc .fc-daygrid-day),
+:global(.fc .fc-daygrid-day-frame) {
+  overflow: visible !important;
+}
+
+.dayEventBars {
+  left: -1px;
+  right: -1px;
+  top: 36px;
+  bottom: auto;
+  height: calc(100% - 42px);
+  display: block;
+  overflow: hidden;
+}
+
+.dayEventBar {
+  --bar-lane: 0;
+  position: absolute;
+  top: calc(var(--bar-lane) * 11px);
+  left: -1px;
+  right: -1px;
+  width: auto;
+  height: 9px;
+  min-height: 9px;
+  flex: none;
+}
+
+.dayEventBarStart {
+  left: 10px;
+  right: -1px;
+  margin: 0;
+  border-radius: 999px 0 0 999px;
+}
+
+.dayEventBarMiddle {
+  left: -1px;
+  right: -1px;
+  margin: 0;
+  border-radius: 0;
+}
+
+.dayEventBarEnd {
+  left: -1px;
+  right: 10px;
+  margin: 0;
+  border-radius: 0 999px 999px 0;
+}
+
+.dayEventBarStart.dayEventBarEnd {
+  left: 10px;
+  right: 10px;
+  margin: 0;
+  border-radius: 999px;
+}
+
+.dayEventCount {
+  z-index: 20 !important;
+}
+
+:global(.fc .fc-col-header-cell-cushion) {
+  font-size: 14px !important;
+  line-height: 1.2;
+}
+
+@media (max-width: 768px) {
+  .dayEventBars {
+    top: 32px;
+    height: calc(100% - 36px);
+  }
+
+  :global(.fc .fc-col-header-cell-cushion) {
+    font-size: 12px !important;
+  }
+}
+
+/* Date state styling without oversized number pills */
+:global(.fc .fc-daygrid-day-number) {
+  min-width: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  padding: 7px 10px 0 0 !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  font-size: 12px !important;
+  line-height: 1 !important;
+}
+
+.dayNumberText {
+  min-width: 0;
+  width: auto;
+  height: auto;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  font-size: 12px;
+  line-height: 1;
+}
+
+:global(.fc .fc-day-today) {
+  background: color-mix(in srgb, var(--cal-accent) 16%, var(--cal-panel) 84%) !important;
+}
+
+:global(.fc .fc-day-today .fc-daygrid-day-number),
+:global(.fc .fc-day-today .dayNumberText) {
+  background: transparent !important;
+  color: var(--cal-accent-2) !important;
+  font-weight: 900;
+}
+
+:global(.fc .fc-daygrid-day.pz-day-selected) {
+  background: color-mix(in srgb, var(--color-primary) 20%, var(--cal-panel) 80%) !important;
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--color-primary) 52%, transparent);
+}
+
+:global(.fc .fc-daygrid-day:hover) {
+  background: color-mix(in srgb, var(--cal-accent) 10%, var(--cal-panel) 90%) !important;
+}
+
+.dayEventBars {
+  top: 24px !important;
+  height: calc(100% - 30px) !important;
+}
+
+@media (max-width: 768px) {
+  :global(.fc .fc-daygrid-day-number),
+  .dayNumberText {
+    font-size: 11px !important;
+  }
+
+  .dayEventBars {
+    top: 22px !important;
+    height: calc(100% - 26px) !important;
+  }
+}
+
+/* Whole date-cell states: the date cell means the full day frame area. */
+:global(.fc .fc-daygrid-day .fc-daygrid-day-frame) {
+  transition: background-color 0.14s ease, box-shadow 0.14s ease;
+}
+
+:global(.fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-frame) {
+  background: color-mix(in srgb, var(--cal-accent) 3%, var(--cal-panel) 82%) !important;
+}
+
+:global(.fc .fc-daygrid-day.pz-day-selected .fc-daygrid-day-frame) {
+  background: color-mix(in srgb, var(--color-primary) 22%, var(--cal-panel) 78%) !important;
+  box-shadow: none !important;
+}
+
+:global(.fc .fc-daygrid-day:hover .fc-daygrid-day-frame) {
+  background: color-mix(in srgb, var(--cal-accent) 12%, var(--cal-panel) 88%) !important;
+}
+
+:global(.fc .fc-daygrid-day.pz-day-selected:hover .fc-daygrid-day-frame) {
+  background: color-mix(in srgb, var(--color-primary) 28%, var(--cal-panel) 72%) !important;
+}
+
+:global(.fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number),
+:global(.fc .fc-daygrid-day.fc-day-today .dayNumberText) {
+  background: transparent !important;
+  color: var(--cal-accent-2) !important;
+}
+
+.holidayLabel {
+  position: absolute;
+  top: 7px;
+  left: 10px;
+  z-index: 5;
+  max-width: calc(100% - 58px);
+  overflow: hidden;
+  color: #ff7a7a;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+:global(.fc .pz-holiday-tip:hover::after),
+:global(.fc .pz-holiday-tip:hover::before) {
+  content: none !important;
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  .holidayLabel {
+    top: 7px;
+    left: 7px;
+    max-width: calc(100% - 42px);
+    font-size: 9px;
+  }
+}
+
+/* Compact side schedule list and unified side backgrounds */
+.sideRail {
+  background: var(--color-surface);
+  gap: 10px;
+}
+
+.sideRail .dayEventPanel {
+  max-height: 228px;
+  background: var(--color-surface);
+  box-shadow: none;
+}
+
+.dayEventList {
+  gap: 6px;
+}
+
+.dayEventItem {
+  min-height: 38px;
+  padding: 7px 10px;
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+.dayEventItem:hover {
+  background: var(--color-surface-muted);
+}
+
+.dayEventDot {
+  width: 10px;
+  height: 10px;
+}
+
+.dayEventText {
+  display: block;
+}
+
+.dayEventTitle {
+  display: block;
+  font-size: 13px;
+  line-height: 1.2;
 }

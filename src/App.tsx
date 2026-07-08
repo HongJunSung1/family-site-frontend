@@ -81,17 +81,32 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
-    const updateViewportHeight = () => {
-      document.documentElement.style.setProperty("--app-viewport-height", `${window.innerHeight}px`);
+    let viewportWidth = window.innerWidth;
+    let lockedViewportHeight = window.innerHeight;
+
+    const applyViewportHeight = () => {
+      document.documentElement.style.setProperty("--app-viewport-height", `${lockedViewportHeight}px`);
     };
 
-    updateViewportHeight();
+    const updateViewportHeight = () => {
+      const nextWidth = window.innerWidth;
+      const nextHeight = window.innerHeight;
+
+      if (Math.abs(nextWidth - viewportWidth) > 24) {
+        viewportWidth = nextWidth;
+        lockedViewportHeight = nextHeight;
+      } else {
+        lockedViewportHeight = Math.min(lockedViewportHeight, nextHeight);
+      }
+
+      applyViewportHeight();
+    };
+
+    applyViewportHeight();
     window.addEventListener("resize", updateViewportHeight);
-    window.visualViewport?.addEventListener("resize", updateViewportHeight);
 
     return () => {
       window.removeEventListener("resize", updateViewportHeight);
-      window.visualViewport?.removeEventListener("resize", updateViewportHeight);
     };
   }, []);
 

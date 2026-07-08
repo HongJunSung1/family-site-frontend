@@ -1,9 +1,8 @@
-import FullCalendar from "@fullcalendar/react";
-import type { EventClickArg, EventHoveringArg, EventMountArg } from "@fullcalendar/core";
+﻿import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import type { DateClickArg } from "@fullcalendar/interaction";
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 import dayjs from "dayjs";
 import type { Dayjs } from "dayjs";
 
@@ -11,61 +10,13 @@ import type { DayType, ViewRange } from "../types";
 import type { ExpandedEvent } from "../utils/recurrence";
 import styles from "../../Calendar.module.css";
 
-
-const getReadableTextColor = (bgColor?: string) => {
-  if (!bgColor) return "#ffffff";
-
-  let hex = bgColor.replace("#", "").trim();
-
-  if (hex.length === 3) {
-    hex = hex
-      .split("")
-      .map((c) => c + c)
-      .join("");
-  }
-
-  if (hex.length !== 6) return "#ffffff";
-
-  const r = parseInt(hex.slice(0, 2), 16);
-  const g = parseInt(hex.slice(2, 4), 16);
-  const b = parseInt(hex.slice(4, 6), 16);
-
-  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-
-  return brightness >= 160 ? "#111827" : "#ffffff";
+type EventBar = {
+  key: string;
+  color: string;
+  isStart: boolean;
+  isEnd: boolean;
+  lane: number;
 };
-
-const closeCalendarPopovers = () => {
-  document.querySelectorAll<HTMLElement>(".fc-popover").forEach((popover) => {
-    popover.remove();
-  });
-};
-
-const closeCalendarPopoversReliably = () => {
-  closeCalendarPopovers();
-  window.requestAnimationFrame(closeCalendarPopovers);
-  window.setTimeout(closeCalendarPopovers, 0);
-};
-
-type CalendarDisplayState = {
-  isMobileCalendar: boolean;
-  dayMaxEvents: number;
-};
-
-const getCalendarDisplayState = () => {
-  if (typeof window === "undefined") {
-    return { isMobileCalendar: false, dayMaxEvents: 3 };
-  }
-
-  const isMobileCalendar = window.innerWidth <= 768;
-
-  if (isMobileCalendar) {
-    return { isMobileCalendar, dayMaxEvents: 1 };
-  }
-
-  return { isMobileCalendar, dayMaxEvents: 1 };
-};
-
 
 type Props = {
   calRef: React.RefObject<FullCalendar | null>;
@@ -73,72 +24,104 @@ type Props = {
   holidayMap: Map<string, string>;
   getDayType: (d: Dayjs) => DayType;
   onDateClick: (info: DateClickArg) => void;
-  onEventClick: (info: EventClickArg) => void;
-  onEventMouseEnter: (info: EventHoveringArg) => void;
-  onEventMouseLeave: (info: EventHoveringArg) => void;
-  onEventDidMount?: (info: EventMountArg) => void;
   onDatesSet: (range: ViewRange, holidayYear: number) => void;
-
   calendarName: string;
+  eventCountByDate: Map<string, number>;
+  eventBarsByDate: Map<string, EventBar[]>;
+  selectedDate: string;
 };
-
 
 export function CalendarView({
   calRef,
-  expandedEvents,
   holidayMap,
   getDayType,
   onDateClick,
-  onEventClick,
-  onEventDidMount,
-  onEventMouseEnter,
-  onEventMouseLeave,
   onDatesSet,
   calendarName,
+  eventCountByDate,
+  eventBarsByDate,
+  selectedDate,
 }: Props) {
-  const [calendarDisplay, setCalendarDisplay] = useState<CalendarDisplayState>(getCalendarDisplayState);
+  const shellRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    const updateCalendarDisplay = () => setCalendarDisplay(getCalendarDisplayState());
-
-    updateCalendarDisplay();
-    window.addEventListener("resize", updateCalendarDisplay);
-
-    return () => {
-      window.removeEventListener("resize", updateCalendarDisplay);
-    };
-  }, []);
-
-  useEffect(() => {
-    const handlePopoverCloseClick = (event: MouseEvent | TouchEvent) => {
-      const target = event.target as HTMLElement | null;
-      if (!target?.closest(".fc-popover-close")) return;
-
-      closeCalendarPopovers();
-    };
-
-    document.addEventListener("click", handlePopoverCloseClick);
-    document.addEventListener("touchend", handlePopoverCloseClick);
-
-    return () => {
-      document.removeEventListener("click", handlePopoverCloseClick);
-      document.removeEventListener("touchend", handlePopoverCloseClick);
-    };
-  }, []);
-
-  const handleEventClick = (info: EventClickArg) => {
-    closeCalendarPopoversReliably();
-
-    onEventClick(info);
+  const getHolidayDisplayName = (name: string) => {
+    if (name === "기독탄신일") return "크리스마스";
+    return name;
   };
 
+  const renderCellExtras = (ymd: string, cellEl: HTMLElement) => {
+    const frame = cellEl.querySelector(".fc-daygrid-day-frame") as HTMLElement | null;
+    const target = frame ?? cellEl;
+    const name = holidayMap.get(ymd);
+    const bars = eventBarsByDate.get(ymd) ?? [];
+    const count = eventCountByDate.get(ymd) ?? 0;
+
+    target
+      .querySelectorAll<HTMLElement>('[data-calendar-cell-extra="true"]')
+      .forEach((el) => el.remove());
+
+    delete target.dataset.holiday;
+    target.classList.remove("pz-holiday-tip");
+
+    if (name) {
+      const holidayLabel = document.createElement("span");
+      holidayLabel.className = styles.holidayLabel;
+      holidayLabel.dataset.calendarCellExtra = "true";
+      holidayLabel.textContent = getHolidayDisplayName(name);
+      target.appendChild(holidayLabel);
+    }
+
+    if (bars.length > 0) {
+      const barsWrap = document.createElement("div");
+      barsWrap.className = styles.dayEventBars;
+      barsWrap.dataset.calendarCellExtra = "true";
+      barsWrap.setAttribute("aria-hidden", "true");
+
+      bars.forEach((bar) => {
+        const barEl = document.createElement("span");
+        barEl.className = [
+          styles.dayEventBar,
+          bar.isStart ? styles.dayEventBarStart : "",
+          bar.isEnd ? styles.dayEventBarEnd : "",
+          !bar.isStart && !bar.isEnd ? styles.dayEventBarMiddle : "",
+        ].join(" ");
+        barEl.style.backgroundColor = bar.color;
+        barEl.style.setProperty("--bar-lane", String(bar.lane));
+        barsWrap.appendChild(barEl);
+      });
+
+      target.appendChild(barsWrap);
+    }
+
+    if (count > 0) {
+      const countEl = document.createElement("span");
+      countEl.className = styles.dayEventCount;
+      countEl.dataset.calendarCellExtra = "true";
+      countEl.textContent = String(count);
+      target.appendChild(countEl);
+    }
+  };
+
+  useEffect(() => {
+    const syncVisibleCells = () => {
+      shellRef.current
+        ?.querySelectorAll<HTMLElement>(".fc-daygrid-day[data-date]")
+        .forEach((cell) => {
+          const ymd = cell.dataset.date;
+          if (!ymd) return;
+          renderCellExtras(ymd, cell);
+        });
+    };
+
+    syncVisibleCells();
+    const raf = window.requestAnimationFrame(syncVisibleCells);
+    return () => window.cancelAnimationFrame(raf);
+  }, [holidayMap, eventBarsByDate, eventCountByDate]);
+
   return (
-    <div className={styles.calendarShell}>
-      <div className={styles.calendarNameHeader}>
-        {calendarName}
-      </div>
+    <div ref={shellRef} className={styles.calendarShell}>
+      <div className={styles.calendarNameHeader}>{calendarName}</div>
       <FullCalendar
-        key={holidayMap.size}
         ref={calRef}
         plugins={[dayGridPlugin, interactionPlugin]}
         initialView="dayGridMonth"
@@ -146,11 +129,10 @@ export function CalendarView({
         locale="ko"
         customButtons={{
           myToday: {
-            text: "📆",
+            text: "오늘",
             hint: "오늘 날짜로 이동",
             click: () => calRef.current?.getApi().today(),
           },
-          
         }}
         headerToolbar={{
           left: "title",
@@ -160,36 +142,32 @@ export function CalendarView({
         datesSet={(arg) => {
           const y = dayjs(arg.start).add(10, "day").year();
           onDatesSet({ start: dayjs(arg.start), end: dayjs(arg.end) }, y);
-          
         }}
         dayCellDidMount={(arg) => {
           const ymd = dayjs(arg.date).format("YYYY-MM-DD");
-          const name = holidayMap.get(ymd);
-          const frame = arg.el.querySelector(".fc-daygrid-day-frame") as HTMLElement | null;
-          const target = frame ?? (arg.el as HTMLElement);
-
-          if (name) {
-            target.dataset.holiday = name;
-            target.classList.add("pz-holiday-tip");
-          } else {
-            delete target.dataset.holiday;
-            target.classList.remove("pz-holiday-tip");
-          }
+          renderCellExtras(ymd, arg.el as HTMLElement);
         }}
-       
+        dayCellContent={(arg) => {
+          const dayNumber = arg.dayNumberText.replace("일", "");
+
+          return (
+            <div className={styles.dayCellContent}>
+              <span className={styles.dayNumberText}>{dayNumber}</span>
+            </div>
+          );
+        }}
         dateClick={onDateClick}
-        eventClick={handleEventClick}
-        eventDidMount={onEventDidMount}
-        eventMouseEnter={onEventMouseEnter}
-        eventMouseLeave={onEventMouseLeave}
         displayEventTime={false}
         displayEventEnd={false}
         dayCellClassNames={(arg) => {
           const d = dayjs(arg.date);
           const t = getDayType(d);
-          if (t === "red") return ["pz-day-red"];
-          if (t === "blue") return ["pz-day-blue"];
-          return ["pz-day-black"];
+          const classes = [];
+          if (t === "red") classes.push("pz-day-red");
+          else if (t === "blue") classes.push("pz-day-blue");
+          else classes.push("pz-day-black");
+          if (d.format("YYYY-MM-DD") === selectedDate) classes.push("pz-day-selected");
+          return classes;
         }}
         dayHeaderClassNames={(arg) => {
           const d = dayjs(arg.date);
@@ -198,37 +176,9 @@ export function CalendarView({
           if (dow === 6) return ["pz-dow-blue"];
           return ["pz-dow-black"];
         }}
-        eventDisplay="block"
- events={expandedEvents.map((e) => {
-  const bgColor = e.color || "#1e2a78";
-
-  return {
-    id: e.id,
-    title: e.title,
-    start: e.start,
-    end: e.end,
-    allDay: e.allDay,
-    backgroundColor: bgColor,
-    borderColor: bgColor,
-    textColor: getReadableTextColor(bgColor),
-    extendedProps: {
-      memo: e.memo,
-      startRaw: e.start,
-      endRaw: e.end,
-      createdBy: e.createdBy,
-      createdByName: e.createdByName,
-      locationName: e.locationName,
-      masterId: e.__masterId ?? e.id,
-      occKey: e.__occKey ?? "",
-      repeat: e.repeat ?? "none",
-    },
-  };
-})}
-        dayMaxEvents={calendarDisplay.dayMaxEvents}
-        moreLinkContent={() => "..."}
-        expandRows={true} // 주(행) 높이를 동일하게 분배
-        fixedWeekCount={true}   // 5~6주 고정(월뷰에서 행 높이 안정)
-        moreLinkClick="popover"
+        events={[]}
+        expandRows={true}
+        fixedWeekCount={true}
       />
     </div>
   );

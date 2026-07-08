@@ -22,6 +22,7 @@ import styles from "./EventModal.module.css";
 
 type Props = {
   mode: ModalMode;
+  presentation?: "modal" | "sideCard";
 
   form: FormState;
   setForm: React.Dispatch<React.SetStateAction<FormState>>;
@@ -60,6 +61,7 @@ type Props = {
 export function EventModal(props: Props) {
   const {
     mode,
+    presentation = "modal",
     form,
     setForm,
     formError,
@@ -278,17 +280,24 @@ export function EventModal(props: Props) {
   );
 
   return (
-    <div className={styles.overlay}>
+    <div className={`${styles.overlay} ${presentation === "sideCard" ? styles.overlaySideCard : ""}`}>
       <div
         ref={modalRef}
-        className={styles.modal}
-        style={{ transform: `translate(${dragOffset.x}px, ${dragOffset.y}px)` }}
+        className={`${styles.modal} ${presentation === "sideCard" ? styles.modalSideCard : ""}`}
+        style={
+          presentation === "sideCard"
+            ? undefined
+            : { transform: `translate(${dragOffset.x}px, ${dragOffset.y}px)` }
+        }
       >
         <button onClick={closeModal} className={styles.closeBtn} aria-label="close">
           ×
         </button>
 
-        <div className={styles.header} onMouseDown={handleDragStart}>
+        <div
+          className={styles.header}
+          onMouseDown={presentation === "sideCard" ? undefined : handleDragStart}
+        >
           <div className={styles.headerLeft}>
             <div className={styles.title}>{mode === "create" ? "일정 추가" : "일정 상세"}</div>
 

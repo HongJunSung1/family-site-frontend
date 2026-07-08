@@ -12,6 +12,7 @@ import {
   type UpdateCalendarEventPayload,
 } from "../../../../api/calendarApi";
 import type { CalEvent, FormState, ModalMode, PickerTarget, RepeatType } from "../types";
+import type { ExpandedEvent } from "../utils/recurrence";
 import { addHours, formatISO, pad2, toDayjs } from "../utils/date";
 
 type UseCalendarEventFormParams = {
@@ -123,9 +124,9 @@ export function useCalendarEventForm({
     setForm((p) => ({ ...p, multiDates: [] }));
   };
 
-  const onDateClick = (info: DateClickArg) => {
+  const openCreateAtDate = (dateStr: string) => {
     setFormError("");
-    const base = dayjs(`${info.dateStr}T09:00`);
+    const base = dayjs(`${dateStr}T09:00`);
     const start = base;
     const end = base.add(1, "hour");
 
@@ -140,28 +141,31 @@ export function useCalendarEventForm({
     setMode("create");
   };
 
-  const onEventClick = (info: EventClickArg) => {
+  const onDateClick = (info: DateClickArg) => {
+    openCreateAtDate(info.dateStr);
+  };
+
+  const openEventDetail = (event: ExpandedEvent) => {
     setFormError("");
-    const e = info.event;
 
-    const startD = toDayjs(e.startStr || "");
-    const endD = toDayjs(e.endStr || e.startStr || "");
+    const startD = toDayjs(event.start || "");
+    const endD = toDayjs(event.end || event.start || "");
 
-    const masterId = String(e.extendedProps?.masterId || e.id || "");
-    const occKey = String(e.extendedProps?.occKey || "");
+    const masterId = String(event.__masterId ?? event.id ?? "");
+    const occKey = String(event.__occKey ?? "");
 
     const master = events.find((x) => x.id === masterId);
 
-    const snapRepeat = (master?.repeat ?? e.extendedProps?.repeat ?? "none") as RepeatType;
-    const snapInterval = Math.max(1, master?.repeatInterval ?? e.extendedProps?.repeatInterval ?? 1);
-    const snapRS = master?.repeatRangeStart ?? e.extendedProps?.repeatRangeStart ?? "";
-    const snapRE = master?.repeatRangeEnd ?? e.extendedProps?.repeatRangeEnd ?? "";
+    const snapRepeat = (master?.repeat ?? event.repeat ?? "none") as RepeatType;
+    const snapInterval = Math.max(1, master?.repeatInterval ?? event.repeatInterval ?? 1);
+    const snapRS = master?.repeatRangeStart ?? event.repeatRangeStart ?? "";
+    const snapRE = master?.repeatRangeEnd ?? event.repeatRangeEnd ?? "";
 
-    const occTitle = String(e.title ?? master?.title ?? "");
-    const occMemo = String(e.extendedProps?.memo ?? master?.memo ?? "");
-    const occColor = String(e.backgroundColor ?? master?.color ?? "#1e2a78");
-    const occCreatedBy = String(e.extendedProps?.createdBy ?? master?.createdBy ?? "");
-    const occAllDay = !!(e.allDay ?? master?.allDay);
+    const occTitle = String(event.title ?? master?.title ?? "");
+    const occMemo = String(event.memo ?? master?.memo ?? "");
+    const occColor = String(event.color ?? master?.color ?? "#1e2a78");
+    const occCreatedBy = String(event.createdBy ?? master?.createdBy ?? "");
+    const occAllDay = !!(event.allDay ?? master?.allDay);
 
     const isRecurringClick = occKey && (snapRepeat ?? "none") !== "none";
     const initialScope = isRecurringClick ? "this" : "all";
@@ -197,20 +201,44 @@ export function useCalendarEventForm({
       clickedOccKey: isRecurringClick ? occKey : "",
       applyScope: initialScope,
       locationLat:
-        e.extendedProps?.locationLat != null
-          ? Number(e.extendedProps.locationLat)
-          : master?.locationLat ?? null,
+        event.locationLat != null ? Number(event.locationLat) : master?.locationLat ?? null,
       locationLng:
-        e.extendedProps?.locationLng != null
-          ? Number(e.extendedProps.locationLng)
-          : master?.locationLng ?? null,
+        event.locationLng != null ? Number(event.locationLng) : master?.locationLng ?? null,
 
-      locationName: String(e.extendedProps?.locationName ?? master?.locationName ?? ""),
-      locationAddress: String(e.extendedProps?.locationAddress ?? master?.locationAddress ?? ""),
+      locationName: String(event.locationName ?? master?.locationName ?? ""),
+      locationAddress: String(event.locationAddress ?? master?.locationAddress ?? ""),
     });
 
     setPicker("none");
     setMode("detail");
+  };
+
+  const onEventClick = (info: EventClickArg) => {
+    const e = info.event;
+
+    openEventDetail({
+      id: String(e.extendedProps?.masterId || e.id || ""),
+      title: String(e.title ?? ""),
+      start: e.startStr || "",
+      end: e.endStr || e.startStr || "",
+      memo: String(e.extendedProps?.memo ?? ""),
+      color: String(e.backgroundColor || "#1e2a78"),
+      createdBy: String(e.extendedProps?.createdBy ?? ""),
+      createdByName: String(e.extendedProps?.createdByName ?? ""),
+      allDay: !!e.allDay,
+      repeat: (e.extendedProps?.repeat ?? "none") as RepeatType,
+      repeatInterval: Number(e.extendedProps?.repeatInterval ?? 1),
+      repeatRangeStart: String(e.extendedProps?.repeatRangeStart ?? ""),
+      repeatRangeEnd: String(e.extendedProps?.repeatRangeEnd ?? ""),
+      locationName: String(e.extendedProps?.locationName ?? ""),
+      locationAddress: String(e.extendedProps?.locationAddress ?? ""),
+      locationLat:
+        e.extendedProps?.locationLat != null ? Number(e.extendedProps.locationLat) : null,
+      locationLng:
+        e.extendedProps?.locationLng != null ? Number(e.extendedProps.locationLng) : null,
+      __masterId: String(e.extendedProps?.masterId || e.id || ""),
+      __occKey: String(e.extendedProps?.occKey || ""),
+    });
   };
 
   const canEdit = form.createdBy === userId;
@@ -516,7 +544,9 @@ export function useCalendarEventForm({
     canEdit,
     lockRepeatControls,
     onDateClick,
+    openCreateAtDate,
     onEventClick,
+    openEventDetail,
     onToggleAllDay,
     onPickStartDate,
     onPickEndDate,

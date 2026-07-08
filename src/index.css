@@ -69,16 +69,19 @@ a {
 a:hover {
   color: var(--color-primary-hover);
 }
-html, body {
+html,
+body,
+#root {
   height: 100%;
 }
 
 body {
   margin: 0;
   display: block;      /* flex 제거 */
-  min-height: 100vh;
+  min-height: var(--app-viewport-height, 100dvh);
   color: var(--color-text);
   background: var(--color-bg);
+  overflow-x: hidden;
 
   /* 폰트 관련 */
   font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI",
