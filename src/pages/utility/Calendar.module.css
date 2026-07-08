@@ -33,7 +33,7 @@
 /* 전체 화면 배경 + 가운데 정렬 */
 .root {
   width: 100%;
-  height: calc(100dvh - var(--app-nav-height, 67px));
+  height: 100%;
   min-height: 0;
   overflow: hidden;
   background: light dark;
@@ -536,19 +536,19 @@
 
 @media (max-width: 768px) {
   .root {
-    height: calc(100dvh - var(--app-nav-height, 59px));
+    height: 100%;
     min-height: 0;
   }
 
   .container {
     height: 100%;
-    padding: 12px 8px;
+    padding: 0;
   }
 
   .card,
   .calendarShell,
   :global(.fc .fc-view-harness) {
-    border-radius: 12px;
+    border-radius: 0;
   }
 
   .calendarTabs {
@@ -776,13 +776,13 @@
 
 @media (max-width: 480px) {
   .container {
-    padding: 6px 4px;
+    padding: 0;
   }
 
   .card,
   .calendarShell,
   :global(.fc .fc-view-harness) {
-    border-radius: 10px;
+    border-radius: 0;
   }
 
   :global(.fc .fc-toolbar-title) {

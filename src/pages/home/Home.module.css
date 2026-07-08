@@ -1,5 +1,5 @@
 .page {
-  height: calc(100dvh - var(--app-nav-height, 67px));
+  height: calc(var(--app-viewport-height, 100dvh) - var(--app-nav-height, 67px));
   min-height: 0;
   padding: 0;
   box-sizing: border-box;
@@ -10,7 +10,7 @@
 
 @media (max-width: 768px) {
   .page {
-    height: calc(100dvh - var(--app-nav-height, 59px));
+    height: calc(var(--app-viewport-height, 100dvh) - var(--app-nav-height, 59px));
     padding: 0;
   }
 }

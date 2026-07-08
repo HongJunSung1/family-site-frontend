@@ -80,6 +80,21 @@ export default function App() {
     window.localStorage.setItem("theme", theme);
   }, [theme]);
 
+  useEffect(() => {
+    const updateViewportHeight = () => {
+      document.documentElement.style.setProperty("--app-viewport-height", `${window.innerHeight}px`);
+    };
+
+    updateViewportHeight();
+    window.addEventListener("resize", updateViewportHeight);
+    window.visualViewport?.addEventListener("resize", updateViewportHeight);
+
+    return () => {
+      window.removeEventListener("resize", updateViewportHeight);
+      window.visualViewport?.removeEventListener("resize", updateViewportHeight);
+    };
+  }, []);
+
   const toggleTheme = () => {
     setTheme((prev) => (prev === "dark" ? "light" : "dark"));
   };
