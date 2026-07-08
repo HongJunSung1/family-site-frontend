@@ -1,5 +1,7 @@
 ﻿import { useState } from "react";
 import AlarmList from "../AlarmList/AlarmList";
+import { useNavigate } from "react-router-dom";
+import { logoutAndClearSession } from "../../../../api/authApi";
 import CalendarInfo from "../calendar-info/CalendarInfo";
 import CalendarSettings from "../calendar-info/CalendarSettings";
 import BasicPersonalInfo from "./BasicPersonalInfo";
@@ -7,12 +9,26 @@ import styles from "./PersonalInfoPage.module.css";
 
 type MenuKey = "basic" | "calendarList" | "calendarSettings" | "AlarmList";
 
-export default function PersonalInfoPage() {
+type Props = {
+  onLogout: () => void;
+};
+
+export default function PersonalInfoPage({ onLogout }: Props) {
+  const navigate = useNavigate();
   const [selectedMenu, setSelectedMenu] = useState<MenuKey>("basic");
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   const onClickCalendarGroup = () => {
     setIsCalendarOpen((prev) => !prev);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logoutAndClearSession();
+    } finally {
+      onLogout();
+      navigate("/login", { replace: true });
+    }
   };
 
   return (
@@ -42,7 +58,7 @@ export default function PersonalInfoPage() {
               onClick={onClickCalendarGroup}
             >
               <span>2) 캘린더 정보</span>
-              <span className={styles.treeArrow}>{isCalendarOpen ? "▴" : "▾"}</span>
+              <span className={styles.treeArrow}>{isCalendarOpen ? "∧" : "∨"}</span>
             </button>
 
             <div className={`${styles.treeSubMenu} ${isCalendarOpen ? styles.treeSubMenuOpen : ""}`}>
@@ -75,6 +91,10 @@ export default function PersonalInfoPage() {
               3) 받은 알림
             </button>
           </div>
+
+          <button type="button" className={styles.logoutButton} onClick={handleLogout}>
+            로그아웃
+          </button>
         </aside>
 
         <section className={styles.content}>

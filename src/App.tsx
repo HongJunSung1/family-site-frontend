@@ -4,51 +4,61 @@ import { verifyStoredSession } from "./api/authApi";
 import Home from "./pages/home/Home";
 import Login from "./pages/home/Login";
 import Signup from "./pages/home/Signup";
+import homeIcon from "./assets/icons/home.svg";
+import profilePrivacyIcon from "./assets/icons/profile-privacy.svg";
+import themeMoonIcon from "./assets/icons/theme-moon.svg";
+import themeSunIcon from "./assets/icons/theme-sun.svg";
 import NotificationBell from "./pages/utility/notification-bell/NotificationBell";
 import PersonalInfoPage from "./pages/utility/info/user-info/PersonalInfoPage";
 import ProtectedRoute from "./routes/ProtectedRoute";
+import styles from "./App.module.css";
 
-function TopNav() {
+type ThemeMode = "light" | "dark";
+
+type TopNavProps = {
+  theme: ThemeMode;
+  onToggleTheme: () => void;
+};
+
+function TopNav({ theme, onToggleTheme }: TopNavProps) {
   const navigate = useNavigate();
 
   return (
-    <nav
-      style={{
-        padding: "12px 16px",
-        borderBottom: "1px solid #333",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-      }}
-    >
+    <nav className={styles.topNav}>
       <div>
-        <Link to="/home" style={{ marginRight: 12 }}>
-          홈
+        <Link to="/home" className={styles.homeButton} aria-label="홈" title="홈">
+          <img src={homeIcon} alt="" className={styles.navIconImage} aria-hidden="true" />
         </Link>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <div className={styles.navActions}>
+        <button
+          type="button"
+          onClick={onToggleTheme}
+          role="switch"
+          aria-checked={theme === "dark"}
+          className={styles.navIconButton}
+          aria-label={theme === "dark" ? "라이트모드로 전환" : "다크모드로 전환"}
+          title={theme === "dark" ? "라이트모드로 전환" : "다크모드로 전환"}
+        >
+          <img
+            src={theme === "dark" ? themeSunIcon : themeMoonIcon}
+            alt=""
+            className={styles.navIconImage}
+            aria-hidden="true"
+          />
+        </button>
+
         <NotificationBell />
 
         <button
           type="button"
           onClick={() => navigate("/profile")}
-          style={{
-            width: 38,
-            height: 38,
-            borderRadius: "50%",
-            border: "1px solid #ccc",
-            background: "#f3f4f6",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 18,
-          }}
+          className={styles.profileButton}
           aria-label="개인정보"
           title="개인정보"
         >
-          내
+          <img src={profilePrivacyIcon} alt="" className={styles.navIconImage} aria-hidden="true" />
         </button>
       </div>
     </nav>
@@ -58,6 +68,21 @@ function TopNav() {
 export default function App() {
   const [checking, setChecking] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [theme, setTheme] = useState<ThemeMode>(() => {
+    if (typeof window === "undefined") return "light";
+
+    const storedTheme = window.localStorage.getItem("theme");
+    return storedTheme === "dark" || storedTheme === "light" ? storedTheme : "light";
+  });
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    window.localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+  };
 
   useEffect(() => {
     const checkLogin = async () => {
@@ -80,7 +105,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      {isLoggedIn && <TopNav />}
+      {isLoggedIn && <TopNav theme={theme} onToggleTheme={toggleTheme} />}
 
       <Routes>
         <Route
@@ -95,7 +120,7 @@ export default function App() {
           path="/home"
           element={
             <ProtectedRoute isLoggedIn={isLoggedIn}>
-              <Home onLogout={() => setIsLoggedIn(false)} />
+              <Home />
             </ProtectedRoute>
           }
         />
@@ -104,7 +129,7 @@ export default function App() {
           path="/profile"
           element={
             <ProtectedRoute isLoggedIn={isLoggedIn}>
-              <PersonalInfoPage />
+              <PersonalInfoPage onLogout={() => setIsLoggedIn(false)} />
             </ProtectedRoute>
           }
         />

@@ -3,6 +3,7 @@ import type { EventClickArg, EventHoveringArg, EventMountArg } from "@fullcalend
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import type { DateClickArg } from "@fullcalendar/interaction";
+import { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import type { Dayjs } from "dayjs";
 
@@ -34,6 +35,37 @@ const getReadableTextColor = (bgColor?: string) => {
   return brightness >= 160 ? "#111827" : "#ffffff";
 };
 
+const closeCalendarPopovers = () => {
+  document.querySelectorAll<HTMLElement>(".fc-popover").forEach((popover) => {
+    popover.remove();
+  });
+};
+
+const closeCalendarPopoversReliably = () => {
+  closeCalendarPopovers();
+  window.requestAnimationFrame(closeCalendarPopovers);
+  window.setTimeout(closeCalendarPopovers, 0);
+};
+
+type CalendarDisplayState = {
+  isMobileCalendar: boolean;
+  dayMaxEvents: number;
+};
+
+const getCalendarDisplayState = () => {
+  if (typeof window === "undefined") {
+    return { isMobileCalendar: false, dayMaxEvents: 3 };
+  }
+
+  const isMobileCalendar = window.innerWidth <= 768;
+
+  if (isMobileCalendar) {
+    return { isMobileCalendar, dayMaxEvents: 1 };
+  }
+
+  return { isMobileCalendar, dayMaxEvents: 1 };
+};
+
 
 type Props = {
   calRef: React.RefObject<FullCalendar | null>;
@@ -43,6 +75,7 @@ type Props = {
   onDateClick: (info: DateClickArg) => void;
   onEventClick: (info: EventClickArg) => void;
   onEventMouseEnter: (info: EventHoveringArg) => void;
+  onEventMouseLeave: (info: EventHoveringArg) => void;
   onEventDidMount?: (info: EventMountArg) => void;
   onDatesSet: (range: ViewRange, holidayYear: number) => void;
 
@@ -59,9 +92,45 @@ export function CalendarView({
   onEventClick,
   onEventDidMount,
   onEventMouseEnter,
+  onEventMouseLeave,
   onDatesSet,
   calendarName,
 }: Props) {
+  const [calendarDisplay, setCalendarDisplay] = useState<CalendarDisplayState>(getCalendarDisplayState);
+
+  useEffect(() => {
+    const updateCalendarDisplay = () => setCalendarDisplay(getCalendarDisplayState());
+
+    updateCalendarDisplay();
+    window.addEventListener("resize", updateCalendarDisplay);
+
+    return () => {
+      window.removeEventListener("resize", updateCalendarDisplay);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handlePopoverCloseClick = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target?.closest(".fc-popover-close")) return;
+
+      closeCalendarPopovers();
+    };
+
+    document.addEventListener("click", handlePopoverCloseClick);
+    document.addEventListener("touchend", handlePopoverCloseClick);
+
+    return () => {
+      document.removeEventListener("click", handlePopoverCloseClick);
+      document.removeEventListener("touchend", handlePopoverCloseClick);
+    };
+  }, []);
+
+  const handleEventClick = (info: EventClickArg) => {
+    closeCalendarPopoversReliably();
+
+    onEventClick(info);
+  };
 
   return (
     <div className={styles.calendarShell}>
@@ -73,8 +142,7 @@ export function CalendarView({
         ref={calRef}
         plugins={[dayGridPlugin, interactionPlugin]}
         initialView="dayGridMonth"
-        height="auto"
-        // height={800}
+        height="100%"
         locale="ko"
         customButtons={{
           myToday: {
@@ -110,9 +178,10 @@ export function CalendarView({
         }}
        
         dateClick={onDateClick}
-        eventClick={onEventClick}
+        eventClick={handleEventClick}
         eventDidMount={onEventDidMount}
         eventMouseEnter={onEventMouseEnter}
+        eventMouseLeave={onEventMouseLeave}
         displayEventTime={false}
         displayEventEnd={false}
         dayCellClassNames={(arg) => {
@@ -155,7 +224,8 @@ export function CalendarView({
     },
   };
 })}
-        dayMaxEvents={5}
+        dayMaxEvents={calendarDisplay.dayMaxEvents}
+        moreLinkContent={() => "..."}
         expandRows={true} // 주(행) 높이를 동일하게 분배
         fixedWeekCount={true}   // 5~6주 고정(월뷰에서 행 높이 안정)
         moreLinkClick="popover"

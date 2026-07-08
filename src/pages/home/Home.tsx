@@ -1,28 +1,10 @@
-﻿import { useNavigate } from "react-router-dom";
 import Calendar from "../utility/Calendar";
-import { logoutAndClearSession } from "../../api/authApi";
+import styles from "./Home.module.css";
 
-type Props = {
-  onLogout: () => void;
-};
-
-export default function Home({ onLogout }: Props) {
-  const navigate = useNavigate();
-
-  const handleLogout = async () => {
-    try {
-      await logoutAndClearSession();
-    } finally {
-      onLogout();
-      navigate("/login", { replace: true });
-    }
-  };
-
+export default function Home() {
   return (
-    <div style={{ padding: 24 }}>
+    <div className={styles.page}>
       <Calendar />
-      <button onClick={handleLogout}>로그아웃</button>
     </div>
   );
 }
-

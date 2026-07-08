@@ -1,7 +1,8 @@
-ï»¿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ApiError } from "../../api/client";
 import { loginAndStoreSession } from "../../api/authApi";
+import styles from "./Auth.module.css";
 
 type Props = {
   onLogin: () => void;
@@ -29,7 +30,7 @@ export default function Login({ onLogin }: Props) {
     setErrorMsg("");
 
     if (!id.trim() || !password.trim()) {
-      setErrorMsg("ì•„ì´ë””ì™€ ë¹„ë°€ë²ˆí˜¸ë¥¼ ì…ë ¥í•´ì£¼ì„¸ìš”.");
+      setErrorMsg("¾ÆÀÌµğ¿Í ºñ¹Ğ¹øÈ£¸¦ ÀÔ·ÂÇØÁÖ¼¼¿ä.");
       return;
     }
 
@@ -39,7 +40,7 @@ export default function Login({ onLogin }: Props) {
       const data = await loginAndStoreSession(id.trim(), password);
 
       if (!data.ok || !data.accessToken) {
-        setErrorMsg(data.message ?? "ë¡œê·¸ì¸ ì‘ë‹µì´ ì˜¬ë°”ë¥´ì§€ ì•ŠìŠµë‹ˆë‹¤.");
+        setErrorMsg(data.message ?? "·Î±×ÀÎ ÀÀ´äÀÌ ¿Ã¹Ù¸£Áö ¾Ê½À´Ï´Ù.");
         return;
       }
 
@@ -56,15 +57,15 @@ export default function Login({ onLogin }: Props) {
     } catch (error) {
       if (error instanceof ApiError) {
         if (error.status === 401) {
-          setErrorMsg("ì•„ì´ë”” ë˜ëŠ” ë¹„ë°€ë²ˆí˜¸ê°€ ì˜¬ë°”ë¥´ì§€ ì•ŠìŠµë‹ˆë‹¤.");
+          setErrorMsg("¾ÆÀÌµğ ¶Ç´Â ºñ¹Ğ¹øÈ£°¡ ¿Ã¹Ù¸£Áö ¾Ê½À´Ï´Ù.");
           return;
         }
 
-        setErrorMsg(error.data?.message ?? "ë¡œê·¸ì¸ ì¤‘ ì˜¤ë¥˜ê°€ ë°œìƒí–ˆìŠµë‹ˆë‹¤. ì ì‹œ í›„ ë‹¤ì‹œ ì‹œë„í•´ì£¼ì„¸ìš”.");
+        setErrorMsg(error.data?.message ?? "·Î±×ÀÎ Áß ¿À·ù°¡ ¹ß»ıÇß½À´Ï´Ù. Àá½Ã ÈÄ ´Ù½Ã ½ÃµµÇØÁÖ¼¼¿ä.");
         return;
       }
 
-      setErrorMsg("ë„¤íŠ¸ì›Œí¬ ì˜¤ë¥˜ê°€ ë°œìƒí–ˆìŠµë‹ˆë‹¤. ì„œë²„ ì—°ê²°ì„ í™•ì¸í•´ì£¼ì„¸ìš”.");
+      setErrorMsg("³×Æ®¿öÅ© ¿À·ù°¡ ¹ß»ıÇß½À´Ï´Ù. ¼­¹ö ¿¬°áÀ» È®ÀÎÇØÁÖ¼¼¿ä.");
     } finally {
       setLoading(false);
     }
@@ -75,55 +76,57 @@ export default function Login({ onLogin }: Props) {
   };
 
   return (
-    <div style={{ padding: 24, maxWidth: 420 }}>
-      <h1>ë¡œê·¸ì¸</h1>
+    <div className={styles.page}>
+      <section className={styles.panel}>
+        <h1 className={styles.title}>·Î±×ÀÎ</h1>
+        <p className={styles.description}>°¡Á· ÀÏÁ¤À» È®ÀÎÇÏ·Á¸é °èÁ¤À¸·Î ·Î±×ÀÎÇØÁÖ¼¼¿ä.</p>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <label>
-          ì•„ì´ë””
-          <input
-            type="text"
-            value={id}
-            onChange={(e) => setId(e.target.value)}
-            onKeyDown={onKeyDown}
-            placeholder="ì•„ì´ë””ë¥¼ ì…ë ¥í•´ì£¼ì„¸ìš”."
-            autoComplete="username"
-            style={{ width: "100%", padding: 10, marginTop: 6 }}
-          />
-        </label>
+        <div className={styles.stack}>
+          <label className={styles.field}>
+            ¾ÆÀÌµğ
+            <input
+              type="text"
+              value={id}
+              onChange={(e) => setId(e.target.value)}
+              onKeyDown={onKeyDown}
+              placeholder="¾ÆÀÌµğ¸¦ ÀÔ·ÂÇØÁÖ¼¼¿ä."
+              autoComplete="username"
+              className={styles.input}
+            />
+          </label>
 
-        <label>
-          ë¹„ë°€ë²ˆí˜¸
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            onKeyDown={onKeyDown}
-            autoComplete="current-password"
-            style={{ width: "100%", padding: 10, marginTop: 6 }}
-          />
-        </label>
+          <label className={styles.field}>
+            ºñ¹Ğ¹øÈ£
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={onKeyDown}
+              autoComplete="current-password"
+              className={styles.input}
+            />
+          </label>
 
-        <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <input
-            type="checkbox"
-            checked={rememberId}
-            onChange={(e) => setRememberId(e.target.checked)}
-          />
-          ID ì €ì¥
-        </label>
+          <label className={styles.checkRow}>
+            <input
+              type="checkbox"
+              checked={rememberId}
+              onChange={(e) => setRememberId(e.target.checked)}
+            />
+            ID ÀúÀå
+          </label>
 
-        {errorMsg && <div style={{ color: "crimson", fontSize: 14 }}>{errorMsg}</div>}
+          {errorMsg && <div className={styles.error}>{errorMsg}</div>}
 
-        <button onClick={handleLogin} disabled={loading} style={{ padding: 10 }}>
-          {loading ? "ë¡œê·¸ì¸ ì¤‘..." : "ë¡œê·¸ì¸"}
-        </button>
+          <button className={styles.submitButton} onClick={handleLogin} disabled={loading}>
+            {loading ? "·Î±×ÀÎ Áß..." : "·Î±×ÀÎ"}
+          </button>
 
-        <div style={{ marginTop: 8 }}>
-          <Link to="/signup">íšŒì›ê°€ì…</Link>
+          <div className={styles.linkRow}>
+            <Link to="/signup">È¸¿ø°¡ÀÔ</Link>
+          </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }
-

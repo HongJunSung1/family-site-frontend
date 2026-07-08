@@ -61,6 +61,7 @@
 
 .table {
   width: 100%;
+  min-width: 760px;
   table-layout: fixed;
   border-collapse: collapse;
   background: #ffffff;
@@ -73,10 +74,11 @@
 
 .table th,
 .table td {
-  padding: 12px 14px;
+  padding: 12px 10px;
   border: 1px solid #e5e7eb;
   font-size: 14px;
   color:black;
+  vertical-align: middle;
 }
 
 .table td {
@@ -88,6 +90,7 @@
   font-weight: 700;
   color: #111827;
   text-align: center;
+  white-space: nowrap;
 }
 
 .emptyRow {
@@ -207,44 +210,100 @@
   text-align: center;
 }
 
+.actionCell {
+  text-align: center;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+.table td.actionCell {
+  text-align: center;
+}
+
+.actionCell .tableActionButton,
+.actionCell .memberToggleButton {
+  margin: 0 auto;
+}
+
 /* 회원명단 보기 */
+.tableActionButton,
 .memberToggleButton {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
 
-  width: 34px;
-  height: 34px;
+  min-width: 44px;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid #dbe3ef;
+  border-radius: 8px;
 
   background: #ffffff;
   cursor: pointer;
-  font-size: 13px;
+  color: #1e3a8a;
+  font-size: 12px;
   font-weight: 700;
-
-  color: black;
-  text-align:center;
+  line-height: 1;
+  white-space: nowrap;
+  gap: 4px;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    transform 0.2s ease;
 }
 
+.memberToggleArrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 12px;
+  font-size: 12px;
+  line-height: 1;
+  transform: translateY(0.5px);
+}
 
+.tableActionButton:hover:not(:disabled),
 .memberToggleButton:hover {
-  color: #2563eb;
+  border-color: #93c5fd;
+  background: #f8fbff;
+  transform: translateY(-1px);
+}
+
+.inviteButton {
+  color: #1d4ed8;
+}
+
+.deleteButton {
+  color: #b91c1c;
 }
 
 .memberToggleOpen {
-  transform: rotate(180deg);
+  border-color: #93c5fd;
+  background: #eff6ff;
 }
 
+.tableActionButton:disabled,
+.memberToggleButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.tableActionButton,
 .memberToggleButton {
   outline: none;
-  border: none; /* 기존 테두리도 제거 */
 }
 
+.tableActionButton:focus,
 .memberToggleButton:focus {
   outline: none;
 }
 
+.tableActionButton:focus-visible,
 .memberToggleButton:focus-visible {
-  outline: none;
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
 }
 
 .memberDetailRow td {
@@ -334,14 +393,15 @@
 }
 
 .orderButton {
-  width: 20px;
-  height: 16px;
+  width: 18px;
+  height: 12px;
   padding: 0;
   border: none;
   background: transparent;
   color: #374151;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 8px;
+  font-weight: 800;
   line-height: 1;
   display: flex;
   align-items: center;
@@ -374,4 +434,117 @@ input[type="number"]::-webkit-inner-spin-button {
   .infoRow {
     grid-template-columns: 110px 1fr;
   }
+}
+
+/* Theme overrides */
+.card,
+.table,
+.memberTable {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
+  box-shadow: var(--shadow-soft);
+}
+
+.sectionTitle,
+.value,
+.summaryValue,
+.table th,
+.table td,
+.memberTable th,
+.memberTable td {
+  color: var(--color-text);
+}
+
+.label,
+.summaryLabel,
+.emptyRow,
+.memberLoading,
+.totalMembers {
+  color: var(--color-text-muted);
+}
+
+.infoRow,
+.table th,
+.table td,
+.memberTable,
+.memberTable th,
+.memberTable td {
+  border-color: var(--color-border);
+}
+
+.table th,
+.memberTable th,
+.memberDetailRow td {
+  background: var(--color-surface-muted);
+}
+
+.saveButton {
+  background: var(--color-primary);
+  color: #ffffff;
+}
+
+.saveButton:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.addCalendarButton,
+.tableInputText,
+.tableInputNumber,
+.tableActionButton,
+.memberToggleButton,
+.memberPaging button {
+  background: var(--color-surface-raised);
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+}
+
+.addCalendarButton:hover:not(:disabled),
+.tableActionButton:hover:not(:disabled),
+.memberToggleButton:hover,
+.orderButton:hover:not(:disabled) {
+  color: var(--color-primary);
+}
+
+.memberToggleOpen {
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary);
+}
+
+.tableInputText:focus,
+.tableInputNumber:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+.orderButton {
+  color: var(--color-text-muted);
+}
+
+.errorText {
+  color: var(--color-danger);
+}
+
+.successText {
+  color: var(--color-success);
+}
+
+:global(html[data-theme="dark"]) .saveButton {
+  background: color-mix(in srgb, var(--color-primary) 68%, var(--color-surface) 32%);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 44%, var(--color-border) 56%);
+  color: #eef6ff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 6px 14px rgba(0, 0, 0, 0.16);
+}
+
+:global(html[data-theme="dark"]) .saveButton:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-primary) 76%, var(--color-surface) 24%);
+}
+
+:global(html[data-theme="dark"]) .addCalendarButton {
+  background: color-mix(in srgb, var(--color-surface-raised) 82%, var(--color-bg) 18%);
+  border-color: var(--color-border);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.14);
 }

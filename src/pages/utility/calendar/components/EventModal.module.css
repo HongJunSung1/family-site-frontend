@@ -1,6 +1,8 @@
 /* EventModal.module.css */
 
 .overlay {
+  --event-modal-date-text: rgba(17, 24, 39, 0.9);
+  --event-modal-calendar-day: rgba(17, 24, 39, 0.9);
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.35);
@@ -111,15 +113,16 @@
 }
 
 .rangeGrid {
-  display: grid;
-  grid-template-columns: 1fr 40px 1fr;
+  display: flex;
   gap: 10px;
-  align-items: center;
+  align-items: flex-end;
+  justify-content: flex-start;
 }
 
 .rangeCol {
   display: grid;
   gap: 10px;
+  min-width: 0;
 }
 
 .rangeHint {
@@ -128,7 +131,8 @@
 }
 
 .rangeArrow {
-  text-align: center;
+  padding-bottom: 9px;
+  text-align: left;
   font-size: 22px;
   opacity: 0.35;
 }
@@ -242,6 +246,28 @@
   gap: 10px;
 }
 
+.collapsible {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition:
+    grid-template-rows 0.24s ease,
+    opacity 0.2s ease,
+    transform 0.24s ease;
+}
+
+.collapsibleOpen {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.collapsibleInner {
+  min-height: 0;
+  overflow: hidden;
+}
+
 .repeatRow {
   display: flex;
   gap: 10px;
@@ -271,6 +297,7 @@
   border-radius: 10px;
   border: 1px solid rgba(0, 0, 0, 0.15);
   outline: none;
+  background: #fff;
   color: #111827;
 }
 
@@ -910,4 +937,361 @@
 .favoriteColorDeleteButton:hover {
   background: #fee2e2;
   color: #dc2626;
+}
+
+/* Theme overrides */
+.overlay {
+  background: var(--overlay-bg);
+}
+
+:global(html[data-theme="dark"]) .overlay {
+  --event-modal-date-text: var(--color-text);
+  --event-modal-calendar-day: var(--color-text);
+}
+
+.modal,
+.favoriteColorMenu,
+.addColorPopover {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-floating);
+}
+
+.addColorPopover::before {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+.title,
+.allDayLabel,
+.btnOutline,
+.linkBtn,
+.hint,
+.cardTitle,
+.placeInfoTitle,
+.placeResultName,
+.addColorTitle,
+.expandTitle,
+.tilde,
+.favoriteColorLabel,
+.favoriteColorOption,
+.favoriteColorTrigger,
+.addColorButton,
+.addColorNameInput,
+.addColorCancelButton {
+  color: var(--color-text);
+}
+
+.closeBtn,
+.sectionTitle,
+.rangeHint,
+.label,
+.labelFixed,
+.repeatUnit,
+.subNote,
+.radioText,
+.expandHint,
+.bottomHint,
+.mapCoordText,
+.placeInfoAddress,
+.placeInfoCoord,
+.placeSearchHint,
+.placeResultAddress,
+.dropdownArrow,
+.addColorLabel,
+.addColorCount,
+.cardText,
+.cardSubText,
+.sectionSummary,
+.sectionArrow,
+.accordionSummary,
+.accordionArrow {
+  color: var(--color-text-muted);
+  opacity: 1;
+}
+
+.closeBtn:hover {
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+}
+
+.sectionRow,
+.expand,
+.footer {
+  border-color: var(--color-border);
+}
+
+.textInput,
+.textarea,
+.select,
+.numberInput,
+.pillBtn,
+.btnOutline,
+.btnDanger,
+.placeInfoBox,
+.placeResultItem,
+.favoriteColorTrigger,
+.favoriteColorOption,
+.addColorButton,
+.addColorNameInput,
+.addColorCancelButton {
+  background: var(--color-surface-raised);
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+}
+
+:global(html[data-theme="dark"]) .favoriteColorMenu,
+:global(html[data-theme="dark"]) .addColorPopover {
+  background: var(--color-surface-raised);
+}
+
+:global(html[data-theme="dark"]) .favoriteColorOption:hover {
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+}
+
+:global(html[data-theme="dark"]) .card,
+:global(html[data-theme="dark"]) .placeInfoBox,
+:global(html[data-theme="dark"]) .placeResultItem {
+  background: var(--color-surface-raised);
+}
+
+:global(html[data-theme="dark"]) .MuiDateCalendar-root,
+:global(html[data-theme="dark"]) .MuiPickersCalendarHeader-root,
+:global(html[data-theme="dark"]) .MuiDayCalendar-header,
+:global(html[data-theme="dark"]) .MuiDayCalendar-monthContainer {
+  color: var(--color-text);
+}
+
+.textInput::placeholder,
+.textarea::placeholder,
+.addColorNameInput::placeholder {
+  color: var(--color-text-muted);
+}
+
+.textInput:focus,
+.textarea:focus,
+.select:focus,
+.numberInput:focus,
+.addColorNameInput:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+.pillBtnActive {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+.card,
+.placeResultItem:hover,
+.favoriteColorOption:hover {
+  background: var(--color-surface-muted);
+}
+
+.btnPrimary,
+.placeSearchBtn,
+.addColorSaveButton {
+  background: var(--color-primary);
+  color: #ffffff;
+}
+
+.btnPrimary:hover,
+.placeSearchBtn:hover,
+.addColorSaveButton:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.formError,
+.btnDanger,
+.favoriteColorDeleteButton:hover {
+  color: var(--color-danger);
+}
+
+.btnDanger,
+.favoriteColorDeleteButton:hover {
+  background: var(--color-danger-soft);
+  border-color: color-mix(in srgb, var(--color-danger) 40%, transparent);
+}
+
+.favoriteColorDot {
+  border-color: var(--color-border-strong);
+}
+
+@media (max-width: 640px) {
+  .overlay {
+    align-items: flex-end;
+    padding: 8px;
+  }
+
+  .modal {
+    width: 100%;
+    max-height: calc(100dvh - 16px);
+    padding: 14px;
+    border-radius: 16px 16px 12px 12px;
+  }
+
+  .closeBtn {
+    top: 10px;
+    right: 10px;
+    width: 36px;
+    height: 36px;
+  }
+
+  .header {
+    padding-right: 34px;
+  }
+
+  .title {
+    font-size: 17px;
+  }
+
+  .allDayRow {
+    margin-top: 8px;
+  }
+
+  .rangeGrid {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .rangeArrow {
+    padding-bottom: 0;
+    font-size: 16px;
+    line-height: 1;
+  }
+
+  .pillRow {
+    gap: 8px;
+  }
+
+  .pillBtn {
+    min-height: 36px;
+    padding: 9px 11px;
+    font-size: 13px;
+  }
+
+  .sectionRow {
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .sectionRight {
+    min-width: 0;
+    justify-content: flex-end;
+  }
+
+  .sectionSummary {
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .repeatRow,
+  .periodRow,
+  .row,
+  .addColorRow {
+    flex-wrap: wrap;
+  }
+
+  .labelFixed {
+    width: 100%;
+  }
+
+  .select {
+    min-width: 160px;
+  }
+
+  .numberInput {
+    width: 76px;
+  }
+
+  .placeSearchRow {
+    grid-template-columns: 1fr 64px 38px;
+  }
+
+  .kakaoMap {
+    height: 220px;
+  }
+
+  .colorArea {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .favoriteColorDropdown {
+    width: min(220px, calc(100vw - 120px));
+  }
+
+  .addColorBox {
+    margin-left: 0;
+  }
+
+  .addColorPopover,
+  .favoriteColorMenu {
+    max-width: calc(100vw - 24px);
+  }
+
+  .footer {
+    position: sticky;
+    bottom: 0;
+    margin-left: -14px;
+    margin-right: -14px;
+    margin-bottom: -14px;
+    padding: 12px 14px 14px;
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+  }
+
+  .footer button {
+    min-height: 40px;
+  }
+}
+
+@media (max-width: 420px) {
+  .overlay {
+    padding: 0;
+  }
+
+  .modal {
+    max-height: 100dvh;
+    border-radius: 0;
+  }
+
+  .sectionTitle {
+    max-width: 180px;
+    line-height: 1.35;
+  }
+
+  .sectionSummary {
+    max-width: 120px;
+  }
+
+  .placeSearchRow {
+    grid-template-columns: 1fr;
+  }
+
+  .placeSearchBtn,
+  .naverMapBtn {
+    width: 100%;
+  }
+
+  .favoriteColorDropdown {
+    width: 100%;
+  }
+
+  .addColorButton {
+    width: 48px;
+  }
+
+  .footer {
+    justify-content: stretch;
+  }
+
+  .footer button {
+    flex: 1;
+  }
 }

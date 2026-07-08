@@ -130,7 +130,37 @@ export function EventModal(props: Props) {
     const t = getDayType(d);
     if (t === "red") return "#dc2626";
     if (t === "blue") return "#2563eb";
-    return "rgba(0,0,0,0.90)";
+    return "var(--event-modal-date-text)";
+  };
+
+  const calendarSx = {
+    color: "var(--color-text)",
+    "& .MuiPickersCalendarHeader-label": { color: "var(--color-text)" },
+    "& .MuiPickersArrowSwitcher-button": { color: "var(--color-text)" },
+    "& .MuiDayCalendar-weekDayLabel": { color: "var(--color-text-muted)" },
+    "& .MuiDayCalendar-weekDayLabel:first-of-type": { color: "#dc2626" },
+    "& .MuiDayCalendar-weekDayLabel:last-of-type": { color: "#2563eb" },
+    "& .MuiPickersDay-root": { color: "var(--event-modal-calendar-day)" },
+    "& .MuiPickersDay-root.Mui-selected": {
+      color: "#ffffff",
+      backgroundColor: "var(--color-primary)",
+    },
+    "& .MuiPickersDay-root.Mui-selected:hover": {
+      backgroundColor: "var(--color-primary-hover)",
+    },
+    "& .MuiPickersDay-root.Mui-disabled": {
+      color: "var(--color-text-muted)",
+      opacity: 0.45,
+    },
+    "& .MuiYearCalendar-button": {
+      color: "var(--color-text)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      lineHeight: 1,
+      paddingTop: 0,
+      paddingBottom: 0,
+    },
   };
 
   const pillClass = (active: boolean, disabled?: boolean) =>
@@ -326,19 +356,7 @@ export function EventModal(props: Props) {
                               holidaySet,
                             } as any,
                           }}
-                          sx={{
-                            "& .MuiDayCalendar-weekDayLabel:first-of-type": { color: "#dc2626" },
-                            "& .MuiDayCalendar-weekDayLabel:last-of-type": { color: "#2563eb" },
-
-                            "& .MuiYearCalendar-button": {
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              lineHeight: 1,
-                              paddingTop: 0,
-                              paddingBottom: 0,
-                            },
-                          }}
+                          sx={calendarSx}
                         />
                       </div>
                     )}
@@ -425,8 +443,8 @@ export function EventModal(props: Props) {
             </div>
           </div>
 
-          {repeatOpen && (
-            <div className={styles.sectionGrid}>
+          <div className={`${styles.collapsible} ${repeatOpen ? styles.collapsibleOpen : ""}`}>
+            <div className={`${styles.sectionGrid} ${styles.collapsibleInner}`}>
               <div className={[styles.repeatRow, lockRepeatControls ? styles.dim : ""].join(" ")}>
                 <select
                   value={form.repeat}
@@ -569,26 +587,14 @@ export function EventModal(props: Props) {
                             holidaySet,
                           } as any,
                         }}
-                        sx={{
-                          "& .MuiDayCalendar-weekDayLabel:first-of-type": { color: "#dc2626" },
-                          "& .MuiDayCalendar-weekDayLabel:last-of-type": { color: "#2563eb" },
-
-                          "& .MuiYearCalendar-button": {
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            lineHeight: 1,
-                            paddingTop: 0,
-                            paddingBottom: 0,
-                          },
-                        }}
+                        sx={calendarSx}
                       />
                     </div>
                   </LocalizationProvider>
                 </div>
               )}
             </div>
-          )}
+          </div>
         </>
 
         {(mode === "create" || mode === "detail") && (
@@ -614,8 +620,8 @@ export function EventModal(props: Props) {
               </div>
             </div>
 
-            {multiDateOpen && (
-              <div className={styles.sectionGrid}>
+            <div className={`${styles.collapsible} ${multiDateOpen ? styles.collapsibleOpen : ""}`}>
+              <div className={`${styles.sectionGrid} ${styles.collapsibleInner}`}>
                 <div className={styles.cardHeadBtns} style={{ marginTop: 2 }}>
                   <button
                     type="button"
@@ -702,18 +708,7 @@ export function EventModal(props: Props) {
                                 selectedSet: multiDatesSet,
                               } as any,
                             }}
-                            sx={{
-                              "& .MuiDayCalendar-weekDayLabel:first-of-type": { color: "#dc2626" },
-                              "& .MuiDayCalendar-weekDayLabel:last-of-type": { color: "#2563eb" },
-                              "& .MuiYearCalendar-button": {
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                lineHeight: 1,
-                                paddingTop: 0,
-                                paddingBottom: 0,
-                              },
-                            }}
+                            sx={calendarSx}
                           />
                         )}
                       </div>
@@ -721,7 +716,7 @@ export function EventModal(props: Props) {
                   </div>
                 )}
               </div>
-            )}
+            </div>
           </>
         )}
 

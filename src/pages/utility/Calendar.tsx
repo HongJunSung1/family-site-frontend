@@ -1,6 +1,6 @@
 ﻿import React, { useMemo, useRef, useState } from "react";
 import FullCalendar from "@fullcalendar/react";
-import type { EventApi, EventHoveringArg, EventMountArg } from "@fullcalendar/core";
+import type { EventApi, EventClickArg, EventHoveringArg, EventMountArg } from "@fullcalendar/core";
 import dayjs, { Dayjs } from "dayjs";
 import "dayjs/locale/ko";
 
@@ -14,6 +14,40 @@ import { expandRecurringEvents } from "./calendar/utils/recurrence";
 import styles from "./Calendar.module.css";
 
 dayjs.locale("ko");
+
+const EVENT_TOOLTIP_ID = "pz-floating-event-tooltip";
+
+const removeFloatingTooltip = () => {
+  document.getElementById(EVENT_TOOLTIP_ID)?.remove();
+};
+
+const showFloatingTooltip = (eventEl: HTMLElement, tooltipText: string) => {
+  removeFloatingTooltip();
+
+  if (!tooltipText) return;
+
+  const tooltip = document.createElement("div");
+  tooltip.id = EVENT_TOOLTIP_ID;
+  tooltip.className = "pz-floating-event-tooltip";
+  tooltip.textContent = tooltipText;
+  document.body.appendChild(tooltip);
+
+  const eventRect = eventEl.getBoundingClientRect();
+  const tooltipRect = tooltip.getBoundingClientRect();
+  const margin = 8;
+  const left = Math.min(
+    Math.max(margin, eventRect.left + eventRect.width / 2 - tooltipRect.width / 2),
+    window.innerWidth - tooltipRect.width - margin
+  );
+  const belowTop = eventRect.bottom + margin;
+  const top =
+    belowTop + tooltipRect.height <= window.innerHeight - margin
+      ? belowTop
+      : Math.max(margin, eventRect.top - tooltipRect.height - margin);
+
+  tooltip.style.left = `${left}px`;
+  tooltip.style.top = `${top}px`;
+};
 
 const Calendar: React.FC = () => {
   const calRef = useRef<FullCalendar | null>(null);
@@ -113,10 +147,36 @@ const Calendar: React.FC = () => {
     info.el.classList.add(styles.eventMemoTooltip);
 
     if (tooltipText) {
-      info.el.setAttribute("data-memo", tooltipText);
+      info.el.setAttribute("data-tooltip-text", tooltipText);
     } else {
-      info.el.removeAttribute("data-memo");
+      info.el.removeAttribute("data-tooltip-text");
     }
+
+    info.el.removeAttribute("data-memo");
+
+    return tooltipText;
+  };
+
+  const clearTooltipLayers = () => {
+    document.querySelectorAll(".pz-tooltip-layer-open").forEach((el) => {
+      el.classList.remove("pz-tooltip-layer-open");
+    });
+  };
+
+  const openTooltipLayers = (eventEl: HTMLElement) => {
+    clearTooltipLayers();
+
+    eventEl.classList.add("pz-tooltip-layer-open");
+
+    [
+      ".fc-daygrid-event-harness",
+      ".fc-daygrid-day-events",
+      ".fc-daygrid-day-frame",
+      ".fc-daygrid-day",
+      ".fc-popover",
+    ].forEach((selector) => {
+      eventEl.closest(selector)?.classList.add("pz-tooltip-layer-open");
+    });
   };
 
   // 일정 안의 내용을 툴팁으로 간략하게 보여준다.
@@ -125,7 +185,20 @@ const Calendar: React.FC = () => {
   };
 
   const onEventMouseEnter = (info: EventHoveringArg) => {
-    applyTooltip(info);
+    const tooltipText = applyTooltip(info);
+    openTooltipLayers(info.el);
+    showFloatingTooltip(info.el, tooltipText);
+  };
+
+  const onEventMouseLeave = () => {
+    clearTooltipLayers();
+    removeFloatingTooltip();
+  };
+
+  const handleEventClick = (info: EventClickArg) => {
+    clearTooltipLayers();
+    removeFloatingTooltip();
+    onEventClick(info);
   };
 
   return (
@@ -155,9 +228,10 @@ const Calendar: React.FC = () => {
             holidayMap={holidayMap}
             getDayType={getDayType}
             onDateClick={onDateClick}
-            onEventClick={onEventClick}
+            onEventClick={handleEventClick}
             onEventDidMount={onEventDidMount}
             onEventMouseEnter={onEventMouseEnter}
+            onEventMouseLeave={onEventMouseLeave}
             onDatesSet={(range, year) => {
               setHolidayYear(year);
               setViewRange(range);

@@ -11,6 +11,7 @@
 
 .calendarShell {
   position: relative;
+  min-height: 0;
 }
 
 .calendarNameHeader {
@@ -32,7 +33,9 @@
 /* 전체 화면 배경 + 가운데 정렬 */
 .root {
   width: 100%;
-  min-height: 100vh;
+  height: calc(100dvh - var(--app-nav-height, 67px));
+  min-height: 0;
+  overflow: hidden;
   background: light dark;
   box-sizing: border-box;
 
@@ -45,10 +48,15 @@
 .container {
   width: 100%;
   max-width: 1100px;
-  padding: 24px 16px;
+  height: 100%;
+  padding: 16px;
   box-sizing: border-box;
 
   background: transparent; 
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
 /* 캘린더가 들어가는 카드(선택) */
 .card {
@@ -63,6 +71,13 @@
 /* FullCalendar 전체 프레임 */
 :global(.fc) {
   color: var(--cal-text);
+}
+
+.card {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
 }
 
 /* 캘린더 바깥 패널 느낌 */
@@ -219,18 +234,75 @@
 :global(.fc .fc-daygrid-event) {
   border-radius: 10px;
   padding: 2px 8px;
+  min-width: 0;
 }
 
 :global(.fc .fc-daygrid-day-events) {
-  min-height: calc(5 * 24px + 20px);
+  min-height: 0;
+  overflow: hidden;
 }
 :global(.fc .fc-daygrid-day-frame) {
-  height: 200px; /* 필요 시 조절 */
+  min-height: 0;
 }
 :global(.fc),
 :global(.fc .fc-view-harness),
 :global(.fc .fc-view-harness-active) {
   height: 100% !important;
+}
+
+:global(.fc .fc-daygrid-day-frame) {
+  height: clamp(68px, calc((100dvh - 250px) / 6), 122px);
+  min-height: 0;
+  overflow: hidden;
+}
+
+:global(.fc) {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+:global(.fc .fc-view-harness) {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+:global(.fc .fc-scroller) {
+  overflow: hidden !important;
+}
+
+:global(.fc .fc-event-title),
+:global(.fc .fc-event-main) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:global(.fc .fc-daygrid-more-link) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 38px;
+  height: 20px;
+  margin-top: 3px;
+  padding: 0 8px;
+  border: 1px solid color-mix(in srgb, var(--cal-accent) 36%, var(--cal-line) 64%);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--cal-accent) 12%, var(--cal-panel) 88%);
+  color: var(--cal-accent);
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+  text-decoration: none;
+}
+
+:global(.fc .fc-daygrid-more-link:hover),
+:global(.fc .fc-daygrid-more-link:focus) {
+  background: color-mix(in srgb, var(--cal-accent) 20%, var(--cal-panel) 80%);
+  border-color: var(--cal-accent);
+  color: var(--cal-accent-2);
 }
 
 :global(.fc .fc-daygrid-dot-event) {
@@ -462,6 +534,610 @@
   pointer-events: none;
 }
 
+@media (max-width: 768px) {
+  .root {
+    height: calc(100dvh - var(--app-nav-height, 59px));
+    min-height: 0;
+  }
+
+  .container {
+    height: 100%;
+    padding: 12px 8px;
+  }
+
+  .card,
+  .calendarShell,
+  :global(.fc .fc-view-harness) {
+    border-radius: 12px;
+  }
+
+  .calendarTabs {
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0 8px;
+    gap: 4px;
+    scrollbar-width: none;
+  }
+
+  .calendarTabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .calendarTab {
+    flex: 0 0 auto;
+    padding: 8px 12px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .calendarNameHeader {
+    position: static;
+    padding: 12px 12px 0;
+    font-size: 18px;
+    line-height: 1.25;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  :global(.fc .fc-toolbar) {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px;
+    padding: 8px;
+    min-height: auto;
+  }
+
+  :global(.fc .fc-toolbar-chunk:nth-child(1)) {
+    min-width: 0;
+    justify-self: start;
+  }
+
+  :global(.fc .fc-toolbar-chunk:nth-child(2)),
+  :global(.fc .fc-toolbar-chunk:nth-child(3)) {
+    justify-self: end;
+  }
+
+  :global(.fc .fc-toolbar-chunk:nth-child(2)) {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  :global(.fc .fc-toolbar-chunk:nth-child(3):empty) {
+    display: none;
+  }
+
+  :global(.fc .fc-toolbar-title) {
+    font-size: 16px;
+    line-height: 1.25;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  :global(.fc button.fc-myToday-button),
+  :global(.fc .fc-prev-button),
+  :global(.fc .fc-next-button) {
+    width: 30px !important;
+    height: 30px !important;
+    min-width: 30px !important;
+  }
+
+  :global(.fc .fc-col-header-cell-cushion) {
+    font-size: 12px;
+  }
+
+  :global(.fc .fc-daygrid-day-frame) {
+    height: clamp(46px, calc((100dvh - 190px) / 6), 78px);
+    min-height: clamp(46px, calc((100dvh - 190px) / 6), 78px);
+  }
+
+  :global(.fc .fc-daygrid-day-events) {
+    min-height: 0;
+  }
+
+  :global(.fc .fc-daygrid-day-number) {
+    min-width: 24px;
+    height: 24px;
+    padding: 0 5px !important;
+    font-size: 11px;
+  }
+
+  :global(.fc .fc-day-today .fc-daygrid-day-number) {
+    height: 24px;
+    padding: 0 6px !important;
+  }
+
+  :global(.fc .fc-daygrid-event) {
+    margin-top: 2px;
+    padding: 1px 4px;
+    border-radius: 7px;
+    font-size: 9px;
+    line-height: 1.25;
+  }
+
+  :global(.fc .fc-daygrid-more-link) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 18px;
+    margin-top: 2px;
+    padding: 0 7px 2px;
+    border: 1px solid color-mix(in srgb, var(--cal-accent) 40%, var(--cal-line) 60%);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--cal-accent) 14%, var(--cal-panel) 86%);
+    color: var(--cal-accent);
+    font-size: 15px;
+    font-weight: 900;
+    line-height: 1;
+    text-decoration: none;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  :global(.fc .fc-daygrid-more-link:hover),
+  :global(.fc .fc-daygrid-more-link:focus) {
+    background: color-mix(in srgb, var(--cal-accent) 22%, var(--cal-panel) 78%);
+    border-color: var(--cal-accent);
+    color: var(--cal-accent-2);
+  }
+
+  :global(.fc .fc-popover) {
+    position: fixed !important;
+    left: 12px !important;
+    right: 12px !important;
+    top: auto !important;
+    bottom: 12px !important;
+    width: auto !important;
+    max-width: none;
+    max-height: min(420px, calc(100dvh - 96px));
+    overflow: hidden;
+    border-color: var(--cal-line);
+    border-radius: 16px;
+    background: var(--cal-panel);
+    color: var(--cal-text);
+    box-shadow: var(--shadow-floating);
+    z-index: 10000;
+  }
+
+  :global(.fc .fc-popover-header) {
+    min-height: 44px;
+    padding: 10px 14px;
+    background: var(--color-surface-muted);
+    color: var(--cal-text);
+    font-size: 14px;
+    font-weight: 800;
+  }
+
+  :global(.fc .fc-popover-title) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  :global(.fc .fc-popover-close) {
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    color: var(--cal-text);
+    opacity: 0.8;
+    cursor: pointer;
+    touch-action: manipulation;
+    user-select: none;
+  }
+
+  :global(.fc .fc-popover-close:hover) {
+    background: var(--cal-hover);
+    opacity: 1;
+  }
+
+  :global(.fc .fc-popover-body) {
+    max-height: min(356px, calc(100dvh - 154px));
+    overflow-y: auto;
+    padding: 10px;
+  }
+
+  :global(.fc .fc-popover-body .fc-daygrid-event-harness) {
+    margin: 0 0 8px;
+  }
+
+  :global(.fc .fc-popover-body .fc-daygrid-event) {
+    min-height: 38px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    font-size: 13px;
+    line-height: 1.25;
+    display: flex;
+    align-items: center;
+  }
+
+  :global(.fc .fc-popover-body .fc-event-title) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  :global(.fc .fc-daygrid-dot-event .fc-event-title),
+  :global(.fc .fc-daygrid-dot-event .fc-event-time) {
+    font-size: 10px;
+  }
+
+  .eventMemoTooltip:hover::after,
+  .eventMemoTooltip:hover::before,
+  :global(.fc .pz-holiday-tip:hover::after),
+  :global(.fc .pz-holiday-tip:hover::before) {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 6px 4px;
+  }
+
+  .card,
+  .calendarShell,
+  :global(.fc .fc-view-harness) {
+    border-radius: 10px;
+  }
+
+  :global(.fc .fc-toolbar-title) {
+    font-size: 15px;
+  }
+
+  :global(.fc .fc-daygrid-day-frame) {
+    height: clamp(40px, calc((100dvh - 174px) / 6), 62px);
+    min-height: clamp(40px, calc((100dvh - 174px) / 6), 62px);
+  }
+
+  :global(.fc .fc-daygrid-day-number) {
+    min-width: 22px;
+    height: 22px;
+    font-size: 10px;
+  }
+
+  :global(.fc .fc-daygrid-event) {
+    padding-left: 3px;
+    padding-right: 3px;
+    font-size: 8px;
+  }
+
+  :global(.fc .fc-daygrid-more-link) {
+    min-width: 26px;
+    height: 17px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 380px) {
+  .calendarNameHeader {
+    padding-top: 8px;
+    font-size: 16px;
+  }
+
+  .calendarTab {
+    padding: 7px 10px;
+    font-size: 12px;
+  }
+
+  :global(.fc .fc-toolbar) {
+    padding: 6px;
+  }
+
+  :global(.fc .fc-toolbar-title) {
+    font-size: 14px;
+  }
+
+  :global(.fc .fc-daygrid-day-frame) {
+    height: clamp(34px, calc((100dvh - 158px) / 6), 54px);
+    min-height: clamp(34px, calc((100dvh - 158px) / 6), 54px);
+  }
+
+  :global(.fc .fc-daygrid-day-number) {
+    min-width: 20px;
+    height: 20px;
+    font-size: 9px;
+  }
+}
+
+:global(.fc .fc-daygrid-day-frame) {
+  height: 100%;
+  min-height: 0;
+  max-height: 100%;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+}
+
+:global(.fc .fc-daygrid-day-events) {
+  flex: 1 1 auto;
+  min-height: 0 !important;
+  max-height: none;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+
+:global(.fc .fc-daygrid-event-harness) {
+  max-width: 100%;
+}
+
+:global(.fc .fc-daygrid-day-top) {
+  flex: 0 0 auto;
+}
+
+:global(.fc .fc-daygrid-day-bottom) {
+  flex: 0 0 auto;
+}
+
+:global(.fc .fc-daygrid-body),
+:global(.fc .fc-daygrid-body table) {
+  height: 100% !important;
+}
+
+:global(.fc .fc-daygrid-body tr) {
+  height: 16.6667%;
+}
+
+:global(.fc .fc-daygrid-day) {
+  position: relative;
+}
+
+:global(.fc .fc-daygrid-day:has(.fc-popover)) {
+  z-index: 100000 !important;
+}
+
+:global(.fc .pz-tooltip-layer-open) {
+  position: relative;
+  z-index: 2147482500 !important;
+}
+
+:global(.fc .fc-daygrid-day.pz-tooltip-layer-open),
+:global(.fc .fc-daygrid-day-frame.pz-tooltip-layer-open),
+:global(.fc .fc-daygrid-day-events.pz-tooltip-layer-open),
+:global(.fc .fc-daygrid-event-harness.pz-tooltip-layer-open) {
+  overflow: visible !important;
+}
+
+:global(.fc .fc-popover .pz-tooltip-layer-open) {
+  z-index: 2147483002 !important;
+}
+
+.eventMemoTooltip:hover {
+  z-index: 2147483003 !important;
+  overflow: visible !important;
+}
+
+:global(.pz-floating-event-tooltip) {
+  position: fixed;
+  z-index: 2147483647;
+  width: 180px;
+  max-width: calc(100vw - 16px);
+  padding: 6px 8px;
+  border: 1px solid var(--cal-line);
+  border-radius: 9px;
+  background: var(--cal-tooltip-bg);
+  color: var(--cal-tooltip-text);
+  box-shadow: var(--shadow-floating);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+  pointer-events: none;
+}
+
+:global(.fc .fc-popover) {
+  z-index: 2147483000 !important;
+  overflow: hidden;
+  width: min(260px, calc(100vw - 24px)) !important;
+  max-width: min(260px, calc(100vw - 24px)) !important;
+  border: 1px solid var(--cal-line) !important;
+  background: var(--cal-panel) !important;
+  color: var(--cal-text) !important;
+  box-shadow: var(--shadow-floating) !important;
+  isolation: isolate;
+}
+
+:global(.fc .fc-more-popover) {
+  z-index: 2147483001 !important;
+  background: var(--cal-panel) !important;
+  box-shadow: var(--shadow-floating) !important;
+}
+
+:global(.fc .fc-popover-header),
+:global(.fc .fc-popover-body) {
+  overflow-x: hidden !important;
+}
+
+:global(.fc .fc-popover-body .fc-daygrid-event-harness) {
+  max-width: 100%;
+  overflow: hidden !important;
+}
+
+:global(.fc .fc-popover-body .fc-daygrid-event),
+:global(.fc .fc-popover-body .fc-event-main),
+:global(.fc .fc-popover-body .fc-event-title) {
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:global(.fc .fc-popover-body .fc-daygrid-event.pz-tooltip-layer-open),
+:global(.fc .fc-popover-body .fc-event-main.pz-tooltip-layer-open) {
+  overflow: hidden !important;
+}
+
+:global(.fc .fc-popover-body.pz-tooltip-layer-open) {
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+}
+
+:global(.fc .fc-popover-body .fc-daygrid-event-harness.pz-tooltip-layer-open) {
+  overflow: hidden !important;
+}
+
+:global(.fc .fc-popover-body) {
+  position: relative;
+  z-index: 1;
+  background: var(--cal-panel) !important;
+  color: var(--cal-text) !important;
+}
+
+:global(.fc .fc-popover-body .fc-daygrid-event-harness) {
+  position: relative;
+  z-index: 2;
+  overflow: hidden;
+}
+
+:global(.fc .fc-popover-body .fc-daygrid-event),
+:global(.fc .fc-popover-body .fc-event-main) {
+  position: relative;
+  z-index: 3;
+}
+
+:global(.fc .fc-scroller) {
+  overflow: visible !important;
+  scrollbar-width: none;
+}
+
+:global(.fc .fc-scroller::-webkit-scrollbar) {
+  display: none;
+}
+
+/* Theme palette */
+.calendarShell {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+:root {
+  --cal-bg: var(--color-bg);
+  --cal-panel: var(--color-surface);
+  --cal-line: var(--color-border);
+  --cal-text: var(--color-text);
+  --cal-muted: var(--color-text-muted);
+  --cal-accent: var(--color-primary);
+  --cal-accent-2: var(--color-primary-hover);
+  --cal-hover: var(--color-surface-muted);
+  --cal-tooltip-bg: #1f2937;
+  --cal-tooltip-text: #f9fafb;
+}
+
+:global(html[data-theme="dark"]) {
+  --cal-bg: var(--color-bg);
+  --cal-panel: #1f2937;
+  --cal-line: rgba(148, 163, 184, 0.22);
+  --cal-text: var(--color-text);
+  --cal-muted: var(--color-text-muted);
+  --cal-accent: #5eead4;
+  --cal-accent-2: #99f6e4;
+  --cal-hover: rgba(255, 255, 255, 0.06);
+  --cal-tooltip-bg: #0f172a;
+  --cal-tooltip-text: #f8fafc;
+}
+
+.root {
+  background: var(--cal-bg);
+}
+
+.card,
+.calendarShell,
+:global(.fc .fc-view-harness),
+:global(.fc .fc-scrollgrid),
+:global(.fc .fc-scrollgrid-section),
+:global(.fc .fc-scrollgrid-section > td),
+:global(.fc .fc-daygrid-body),
+:global(.fc .fc-daygrid-day),
+:global(.fc .fc-col-header),
+:global(.fc .fc-col-header-cell),
+:global(.fc .fc-daygrid-day-frame),
+:global(.fc .fc-toolbar) {
+  background: var(--cal-panel);
+}
+
+.card {
+  border-color: var(--cal-line);
+  box-shadow: var(--shadow-soft);
+}
+
+.calendarNameHeader,
+:global(.fc .fc-toolbar-title) {
+  color: var(--cal-text);
+}
+
+:global(.fc .fc-button) {
+  background: var(--color-surface-muted);
+  border-color: var(--cal-line);
+  color: var(--cal-text);
+}
+
+:global(.fc .fc-button:hover),
+:global(.fc .fc-prev-button:hover),
+:global(.fc .fc-next-button:hover) {
+  background: var(--cal-hover) !important;
+  border-color: var(--cal-accent) !important;
+}
+
+:global(.fc .fc-col-header-cell) {
+  background: var(--color-surface-muted);
+}
+
+:global(.fc .fc-day-today) {
+  background: var(--color-primary-soft) !important;
+}
+
+:global(.fc .fc-day-today .fc-daygrid-day-number) {
+  background: var(--color-primary) !important;
+  color: #ffffff !important;
+}
+
+:global(.fc .fc-daygrid-day:hover) {
+  background: var(--cal-hover);
+}
+
+.calendarTabs {
+  border-bottom-color: var(--cal-line);
+}
+
+.calendarTab {
+  border-color: var(--cal-line);
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+}
+
+.calendarTab:hover {
+  background: var(--cal-hover);
+  color: var(--color-text);
+}
+
+.activeCalendarTab {
+  background: var(--cal-panel);
+  color: var(--cal-accent);
+  border-color: var(--cal-line);
+  box-shadow: 0 -2px 10px rgba(15, 23, 42, 0.08);
+}
+
+:global(.fc .pz-holiday-tip:hover::after),
+.eventMemoTooltip:hover::after {
+  background: var(--cal-tooltip-bg);
+  color: var(--cal-tooltip-text);
+  border-color: var(--cal-line);
+  box-shadow: var(--shadow-floating);
+}
+
+:global(.fc .pz-holiday-tip:hover::before) {
+  border-top-color: var(--cal-tooltip-bg);
+}
+
 .eventMemoTooltip:hover::before {
   content: "";
 
@@ -484,7 +1160,11 @@
 }
 
 .eventMemoTooltip:hover::after {
-  content: attr(data-memo);
+  content: none;
+}
+
+.eventMemoTooltip:hover::before {
+  content: none;
 
   position: absolute;
   left: 50%;

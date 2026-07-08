@@ -1,0 +1,16 @@
+.page {
+  height: calc(100dvh - var(--app-nav-height, 67px));
+  min-height: 0;
+  padding: 0;
+  box-sizing: border-box;
+  background: var(--color-bg);
+  color: var(--color-text);
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .page {
+    height: calc(100dvh - var(--app-nav-height, 59px));
+    padding: 0;
+  }
+}

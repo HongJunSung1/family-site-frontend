@@ -399,13 +399,13 @@ export default function CalendarInfo() {
       <div className={styles.tableWrap}>
         <table className={styles.table}>
           <colgroup>
-            <col style={{ width: "5%" }} />
-            <col style={{ width: "5%" }} />
-            <col style={{ width: "65%" }} />
+            <col style={{ width: "4%" }} />
+            <col style={{ width: "4%" }} />
+            <col style={{ width: "57%" }} />
+            <col style={{ width: "11%" }} />
             <col style={{ width: "7%" }} />
             <col style={{ width: "7%" }} />
-            <col style={{ width: "7%" }} />
-            <col style={{ width: "5%" }} />
+            <col style={{ width: "10%" }} />
           </colgroup>
 
           <thead>
@@ -437,7 +437,7 @@ export default function CalendarInfo() {
                             onClick={() => handleMoveCalendar(calendar.id, "up")}
                             disabled={saving || index === 0}
                           >
-                            ↑
+                            ▲
                           </button>
 
                           <button
@@ -446,7 +446,7 @@ export default function CalendarInfo() {
                             onClick={() => handleMoveCalendar(calendar.id, "down")}
                             disabled={saving || index === getSortedCalendars().length - 1}
                           >
-                            ↓
+                            ▼
                           </button>
                         </div>
                       </td>
@@ -473,10 +473,10 @@ export default function CalendarInfo() {
 
                       <td style={{ textAlign: "center" }}>{ownerText}</td>
 
-                      <td>
+                      <td className={styles.actionCell}>
                         <button
                           type="button"
-                          className={styles.saveButton}
+                          className={`${styles.tableActionButton} ${styles.inviteButton}`}
                           onClick={() =>
                             handleInvitation(
                               calendar.id,
@@ -490,10 +490,10 @@ export default function CalendarInfo() {
                         </button>
                       </td>
 
-                      <td>
+                      <td className={styles.actionCell}>
                         <button
                           type="button"
-                          className={styles.saveButton}
+                          className={`${styles.tableActionButton} ${styles.deleteButton}`}
                           onClick={() => handleDelete(calendar.id)}
                           disabled={saving}
                         >
@@ -501,15 +501,22 @@ export default function CalendarInfo() {
                         </button>
                       </td>
 
-                      <td>
+                      <td className={styles.actionCell}>
                         <button
                           type="button"
                           className={`${styles.memberToggleButton} ${
                             openMemberCalendarId === calendar.id ? styles.memberToggleOpen : ""
                           }`}
                           onClick={() => handleToggleMembers(calendar.id)}
+                          aria-label={
+                            openMemberCalendarId === calendar.id ? "회원정보 접기" : "회원정보 자세히 보기"
+                          }
+                          title={openMemberCalendarId === calendar.id ? "회원정보 접기" : "회원정보 자세히 보기"}
                         >
-                          보기
+                          <span>{openMemberCalendarId === calendar.id ? "접기" : "자세히"}</span>
+                          <span className={styles.memberToggleArrow} aria-hidden="true">
+                            {openMemberCalendarId === calendar.id ? "▴" : "▾"}
+                          </span>
                         </button>
                       </td>
                     </tr>
@@ -609,10 +616,10 @@ export default function CalendarInfo() {
                 <td>
                   <div className={styles.orderButtonBox}>
                     <button type="button" className={styles.orderButton} disabled>
-                      ↑
+                      ▲
                     </button>
                     <button type="button" className={styles.orderButton} disabled>
-                      ↓
+                      ▼
                     </button>
                   </div>
                 </td>
@@ -641,15 +648,19 @@ export default function CalendarInfo() {
                 </td>
 
                 <td>캘린더장</td>
-                <td>
-                  <button type="button" className={styles.saveButton} disabled={saving}>
+                <td className={styles.actionCell}>
+                  <button
+                    type="button"
+                    className={`${styles.tableActionButton} ${styles.inviteButton}`}
+                    disabled={saving}
+                  >
                     초대
                   </button>
                 </td>
-                <td>
+                <td className={styles.actionCell}>
                   <button
                     type="button"
-                    className={styles.saveButton}
+                    className={`${styles.tableActionButton} ${styles.deleteButton}`}
                     onClick={() => {
                       setAddingCalendar(false);
                       setNewCalendarName("");

@@ -26,6 +26,7 @@ export function CustomDay(props: CustomDayProps) {
       outsideCurrentMonth={outsideCurrentMonth}
       {...other}
       sx={{
+        color: "var(--event-modal-calendar-day)",
         ...(isRed && { color: "#dc2626" }),
         ...(isBlue && { color: "#2563eb" }),
         ...(isSelected && {

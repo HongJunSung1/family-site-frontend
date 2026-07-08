@@ -78,8 +78,8 @@ export function EventLocationPicker({
         </div>
       </div>
 
-      {mapOpen && (
-        <div className={styles.sectionGrid}>
+      <div className={`${styles.collapsible} ${mapOpen ? styles.collapsibleOpen : ""}`}>
+        <div className={`${styles.sectionGrid} ${styles.collapsibleInner}`}>
           <div className={styles.placeSearchRow}>
             <input
               type="text"
@@ -139,7 +139,7 @@ export function EventLocationPicker({
             </button>
           </div>
         </div>
-      )}
+      </div>
     </>
   );
 }

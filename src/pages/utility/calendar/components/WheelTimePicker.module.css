@@ -145,3 +145,30 @@
 .itemSelected:hover {
   color: rgba(17, 24, 39, 0.98);
 }
+
+/* Theme overrides */
+.wrap::before,
+.wrap::after {
+  background: var(--color-border);
+}
+
+.col::before {
+  background: linear-gradient(to bottom, var(--color-surface) 0%, transparent 100%);
+}
+
+.col::after {
+  background: linear-gradient(to top, var(--color-surface) 0%, transparent 100%);
+}
+
+.item {
+  color: color-mix(in srgb, var(--color-text) 26%, transparent);
+}
+
+.item:hover {
+  color: color-mix(in srgb, var(--color-text) 58%, transparent);
+}
+
+.itemSelected,
+.itemSelected:hover {
+  color: var(--color-text);
+}

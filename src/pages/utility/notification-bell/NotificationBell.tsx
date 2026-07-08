@@ -6,6 +6,7 @@ import {
   respondCalendarInvitation,
   type NotificationItem,
 } from "../../../api/notificationApi";
+import notificationBellIcon from "../../../assets/icons/notification-bell.svg";
 import styles from "./NotificationBell.module.css";
 
 export default function NotificationBell() {
@@ -89,7 +90,7 @@ export default function NotificationBell() {
         aria-label="알림"
         title="알림"
       >
-        알림
+        <img src={notificationBellIcon} alt="" className={styles.bellIconImage} aria-hidden="true" />
         {unreadCount > 0 && <span className={styles.badge}>{unreadCount}</span>}
       </button>
 

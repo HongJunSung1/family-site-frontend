@@ -81,7 +81,7 @@ export function EventColorPicker({
 
         setFavoriteMenuStyle({
           top: openAbove
-            ? Math.max(viewportPadding, rect.top - gap - maxHeight - 12)
+            ? Math.max(viewportPadding, rect.top - gap - maxHeight)
             : rect.bottom + gap,
           left: rect.left,
           width: rect.width,
