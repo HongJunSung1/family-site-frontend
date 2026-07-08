@@ -1991,3 +1991,149 @@
   font-size: 13px;
   line-height: 1.2;
 }
+
+.dayEventPanelDateRow {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.dayEventPanelHoliday {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: #ff7a7a;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0;
+  }
+
+  .card {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 2fr) minmax(0, 1fr);
+    gap: 0;
+    height: 100%;
+    border-radius: 0;
+  }
+
+  .calendarPane {
+    grid-column: 1;
+    grid-row: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .calendarPane .calendarTabs {
+    flex: 0 0 auto;
+  }
+
+  .calendarPane .calendarShell {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .sideRail {
+    grid-column: 1;
+    grid-row: 2;
+    min-height: 0;
+    max-height: none;
+    padding: 6px 8px 8px;
+    gap: 0;
+    overflow: hidden;
+    background: var(--color-surface);
+  }
+
+  .sideRail .dayEventPanel {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    min-height: 0;
+    margin: 0;
+    padding: 10px;
+    overflow: hidden;
+    border-radius: 12px;
+  }
+
+  .dayEventPanelHeader {
+    flex: 0 0 auto;
+    align-items: flex-start;
+    margin-bottom: 8px;
+  }
+
+  .dayEventPanelDateRow {
+    gap: 6px;
+  }
+
+  .dayEventPanelDate {
+    font-size: 15px;
+    line-height: 1.15;
+  }
+
+  .dayEventPanelHoliday {
+    font-size: 11px;
+  }
+
+  .dayEventPanelCount {
+    margin-top: 3px;
+    font-size: 11px;
+  }
+
+  .dayEventAddButton {
+    min-height: 30px;
+    padding: 5px 11px;
+    font-size: 12px;
+  }
+
+  .dayEventList {
+    flex: 1 1 auto;
+    min-height: 0;
+    gap: 6px;
+    overflow-y: auto;
+  }
+
+  .dayEventItem {
+    min-height: 32px;
+    padding: 6px 8px;
+  }
+
+  .dayEventDot {
+    width: 8px;
+    height: 8px;
+  }
+
+  .dayEventTitle {
+    font-size: 12px;
+  }
+
+  .dayEventBars {
+    top: 22px !important;
+    height: calc(100% - 26px) !important;
+  }
+
+  .dayEventBar {
+    top: calc(var(--bar-lane) * 5px) !important;
+    height: 4px !important;
+    min-height: 4px !important;
+  }
+
+  .dayEventCount {
+    right: 4px !important;
+    bottom: 3px !important;
+    min-width: 14px !important;
+    height: 14px !important;
+    padding: 0 4px !important;
+    font-size: 8px !important;
+    line-height: 14px !important;
+  }
+}

@@ -50,6 +50,11 @@ const showFloatingTooltip = (eventEl: HTMLElement, tooltipText: string) => {
   tooltip.style.top = `${top}px`;
 };
 
+const getHolidayDisplayName = (name?: string) => {
+  if (!name) return "";
+  return name === "기독탄신일" ? "크리스마스" : name;
+};
+
 const Calendar: React.FC = () => {
   const calRef = useRef<FullCalendar | null>(null);
 
@@ -231,6 +236,8 @@ const Calendar: React.FC = () => {
     [eventOccursOnDate, expandedEvents, selectedDate]
   );
 
+  const selectedHolidayName = getHolidayDisplayName(holidayMap.get(selectedDate));
+
   const getDayType = React.useCallback(
     (d: Dayjs) => {
       const dow = d.day();
@@ -373,8 +380,15 @@ const Calendar: React.FC = () => {
               <aside className={styles.dayEventPanel} aria-label="선택한 날짜 일정">
               <div className={styles.dayEventPanelHeader}>
                 <div>
-                  <div className={styles.dayEventPanelDate}>
-                    {dayjs(selectedDate).format("YYYY년 M월 D일")}
+                  <div className={styles.dayEventPanelDateRow}>
+                    <span className={styles.dayEventPanelDate}>
+                      {dayjs(selectedDate).format("YYYY년 M월 D일")}
+                    </span>
+                    {selectedHolidayName && (
+                      <span className={styles.dayEventPanelHoliday}>
+                        {selectedHolidayName}
+                      </span>
+                    )}
                   </div>
                   <div className={styles.dayEventPanelCount}>
                     일정 {selectedDateEvents.length}개
