@@ -24,7 +24,7 @@ export function ConfirmDialog({
       open={open}
       onClose={onClose}
       sx={{
-        zIndex: 9999,
+        zIndex: 20000,
         "& .MuiBackdrop-root": {
           borderRadius: "16px",
           padding: "8px 4px",

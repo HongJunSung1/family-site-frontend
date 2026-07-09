@@ -83,6 +83,7 @@ const Calendar: React.FC = () => {
   const modalBackStackRef = useRef<ModalSnapshot[]>([]);
   const modalHistoryDepthRef = useRef(0);
   const ignorePopCountRef = useRef(0);
+  const rootHistoryGuardRef = useRef(false);
   const [viewRange, setViewRange] = useState<{ start: Dayjs; end: Dayjs }>(() => {
     const now = dayjs();
     return { start: now.startOf("month"), end: now.endOf("month").add(1, "day") };
@@ -325,6 +326,17 @@ const Calendar: React.FC = () => {
     modalHistoryDepthRef.current += 1;
   }, []);
 
+  const pushRootHistoryGuard = React.useCallback(() => {
+    if (!isMobileCalendarViewport()) return;
+
+    window.history.pushState(
+      { ...(window.history.state ?? {}), calendarRootGuard: true },
+      "",
+      window.location.href
+    );
+    rootHistoryGuardRef.current = true;
+  }, []);
+
   const releaseModalHistoryEntries = React.useCallback(() => {
     const depth = modalHistoryDepthRef.current;
     if (!isMobileCalendarViewport() || depth <= 0) return;
@@ -394,9 +406,15 @@ const Calendar: React.FC = () => {
         return;
       }
 
-      if (!isMobileCalendarViewport() || mode === "none") return;
+      if (!isMobileCalendarViewport()) return;
+
+      if (mode === "none") {
+        pushRootHistoryGuard();
+        return;
+      }
 
       modalHistoryDepthRef.current = Math.max(0, modalHistoryDepthRef.current - 1);
+      pushModalHistoryEntry();
       removeFloatingTooltip();
       setBackConfirm({
         action: modalBackStackRef.current.length > 0 ? "restore" : "close",
@@ -405,11 +423,15 @@ const Calendar: React.FC = () => {
 
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, [mode]);
+  }, [mode, pushModalHistoryEntry, pushRootHistoryGuard]);
+
+  React.useEffect(() => {
+    if (rootHistoryGuardRef.current || !isMobileCalendarViewport()) return;
+    pushRootHistoryGuard();
+  }, [pushRootHistoryGuard]);
 
   const handleCancelBackClose = () => {
     setBackConfirm(null);
-    pushModalHistoryEntry();
   };
 
   const handleConfirmBackClose = () => {
