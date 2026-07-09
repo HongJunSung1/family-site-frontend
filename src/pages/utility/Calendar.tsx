@@ -69,6 +69,12 @@ type BackConfirmState = {
 const canUseCalendarHistoryGuard = () => typeof window !== "undefined";
 const MIN_BACK_GUARD_DEPTH = 2;
 
+const isBackDebugEnabled = () => {
+  if (typeof window === "undefined") return false;
+  const params = new URLSearchParams(window.location.search);
+  return params.get("debugBack") === "1" || window.localStorage.getItem("calendarBackDebug") === "1";
+};
+
 const cloneForm = (form: FormState): FormState => JSON.parse(JSON.stringify(form)) as FormState;
 
 const Calendar: React.FC = () => {
@@ -80,6 +86,8 @@ const Calendar: React.FC = () => {
   const [modalOpenVersion, setModalOpenVersion] = useState(0);
   const [backConfirm, setBackConfirm] = useState<BackConfirmState | null>(null);
   const [homeExitConfirmOpen, setHomeExitConfirmOpen] = useState(false);
+  const [backDebugLines, setBackDebugLines] = useState<string[]>([]);
+  const [backDebugEnabled] = useState(isBackDebugEnabled);
   const openedFormSnapshotRef = useRef<string>("");
   const modalBackStackRef = useRef<ModalSnapshot[]>([]);
   const backConfirmRef = useRef<BackConfirmState | null>(null);
@@ -97,6 +105,26 @@ const Calendar: React.FC = () => {
   });
 
   const { holidaySet, holidayMap } = useHolidays(holidayYear);
+
+  const logBackDebug = React.useCallback(
+    (message: string) => {
+      if (!backDebugEnabled || typeof window === "undefined") return;
+
+      const line = [
+        new Date().toLocaleTimeString(),
+        message,
+        `mode=${modeRef.current}`,
+        `modalConfirm=${backConfirmRef.current?.action ?? "none"}`,
+        `homeConfirm=${homeExitConfirmOpenRef.current ? "open" : "closed"}`,
+        `guards=${backGuardDepthRef.current}`,
+        `hash=${window.location.hash || "-"}`,
+      ].join(" | ");
+
+      console.info("[calendar-back]", line);
+      setBackDebugLines((prev) => [...prev.slice(-17), line]);
+    },
+    [backDebugEnabled]
+  );
 
   // 로그인 사용자와 현재 캘린더의 이벤트 목록을 관리한다.
   const {
@@ -337,6 +365,7 @@ const Calendar: React.FC = () => {
   const pushBackGuard = React.useCallback((count = 1) => {
     if (!canUseCalendarHistoryGuard()) return;
 
+    logBackDebug(`push guard count=${count}`);
     for (let i = 0; i < count; i += 1) {
       window.history.pushState(
         { ...(window.history.state ?? {}), calendarBackGuard: true },
@@ -345,16 +374,18 @@ const Calendar: React.FC = () => {
       );
       backGuardDepthRef.current += 1;
     }
-  }, [getBackGuardUrl]);
+  }, [getBackGuardUrl, logBackDebug]);
 
   const ensureBackGuards = React.useCallback(() => {
     const missing = MIN_BACK_GUARD_DEPTH - backGuardDepthRef.current;
+    logBackDebug(`ensure guards missing=${missing}`);
     if (missing > 0) pushBackGuard(missing);
-  }, [pushBackGuard]);
+  }, [logBackDebug, pushBackGuard]);
 
   const armBackGuard = React.useCallback(() => {
     if (!canUseCalendarHistoryGuard() || historyGuardArmedRef.current) return;
 
+    logBackDebug("arm guard");
     const url = getCalendarBaseUrl();
     window.history.replaceState(
       { ...(window.history.state ?? {}), calendarBase: true },
@@ -367,14 +398,16 @@ const Calendar: React.FC = () => {
   }, [ensureBackGuards, getCalendarBaseUrl]);
 
   const closeBackConfirm = React.useCallback(() => {
+    logBackDebug("close modal confirm");
     backConfirmRef.current = null;
     setBackConfirm(null);
-  }, []);
+  }, [logBackDebug]);
 
   const closeHomeExitConfirm = React.useCallback(() => {
+    logBackDebug("close home confirm");
     homeExitConfirmOpenRef.current = false;
     setHomeExitConfirmOpen(false);
-  }, []);
+  }, [logBackDebug]);
 
   const rememberCurrentModal = () => {
     if (mode === "none") return;
@@ -436,7 +469,9 @@ const Calendar: React.FC = () => {
     const handleBrowserBack = (event: Event) => {
       if (!canUseCalendarHistoryGuard()) return;
 
+      logBackDebug(`event ${event.type}`);
       if (backEventLockRef.current) {
+        logBackDebug(`event locked ${event.type}`);
         event.stopImmediatePropagation();
         return;
       }
@@ -448,6 +483,7 @@ const Calendar: React.FC = () => {
 
       if (allowBackStepsRef.current > 0) {
         allowBackStepsRef.current -= 1;
+        logBackDebug(`allow native back remaining=${allowBackStepsRef.current}`);
         return;
       }
 
@@ -456,16 +492,19 @@ const Calendar: React.FC = () => {
       ensureBackGuards();
 
       if (backConfirmRef.current) {
+        logBackDebug("back while modal confirm open -> cancel");
         closeBackConfirm();
         return;
       }
 
       if (homeExitConfirmOpenRef.current) {
+        logBackDebug("back while home confirm open -> cancel");
         closeHomeExitConfirm();
         return;
       }
 
       if (modeRef.current === "none") {
+        logBackDebug("open home confirm");
         homeExitConfirmOpenRef.current = true;
         setHomeExitConfirmOpen(true);
         return;
@@ -475,6 +514,7 @@ const Calendar: React.FC = () => {
       const nextBackConfirm = {
         action: modalBackStackRef.current.length > 0 ? "restore" : "close",
       } satisfies BackConfirmState;
+      logBackDebug(`open modal confirm action=${nextBackConfirm.action}`);
       backConfirmRef.current = nextBackConfirm;
       setBackConfirm(nextBackConfirm);
     };
@@ -685,6 +725,31 @@ const Calendar: React.FC = () => {
         onClose={handleCancelHomeExit}
         onConfirm={handleConfirmHomeExit}
       />
+      {backDebugEnabled && (
+        <div
+          style={{
+            position: "fixed",
+            left: 8,
+            right: 8,
+            bottom: 8,
+            zIndex: 30000,
+            maxHeight: "42vh",
+            overflow: "auto",
+            padding: 8,
+            border: "1px solid rgba(125, 227, 223, 0.8)",
+            borderRadius: 8,
+            background: "rgba(13, 18, 29, 0.92)",
+            color: "#d7fffb",
+            fontSize: 10,
+            lineHeight: 1.35,
+            whiteSpace: "pre-wrap",
+          }}
+        >
+          <strong>calendar back debug</strong>
+          {"\n"}
+          {backDebugLines.length === 0 ? "no events yet" : backDebugLines.join("\n")}
+        </div>
+      )}
     </div>
   );
 };
