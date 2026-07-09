@@ -1,6 +1,7 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+﻿import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
+import { ConfirmDialog } from "../../../../common/components/ConfirmDialog";
 import type { CSSProperties } from "react";
 import type { FavoriteColorPreset } from "../hooks/useFavoriteColors";
 import styles from "./EventModal.module.css";
@@ -26,6 +27,7 @@ export function EventColorPicker({
   const [addColorOpen, setAddColorOpen] = useState(false);
   const [newColor, setNewColor] = useState(color || "#3b82f6");
   const [newColorLabel, setNewColorLabel] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<FavoriteColorPreset | null>(null);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const dropdownMenuRef = useRef<HTMLDivElement>(null);
@@ -147,147 +149,167 @@ export function EventColorPicker({
     setAddColorOpen(false);
   };
 
-  return (
-    <div className={styles.colorArea}>
-      <input
-        type="color"
-        value={color}
-        onChange={(e) => onColorChange(e.target.value)}
-        className={styles.colorInput}
-      />
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
 
-      {favoriteColors.length > 0 && (
-        <div ref={dropdownRef} className={styles.favoriteColorDropdown}>
+    const target = deleteTarget;
+    setDeleteTarget(null);
+    await onDeleteFavoriteColor(target);
+  };
+
+  return (
+    <>
+      <div className={styles.colorArea}>
+        <input
+          type="color"
+          value={color}
+          onChange={(e) => onColorChange(e.target.value)}
+          className={styles.colorInput}
+        />
+
+        {favoriteColors.length > 0 && (
+          <div ref={dropdownRef} className={styles.favoriteColorDropdown}>
+            <button
+              type="button"
+              className={styles.favoriteColorTrigger}
+              onClick={() => setFavoriteColorOpen((prev) => !prev)}
+            >
+              <span className={styles.favoriteColorDot} style={{ backgroundColor: color }} />
+              <span>{selectedFavoriteLabel}</span>
+              <span className={styles.dropdownArrow}>▾</span>
+            </button>
+
+            {favoriteColorOpen &&
+              createPortal(
+                <div
+                  ref={dropdownMenuRef}
+                  className={[styles.favoriteColorMenu, styles.favoriteColorMenuFloating].join(" ")}
+                  style={favoriteMenuStyle}
+                >
+                  {favoriteColors.map((preset) => (
+                    <div
+                      key={preset.slot}
+                      className={styles.favoriteColorOption}
+                      onClick={() => {
+                        onColorChange(preset.color);
+                        setFavoriteColorOpen(false);
+                      }}
+                    >
+                      <span
+                        className={styles.favoriteColorDot}
+                        style={{ backgroundColor: preset.color }}
+                      />
+
+                      <span className={styles.favoriteColorLabel}>
+                        {preset.label?.trim() || preset.color}
+                      </span>
+
+                      <button
+                        type="button"
+                        className={styles.favoriteColorDeleteButton}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteTarget(preset);
+                        }}
+                        title="색상 삭제"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>,
+                document.body
+              )}
+          </div>
+        )}
+
+        <div ref={addColorRef} className={styles.addColorBox}>
           <button
             type="button"
-            className={styles.favoriteColorTrigger}
-            onClick={() => setFavoriteColorOpen((prev) => !prev)}
+            className={styles.addColorButton}
+            onClick={() => {
+              setNewColor(color || "#3b82f6");
+              setAddColorOpen((prev) => !prev);
+            }}
           >
-            <span className={styles.favoriteColorDot} style={{ backgroundColor: color }} />
-            <span>{selectedFavoriteLabel}</span>
-            <span className={styles.dropdownArrow}>▾</span>
+            <span className={styles.addColorPlus}>+</span>
           </button>
 
-          {favoriteColorOpen &&
+          {addColorOpen &&
             createPortal(
               <div
-                ref={dropdownMenuRef}
-                className={[styles.favoriteColorMenu, styles.favoriteColorMenuFloating].join(" ")}
-                style={favoriteMenuStyle}
+                ref={addColorPopoverRef}
+                className={[
+                  styles.addColorPopover,
+                  styles.addColorPopoverFloating,
+                  addColorPopoverOpenAbove ? styles.addColorPopoverOpenAbove : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                style={addColorPopoverStyle}
               >
-              {favoriteColors.map((preset) => (
-                <div
-                  key={preset.slot}
-                  className={styles.favoriteColorOption}
-                  onClick={() => {
-                    onColorChange(preset.color);
-                    setFavoriteColorOpen(false);
-                  }}
-                >
-                  <span
-                    className={styles.favoriteColorDot}
-                    style={{ backgroundColor: preset.color }}
+                <div className={styles.addColorHeader}>
+                  <div className={styles.addColorTitle}>새 색상 추가</div>
+
+                  <div className={styles.addColorActions}>
+                    <button
+                      type="button"
+                      className={styles.addColorCancelButton}
+                      onClick={() => {
+                        setNewColorLabel("");
+                        setAddColorOpen(false);
+                      }}
+                    >
+                      취소
+                    </button>
+
+                    <button
+                      type="button"
+                      className={styles.addColorSaveButton}
+                      disabled={savingColor || !newColorLabel.trim()}
+                      onClick={handleSave}
+                    >
+                      저장
+                    </button>
+                  </div>
+                </div>
+
+                <div className={styles.addColorRow}>
+                  <label className={styles.addColorLabel}>색상</label>
+
+                  <input
+                    type="color"
+                    value={newColor}
+                    onChange={(e) => setNewColor(e.target.value)}
+                    className={styles.addColorInput}
                   />
 
-                  <span className={styles.favoriteColorLabel}>
-                    {preset.label?.trim() || preset.color}
-                  </span>
-
-                  <button
-                    type="button"
-                    className={styles.favoriteColorDeleteButton}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDeleteFavoriteColor(preset);
-                    }}
-                    title="색상 삭제"
-                  >
-                    ×
-                  </button>
+                  <input
+                    type="text"
+                    value={newColorLabel}
+                    maxLength={20}
+                    onChange={(e) => setNewColorLabel(e.target.value)}
+                    placeholder="색상 이름 입력"
+                    className={styles.addColorNameInput}
+                  />
                 </div>
-              ))}
+
+                <div className={styles.addColorCount}>{newColorLabel.length} / 20</div>
               </div>,
               document.body
             )}
         </div>
-      )}
-
-      <div ref={addColorRef} className={styles.addColorBox}>
-        <button
-          type="button"
-          className={styles.addColorButton}
-          onClick={() => {
-            setNewColor(color || "#3b82f6");
-            setAddColorOpen((prev) => !prev);
-          }}
-        >
-          <span className={styles.addColorPlus}>+</span>
-        </button>
-
-        {addColorOpen &&
-          createPortal(
-            <div
-              ref={addColorPopoverRef}
-              className={[
-                styles.addColorPopover,
-                styles.addColorPopoverFloating,
-                addColorPopoverOpenAbove ? styles.addColorPopoverOpenAbove : "",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-              style={addColorPopoverStyle}
-            >
-            <div className={styles.addColorHeader}>
-              <div className={styles.addColorTitle}>새 색상 추가</div>
-
-              <div className={styles.addColorActions}>
-                <button
-                  type="button"
-                  className={styles.addColorCancelButton}
-                  onClick={() => {
-                    setNewColorLabel("");
-                    setAddColorOpen(false);
-                  }}
-                >
-                  취소
-                </button>
-
-                <button
-                  type="button"
-                  className={styles.addColorSaveButton}
-                  disabled={savingColor || !newColorLabel.trim()}
-                  onClick={handleSave}
-                >
-                  저장
-                </button>
-              </div>
-            </div>
-
-            <div className={styles.addColorRow}>
-              <label className={styles.addColorLabel}>색상</label>
-
-              <input
-                type="color"
-                value={newColor}
-                onChange={(e) => setNewColor(e.target.value)}
-                className={styles.addColorInput}
-              />
-
-              <input
-                type="text"
-                value={newColorLabel}
-                maxLength={20}
-                onChange={(e) => setNewColorLabel(e.target.value)}
-                placeholder="색상 이름 입력"
-                className={styles.addColorNameInput}
-              />
-            </div>
-
-            <div className={styles.addColorCount}>{newColorLabel.length} / 20</div>
-            </div>,
-            document.body
-          )}
       </div>
-    </div>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="삭제 확인"
+        message={`"${deleteTarget?.label?.trim() || deleteTarget?.color || ""}" 색상을 삭제하시겠습니까?`}
+        cancelLabel="아니요"
+        confirmLabel="예"
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleConfirmDelete}
+      />
+    </>
   );
 }

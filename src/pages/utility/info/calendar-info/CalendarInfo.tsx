@@ -8,6 +8,7 @@ import {
   type CalendarMemberItem,
   type GetMyCalendarsInfoResponse,
 } from "../../../../api/calendarApi";
+import { ConfirmDialog } from "../../../../common/components/ConfirmDialog";
 import CalendarInvitePopup from "./CalendarInvitePopup";
 import styles from "./CalendarInfo.module.css";
 
@@ -30,6 +31,7 @@ export default function CalendarInfo() {
   const [memberMap, setMemberMap] = useState<Record<number, CalendarMemberItem[]>>({});
   const [memberPageMap, setMemberPageMap] = useState<Record<number, number>>({});
   const [memberLoadingMap, setMemberLoadingMap] = useState<Record<number, boolean>>({});
+  const [deleteCalendarId, setDeleteCalendarId] = useState<number | null>(null);
 
   const loadCalendarInfo = async () => {
     if (!hasAccessToken()) {
@@ -281,11 +283,19 @@ export default function CalendarInfo() {
     }
   };
 
-  const handleDelete = async (calendarId: number) => {
+  const handleDeleteClick = (calendarId: number) => {
     setErrorMsg("");
     setSuccessMsg("");
+    setDeleteCalendarId(calendarId);
+  };
 
-    if (!window.confirm("해당 캘린더를 삭제하시겠습니까?")) return;
+  const handleConfirmDelete = async () => {
+    if (deleteCalendarId == null) return;
+
+    const calendarId = deleteCalendarId;
+    setErrorMsg("");
+    setSuccessMsg("");
+    setDeleteCalendarId(null);
 
     try {
       setSaving(true);
@@ -494,7 +504,7 @@ export default function CalendarInfo() {
                         <button
                           type="button"
                           className={`${styles.tableActionButton} ${styles.deleteButton}`}
-                          onClick={() => handleDelete(calendar.id)}
+                          onClick={() => handleDeleteClick(calendar.id)}
                           disabled={saving}
                         >
                           삭제
@@ -682,6 +692,16 @@ export default function CalendarInfo() {
         calendarId={inviteCalendarId}
         calendarName={inviteCalendarName}
         onClose={() => setInviteOpen(false)}
+      />
+
+      <ConfirmDialog
+        open={deleteCalendarId != null}
+        title="삭제 확인"
+        message="해당 캘린더를 삭제하시겠습니까?"
+        cancelLabel="아니요"
+        confirmLabel="예"
+        onClose={() => setDeleteCalendarId(null)}
+        onConfirm={handleConfirmDelete}
       />
     </div>
   );

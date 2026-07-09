@@ -2,7 +2,15 @@
 import { Link, useNavigate } from "react-router-dom";
 import { ApiError, isApiBaseConfigured } from "../../api/client";
 import { signup } from "../../api/authApi";
+import { AlertDialog } from "../../common/components/ConfirmDialog";
 import styles from "./Auth.module.css";
+
+type AlertState = {
+  open: boolean;
+  title: string;
+  message: string;
+  onClose?: () => void;
+};
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -16,6 +24,21 @@ export default function Signup() {
   });
 
   const [submitting, setSubmitting] = useState(false);
+  const [alertState, setAlertState] = useState<AlertState>({
+    open: false,
+    title: "",
+    message: "",
+  });
+
+  const showAlert = (message: string, title = "안내", onClose?: () => void) => {
+    setAlertState({ open: true, title, message, onClose });
+  };
+
+  const closeAlert = () => {
+    const callback = alertState.onClose;
+    setAlertState((prev) => ({ ...prev, open: false, onClose: undefined }));
+    callback?.();
+  };
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -25,29 +48,29 @@ export default function Signup() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    setSubmitting(true);
     try {
       if (!form.email || !form.password) {
-        alert("이메일과 비밀번호는 필수입니다.");
+        showAlert("이메일과 비밀번호는 필수입니다.");
         return;
       }
       if (!form.id) {
-        alert("아이디는 필수입니다.");
+        showAlert("아이디는 필수입니다.");
         return;
       }
       if (form.password.length < 8) {
-        alert("비밀번호는 8자 이상 입력해주세요.");
+        showAlert("비밀번호는 8자 이상 입력해주세요.");
         return;
       }
       if (form.password !== form.passwordConfirm) {
-        alert("비밀번호가 일치하지 않습니다.");
+        showAlert("비밀번호가 일치하지 않습니다.");
         return;
       }
       if (!isApiBaseConfigured()) {
-        alert("API 주소가 설정되지 않았습니다. (.env.local의 VITE_API_URL 확인)");
+        showAlert("API 주소가 설정되지 않았습니다. (.env.local의 VITE_API_URL 확인)");
         return;
       }
 
+      setSubmitting(true);
       await signup({
         name: form.name,
         id: form.id,
@@ -55,15 +78,16 @@ export default function Signup() {
         password: form.password,
       });
 
-      alert("회원가입 성공! 로그인 화면으로 이동합니다.");
-      navigate("/login");
+      showAlert("회원가입 성공! 로그인 화면으로 이동합니다.", "회원가입 완료", () =>
+        navigate("/login")
+      );
     } catch (err) {
       if (err instanceof ApiError) {
-        alert(err.data?.message ?? "회원가입 실패");
+        showAlert(err.data?.message ?? "회원가입 실패");
         return;
       }
 
-      alert(`네트워크 오류: ${String(err instanceof Error ? err.message : err)}`);
+      showAlert(`네트워크 오류: ${String(err instanceof Error ? err.message : err)}`);
     } finally {
       setSubmitting(false);
     }
@@ -150,6 +174,13 @@ export default function Signup() {
           <Link to="/">처음으로</Link>
         </div>
       </section>
+
+      <AlertDialog
+        open={alertState.open}
+        title={alertState.title}
+        message={alertState.message}
+        onClose={closeAlert}
+      />
     </div>
   );
 }

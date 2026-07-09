@@ -66,6 +66,10 @@ type BackConfirmState = {
   action: "restore" | "close";
 };
 
+type DiscardConfirmState = {
+  onConfirm: () => void;
+};
+
 const canUseCalendarHistoryGuard = () => typeof window !== "undefined";
 const HOME_BACK_GUARD_DEPTH = 1;
 const MODAL_BACK_GUARD_DEPTH = 2;
@@ -120,6 +124,7 @@ const Calendar: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<string>(() => dayjs().format("YYYY-MM-DD"));
   const [modalOpenVersion, setModalOpenVersion] = useState(0);
   const [backConfirm, setBackConfirm] = useState<BackConfirmState | null>(null);
+  const [discardConfirm, setDiscardConfirm] = useState<DiscardConfirmState | null>(null);
   const [backDebugEnabled] = useState(isBackDebugEnabled);
   const [backDebugLines, setBackDebugLines] = useState<string[]>(() =>
     backDebugEnabled ? readBackDebugLines() : []
@@ -467,40 +472,44 @@ const Calendar: React.FC = () => {
     closeModal();
   }, [closeBackConfirm, closeModal]);
 
-  const confirmDiscardIfNeeded = () => {
-    if (!hasUnsavedModalChanges()) return true;
+  const runWithDiscardConfirm = (action: () => void) => {
+    if (!hasUnsavedModalChanges()) {
+      action();
+      return;
+    }
 
-    return window.confirm(
-      "다른 일정 또는 새로운 일정을 열면 현재 수정 내역이 사라집니다. 계속하시겠습니까?"
-    );
+    setDiscardConfirm({ onConfirm: action });
   };
 
   const handleDateSelect = (info: DateClickArg) => {
     clearTooltipLayers();
     removeFloatingTooltip();
-    if (!confirmDiscardIfNeeded()) return;
-    setSelectedDate(info.dateStr);
-    closeModalFromCalendar();
+    runWithDiscardConfirm(() => {
+      setSelectedDate(info.dateStr);
+      closeModalFromCalendar();
+    });
   };
 
   const handleListEventClick = (event: ExpandedEvent) => {
     clearTooltipLayers();
     removeFloatingTooltip();
-    if (!confirmDiscardIfNeeded()) return;
-    rememberCurrentModal();
-    openMobileModalHistoryStep();
-    setModalOpenVersion((version) => version + 1);
-    openEventDetail(event);
+    runWithDiscardConfirm(() => {
+      rememberCurrentModal();
+      openMobileModalHistoryStep();
+      setModalOpenVersion((version) => version + 1);
+      openEventDetail(event);
+    });
   };
 
   const handleCreateClick = () => {
     clearTooltipLayers();
     removeFloatingTooltip();
-    if (!confirmDiscardIfNeeded()) return;
-    rememberCurrentModal();
-    openMobileModalHistoryStep();
-    setModalOpenVersion((version) => version + 1);
-    openCreateAtDate(selectedDate);
+    runWithDiscardConfirm(() => {
+      rememberCurrentModal();
+      openMobileModalHistoryStep();
+      setModalOpenVersion((version) => version + 1);
+      openCreateAtDate(selectedDate);
+    });
   };
 
   React.useEffect(() => {
@@ -804,6 +813,19 @@ const Calendar: React.FC = () => {
         confirmLabel="예"
         onClose={handleCancelBackClose}
         onConfirm={handleConfirmBackClose}
+      />
+      <ConfirmDialog
+        open={!!discardConfirm}
+        title="입력을 취소하시겠습니까?"
+        message="다른 일정 또는 새로운 일정을 열면 현재 수정 내역이 사라집니다. 계속하시겠습니까?"
+        cancelLabel="아니요"
+        confirmLabel="예"
+        onClose={() => setDiscardConfirm(null)}
+        onConfirm={() => {
+          const action = discardConfirm?.onConfirm;
+          setDiscardConfirm(null);
+          action?.();
+        }}
       />
       {backDebugEnabled && (
         <div

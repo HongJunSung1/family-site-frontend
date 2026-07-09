@@ -6,6 +6,7 @@ import {
   respondCalendarInvitation,
   type NotificationItem,
 } from "../../../api/notificationApi";
+import { AlertDialog } from "../../../common/components/ConfirmDialog";
 import notificationBellIcon from "../../../assets/icons/notification-bell.svg";
 import styles from "./NotificationBell.module.css";
 
@@ -14,6 +15,7 @@ export default function NotificationBell() {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
   const wrapRef = useRef<HTMLDivElement | null>(null);
 
   const loadNotifications = async () => {
@@ -49,7 +51,7 @@ export default function NotificationBell() {
     const result = await respondCalendarInvitation(notification.ref_id, action);
 
     if (!result.ok) {
-      alert(result.message ?? "처리 중 오류가 발생했습니다.");
+      setAlertMessage(result.message ?? "처리 중 오류가 발생했습니다.");
       return;
     }
 
@@ -150,6 +152,13 @@ export default function NotificationBell() {
             ))}
         </div>
       )}
+
+      <AlertDialog
+        open={!!alertMessage}
+        title="안내"
+        message={alertMessage}
+        onClose={() => setAlertMessage("")}
+      />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+﻿import { useCallback, useEffect, useState } from "react";
 import {
   getMyColorPresets,
   saveMyColorPresets,
@@ -8,7 +8,12 @@ import { hasAccessToken } from "../../../../api/client";
 
 export type { FavoriteColorPreset } from "../../../../api/calendarApi";
 
-export function useFavoriteColors() {
+type UseFavoriteColorsOptions = {
+  onAlert?: (message: string, title?: string) => void;
+};
+
+export function useFavoriteColors(options: UseFavoriteColorsOptions = {}) {
+  const { onAlert } = options;
   const [favoriteColors, setFavoriteColors] = useState<FavoriteColorPreset[]>([]);
   const [savingColor, setSavingColor] = useState(false);
 
@@ -35,7 +40,7 @@ export function useFavoriteColors() {
       const label = rawLabel.trim();
 
       if (!label) {
-        alert("색상 이름을 입력해주세요.");
+        onAlert?.("색상 이름을 입력해주세요.");
         return false;
       }
 
@@ -47,7 +52,7 @@ export function useFavoriteColors() {
         ) ?? null;
 
       if (!nextSlot) {
-        alert("자주 쓰는 색상은 최대 12개까지 저장할 수 있습니다.");
+        onAlert?.("자주 쓰는 색상은 최대 12개까지 저장할 수 있습니다.");
         return false;
       }
 
@@ -66,7 +71,7 @@ export function useFavoriteColors() {
         const data = await saveMyColorPresets(nextPresets);
 
         if (!data.ok) {
-          alert(data.message || "색상 저장에 실패했습니다.");
+          onAlert?.(data.message || "색상 저장에 실패했습니다.");
           return false;
         }
 
@@ -74,23 +79,17 @@ export function useFavoriteColors() {
         return true;
       } catch (err) {
         console.error("색상 저장 실패", err);
-        alert("색상 저장 중 오류가 발생했습니다.");
+        onAlert?.("색상 저장 중 오류가 발생했습니다.");
         return false;
       } finally {
         setSavingColor(false);
       }
     },
-    [favoriteColors]
+    [favoriteColors, onAlert]
   );
 
   const deleteFavoriteColor = useCallback(
     async (preset: FavoriteColorPreset) => {
-      const ok = window.confirm(
-        `"${preset.label?.trim() || preset.color}" 색상을 삭제하시겠습니까?`
-      );
-
-      if (!ok) return false;
-
       if (!hasAccessToken()) return false;
 
       const nextPresets = favoriteColors
@@ -104,7 +103,7 @@ export function useFavoriteColors() {
         const data = await saveMyColorPresets(nextPresets);
 
         if (!data.ok) {
-          alert(data.message || "색상 삭제에 실패했습니다.");
+          onAlert?.(data.message || "색상 삭제에 실패했습니다.");
           return false;
         }
 
@@ -112,11 +111,11 @@ export function useFavoriteColors() {
         return true;
       } catch (err) {
         console.error("색상 삭제 실패", err);
-        alert("색상 삭제 중 오류가 발생했습니다.");
+        onAlert?.("색상 삭제 중 오류가 발생했습니다.");
         return false;
       }
     },
-    [favoriteColors]
+    [favoriteColors, onAlert]
   );
 
   return {

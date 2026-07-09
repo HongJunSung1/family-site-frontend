@@ -6,6 +6,7 @@ import {
   saveMyColorPresets,
   type FavoriteColorPreset,
 } from "../../../../api/calendarApi";
+import { AlertDialog, ConfirmDialog } from "../../../../common/components/ConfirmDialog";
 import styles from "./CalendarSettings.module.css";
 
 type FavoriteColorRow = {
@@ -13,6 +14,12 @@ type FavoriteColorRow = {
   slot?: number;
   color: string;
   title: string;
+};
+
+type AlertState = {
+  open: boolean;
+  title: string;
+  message: string;
 };
 
 const createEmptyRow = (): FavoriteColorRow => ({
@@ -25,10 +32,20 @@ export default function CalendarSettings() {
   const [colors, setColors] = useState<FavoriteColorRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [alertState, setAlertState] = useState<AlertState>({
+    open: false,
+    title: "",
+    message: "",
+  });
+  const [deleteTarget, setDeleteTarget] = useState<FavoriteColorRow | null>(null);
+
+  const showAlert = (message: string, title = "안내") => {
+    setAlertState({ open: true, title, message });
+  };
 
   const fetchColorPresets = async () => {
     if (!hasAccessToken()) {
-      alert("로그인 정보가 없습니다.");
+      showAlert("로그인 정보가 없습니다.");
       setLoading(false);
       return;
     }
@@ -37,7 +54,7 @@ export default function CalendarSettings() {
       const data = await getMyColorPresets();
 
       if (!data.ok) {
-        alert(data.message || "자주 쓰는 색상 정보를 불러오지 못했습니다.");
+        showAlert(data.message || "자주 쓰는 색상 정보를 불러오지 못했습니다.");
         return;
       }
 
@@ -52,7 +69,7 @@ export default function CalendarSettings() {
       setColors(rows);
     } catch (error) {
       console.error(error);
-      alert("자주 쓰는 색상 정보를 불러오는 중 오류가 발생했습니다.");
+      showAlert("자주 쓰는 색상 정보를 불러오는 중 오류가 발생했습니다.");
     } finally {
       setLoading(false);
     }
@@ -64,7 +81,7 @@ export default function CalendarSettings() {
 
   const handleAddColor = () => {
     if (colors.length >= 12) {
-      alert("자주 쓰는 색상은 최대 12개까지 등록할 수 있습니다.");
+      showAlert("자주 쓰는 색상은 최대 12개까지 등록할 수 있습니다.");
       return;
     }
 
@@ -77,10 +94,15 @@ export default function CalendarSettings() {
     );
   };
 
-  const handleDeleteColor = async (row: FavoriteColorRow) => {
-    if (!confirm("이 색상을 삭제하시겠습니까?")) {
-      return;
-    }
+  const handleDeleteColor = (row: FavoriteColorRow) => {
+    setDeleteTarget(row);
+  };
+
+  const handleConfirmDeleteColor = async () => {
+    if (!deleteTarget) return;
+
+    const row = deleteTarget;
+    setDeleteTarget(null);
 
     if (!row.slot) {
       setColors((prev) => prev.filter((item) => item.tempId !== row.tempId));
@@ -91,14 +113,14 @@ export default function CalendarSettings() {
       const data = await deleteMyColorPreset(row.slot);
 
       if (!data.ok) {
-        alert(data.message || "색상 삭제에 실패했습니다.");
+        showAlert(data.message || "색상 삭제에 실패했습니다.");
         return;
       }
 
       setColors((prev) => prev.filter((item) => item.tempId !== row.tempId));
     } catch (error) {
       console.error(error);
-      alert("색상 삭제 중 오류가 발생했습니다.");
+      showAlert("색상 삭제 중 오류가 발생했습니다.");
     }
   };
 
@@ -106,12 +128,12 @@ export default function CalendarSettings() {
     const invalidTitle = colors.some((row) => row.title.trim() === "");
 
     if (!hasAccessToken()) {
-      alert("로그인 정보가 없습니다.");
+      showAlert("로그인 정보가 없습니다.");
       return;
     }
 
     if (invalidTitle) {
-      alert("색상 제목을 입력해주세요.");
+      showAlert("색상 제목을 입력해주세요.");
       return;
     }
 
@@ -127,22 +149,48 @@ export default function CalendarSettings() {
       );
 
       if (!data.ok) {
-        alert(data.message || "자주 쓰는 색상 저장에 실패했습니다.");
+        showAlert(data.message || "자주 쓰는 색상 저장에 실패했습니다.");
         return;
       }
 
-      alert(data.message || "자주 쓰는 색상이 저장되었습니다.");
+      showAlert(data.message || "자주 쓰는 색상이 저장되었습니다.");
       fetchColorPresets();
     } catch (error) {
       console.error(error);
-      alert("자주 쓰는 색상 저장 중 오류가 발생했습니다.");
+      showAlert("자주 쓰는 색상 저장 중 오류가 발생했습니다.");
     } finally {
       setSaving(false);
     }
   };
 
+  const dialogs = (
+    <>
+      <AlertDialog
+        open={alertState.open}
+        title={alertState.title}
+        message={alertState.message}
+        onClose={() => setAlertState((prev) => ({ ...prev, open: false }))}
+      />
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="삭제 확인"
+        message="이 색상을 삭제하시겠습니까?"
+        cancelLabel="아니요"
+        confirmLabel="예"
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleConfirmDeleteColor}
+      />
+    </>
+  );
+
   if (loading) {
-    return <div className={styles.card}>불러오는 중...</div>;
+    return (
+      <>
+        <div className={styles.card}>불러오는 중...</div>
+        {dialogs}
+      </>
+    );
   }
 
   return (
@@ -242,6 +290,8 @@ export default function CalendarSettings() {
           </tbody>
         </table>
       </div>
+
+      {dialogs}
     </div>
   );
 }

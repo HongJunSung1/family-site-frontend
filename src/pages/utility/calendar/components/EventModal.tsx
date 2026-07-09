@@ -10,7 +10,7 @@ import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
 
 import type { ApplyScope, FormState, ModalMode, PickerTarget, RepeatType } from "../types";
 import { CustomDay } from "./CustomDay";
-import { ConfirmDialog } from "../../../../common/components/ConfirmDialog";
+import { AlertDialog, ConfirmDialog } from "../../../../common/components/ConfirmDialog";
 import { EventColorPicker } from "./EventColorPicker";
 import { EventLocationPicker } from "./EventLocationPicker";
 import { WheelTimePicker } from "./WheelTimePicker";
@@ -102,6 +102,15 @@ export function EventModal(props: Props) {
 
   // 삭제 버튼
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [alertDialog, setAlertDialog] = useState({
+    open: false,
+    title: "",
+    message: "",
+  });
+
+  const showAlertDialog = React.useCallback((message: string, title = "안내") => {
+    setAlertDialog({ open: true, title, message });
+  }, []);
 
   const RepeatUnitLabel =
     form.repeat === "none"
@@ -116,7 +125,7 @@ export function EventModal(props: Props) {
 
   const repeatUiDisabled = form.repeat === "none" || lockRepeatControls;
   const { favoriteColors, savingColor, saveFavoriteColor, deleteFavoriteColor } =
-    useFavoriteColors();
+    useFavoriteColors({ onAlert: showAlertDialog });
 
   // 자주 쓰는 색상 변경
   // 자주 쓰는 색상 드롭다운
@@ -837,6 +846,13 @@ export function EventModal(props: Props) {
             setDeleteOpen(false);
             deleteEvent();
           }}
+        />
+
+        <AlertDialog
+          open={alertDialog.open}
+          title={alertDialog.title}
+          message={alertDialog.message}
+          onClose={() => setAlertDialog((prev) => ({ ...prev, open: false }))}
         />
       </div>
     </div>

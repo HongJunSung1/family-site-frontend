@@ -5,6 +5,7 @@ import {
   respondCalendarInvitation,
   type NotificationRow,
 } from "../../../../api/notificationApi";
+import { AlertDialog } from "../../../../common/components/ConfirmDialog";
 import styles from "./AlarmList.module.css";
 
 function formatDateTime(value?: string | null) {
@@ -29,6 +30,7 @@ export default function AlarmList() {
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [alertMessage, setAlertMessage] = useState("");
 
   const fetchNotifications = async (targetPage: number) => {
     if (!hasAccessToken()) {
@@ -66,7 +68,7 @@ export default function AlarmList() {
     const result = await respondCalendarInvitation(notification.ref_id, action);
 
     if (!result.ok) {
-      alert(result.message ?? "처리 중 오류가 발생했습니다.");
+      setAlertMessage(result.message ?? "처리 중 오류가 발생했습니다.");
       return;
     }
 
@@ -191,6 +193,13 @@ export default function AlarmList() {
           다음
         </button>
       </div>
+
+      <AlertDialog
+        open={!!alertMessage}
+        title="안내"
+        message={alertMessage}
+        onClose={() => setAlertMessage("")}
+      />
     </div>
   );
 }
