@@ -72,7 +72,19 @@ const MIN_BACK_GUARD_DEPTH = 2;
 const isBackDebugEnabled = () => {
   if (typeof window === "undefined") return false;
   const params = new URLSearchParams(window.location.search);
-  return params.get("debugBack") === "1" || window.localStorage.getItem("calendarBackDebug") === "1";
+  const debugParam = params.get("debugBack");
+
+  if (debugParam === "1") {
+    window.localStorage.setItem("calendarBackDebug", "1");
+    return true;
+  }
+
+  if (debugParam === "0") {
+    window.localStorage.removeItem("calendarBackDebug");
+    return false;
+  }
+
+  return window.localStorage.getItem("calendarBackDebug") === "1";
 };
 
 const cloneForm = (form: FormState): FormState => JSON.parse(JSON.stringify(form)) as FormState;
