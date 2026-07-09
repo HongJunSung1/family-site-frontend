@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+ï»¿import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ApiError } from "../../api/client";
 import { loginAndStoreSession } from "../../api/authApi";
@@ -30,7 +30,7 @@ export default function Login({ onLogin }: Props) {
     setErrorMsg("");
 
     if (!id.trim() || !password.trim()) {
-      setErrorMsg("¾ÆÀÌµğ¿Í ºñ¹Ğ¹øÈ£¸¦ ÀÔ·ÂÇØÁÖ¼¼¿ä.");
+      setErrorMsg("ì•„ì´ë””ì™€ ë¹„ë°€ë²ˆí˜¸ë¥¼ ì…ë ¥í•´ì£¼ì„¸ìš”.");
       return;
     }
 
@@ -40,7 +40,7 @@ export default function Login({ onLogin }: Props) {
       const data = await loginAndStoreSession(id.trim(), password);
 
       if (!data.ok || !data.accessToken) {
-        setErrorMsg(data.message ?? "·Î±×ÀÎ ÀÀ´äÀÌ ¿Ã¹Ù¸£Áö ¾Ê½À´Ï´Ù.");
+        setErrorMsg(data.message ?? "ë¡œê·¸ì¸ ì‘ë‹µì´ ì˜¬ë°”ë¥´ì§€ ì•ŠìŠµë‹ˆë‹¤.");
         return;
       }
 
@@ -57,15 +57,15 @@ export default function Login({ onLogin }: Props) {
     } catch (error) {
       if (error instanceof ApiError) {
         if (error.status === 401) {
-          setErrorMsg("¾ÆÀÌµğ ¶Ç´Â ºñ¹Ğ¹øÈ£°¡ ¿Ã¹Ù¸£Áö ¾Ê½À´Ï´Ù.");
+          setErrorMsg("ì•„ì´ë”” ë˜ëŠ” ë¹„ë°€ë²ˆí˜¸ê°€ ì˜¬ë°”ë¥´ì§€ ì•ŠìŠµë‹ˆë‹¤.");
           return;
         }
 
-        setErrorMsg(error.data?.message ?? "·Î±×ÀÎ Áß ¿À·ù°¡ ¹ß»ıÇß½À´Ï´Ù. Àá½Ã ÈÄ ´Ù½Ã ½ÃµµÇØÁÖ¼¼¿ä.");
+        setErrorMsg(error.data?.message ?? "ë¡œê·¸ì¸ ì¤‘ ì˜¤ë¥˜ê°€ ë°œìƒí–ˆìŠµë‹ˆë‹¤. ì ì‹œ í›„ ë‹¤ì‹œ ì‹œë„í•´ì£¼ì„¸ìš”.");
         return;
       }
 
-      setErrorMsg("³×Æ®¿öÅ© ¿À·ù°¡ ¹ß»ıÇß½À´Ï´Ù. ¼­¹ö ¿¬°áÀ» È®ÀÎÇØÁÖ¼¼¿ä.");
+      setErrorMsg("ë„¤íŠ¸ì›Œí¬ ì˜¤ë¥˜ê°€ ë°œìƒí–ˆìŠµë‹ˆë‹¤. ì„œë²„ ì—°ê²°ì„ í™•ì¸í•´ì£¼ì„¸ìš”.");
     } finally {
       setLoading(false);
     }
@@ -78,25 +78,25 @@ export default function Login({ onLogin }: Props) {
   return (
     <div className={styles.page}>
       <section className={styles.panel}>
-        <h1 className={styles.title}>·Î±×ÀÎ</h1>
-        <p className={styles.description}>°¡Á· ÀÏÁ¤À» È®ÀÎÇÏ·Á¸é °èÁ¤À¸·Î ·Î±×ÀÎÇØÁÖ¼¼¿ä.</p>
+        <h1 className={styles.title}>ë¡œê·¸ì¸</h1>
+        <p className={styles.description}>ê°€ì¡± ì¼ì •ì„ í™•ì¸í•˜ë ¤ë©´ ê³„ì •ìœ¼ë¡œ ë¡œê·¸ì¸í•´ì£¼ì„¸ìš”.</p>
 
         <div className={styles.stack}>
           <label className={styles.field}>
-            ¾ÆÀÌµğ
+            ì•„ì´ë””
             <input
               type="text"
               value={id}
               onChange={(e) => setId(e.target.value)}
               onKeyDown={onKeyDown}
-              placeholder="¾ÆÀÌµğ¸¦ ÀÔ·ÂÇØÁÖ¼¼¿ä."
+              placeholder="ì•„ì´ë””ë¥¼ ì…ë ¥í•´ì£¼ì„¸ìš”."
               autoComplete="username"
               className={styles.input}
             />
           </label>
 
           <label className={styles.field}>
-            ºñ¹Ğ¹øÈ£
+            ë¹„ë°€ë²ˆí˜¸
             <input
               type="password"
               value={password}
@@ -113,17 +113,17 @@ export default function Login({ onLogin }: Props) {
               checked={rememberId}
               onChange={(e) => setRememberId(e.target.checked)}
             />
-            ID ÀúÀå
+            ID ì €ì¥
           </label>
 
           {errorMsg && <div className={styles.error}>{errorMsg}</div>}
 
           <button className={styles.submitButton} onClick={handleLogin} disabled={loading}>
-            {loading ? "·Î±×ÀÎ Áß..." : "·Î±×ÀÎ"}
+            {loading ? "ë¡œê·¸ì¸ ì¤‘..." : "ë¡œê·¸ì¸"}
           </button>
 
           <div className={styles.linkRow}>
-            <Link to="/signup">È¸¿ø°¡ÀÔ</Link>
+            <Link to="/signup">íšŒì›ê°€ì…</Link>
           </div>
         </div>
       </section>

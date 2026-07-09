@@ -1,4 +1,4 @@
-import { useState } from "react";
+ï»¿import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ApiError, isApiBaseConfigured } from "../../api/client";
 import { signup } from "../../api/authApi";
@@ -28,23 +28,23 @@ export default function Signup() {
     setSubmitting(true);
     try {
       if (!form.email || !form.password) {
-        alert("ÀÌ¸ŞÀÏ°ú ºñ¹Ğ¹øÈ£´Â ÇÊ¼öÀÔ´Ï´Ù.");
+        alert("ì´ë©”ì¼ê³¼ ë¹„ë°€ë²ˆí˜¸ëŠ” í•„ìˆ˜ì…ë‹ˆë‹¤.");
         return;
       }
       if (!form.id) {
-        alert("¾ÆÀÌµğ´Â ÇÊ¼öÀÔ´Ï´Ù.");
+        alert("ì•„ì´ë””ëŠ” í•„ìˆ˜ì…ë‹ˆë‹¤.");
         return;
       }
       if (form.password.length < 8) {
-        alert("ºñ¹Ğ¹øÈ£´Â 8ÀÚ ÀÌ»ó ÀÔ·ÂÇØÁÖ¼¼¿ä.");
+        alert("ë¹„ë°€ë²ˆí˜¸ëŠ” 8ì ì´ìƒ ì…ë ¥í•´ì£¼ì„¸ìš”.");
         return;
       }
       if (form.password !== form.passwordConfirm) {
-        alert("ºñ¹Ğ¹øÈ£°¡ ÀÏÄ¡ÇÏÁö ¾Ê½À´Ï´Ù.");
+        alert("ë¹„ë°€ë²ˆí˜¸ê°€ ì¼ì¹˜í•˜ì§€ ì•ŠìŠµë‹ˆë‹¤.");
         return;
       }
       if (!isApiBaseConfigured()) {
-        alert("API ÁÖ¼Ò°¡ ¼³Á¤µÇÁö ¾Ê¾Ò½À´Ï´Ù. (.env.localÀÇ VITE_API_URL È®ÀÎ)");
+        alert("API ì£¼ì†Œê°€ ì„¤ì •ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤. (.env.localì˜ VITE_API_URL í™•ì¸)");
         return;
       }
 
@@ -55,15 +55,15 @@ export default function Signup() {
         password: form.password,
       });
 
-      alert("È¸¿ø°¡ÀÔ ¼º°ø! ·Î±×ÀÎ È­¸éÀ¸·Î ÀÌµ¿ÇÕ´Ï´Ù.");
+      alert("íšŒì›ê°€ì… ì„±ê³µ! ë¡œê·¸ì¸ í™”ë©´ìœ¼ë¡œ ì´ë™í•©ë‹ˆë‹¤.");
       navigate("/login");
     } catch (err) {
       if (err instanceof ApiError) {
-        alert(err.data?.message ?? "È¸¿ø°¡ÀÔ ½ÇÆĞ");
+        alert(err.data?.message ?? "íšŒì›ê°€ì… ì‹¤íŒ¨");
         return;
       }
 
-      alert(`³×Æ®¿öÅ© ¿À·ù: ${String(err instanceof Error ? err.message : err)}`);
+      alert(`ë„¤íŠ¸ì›Œí¬ ì˜¤ë¥˜: ${String(err instanceof Error ? err.message : err)}`);
     } finally {
       setSubmitting(false);
     }
@@ -72,23 +72,23 @@ export default function Signup() {
   return (
     <div className={styles.page}>
       <section className={`${styles.panel} ${styles.signupPanel}`}>
-        <h1 className={styles.title}>È¸¿ø°¡ÀÔ</h1>
-        <p className={styles.description}>°¡Á· »çÀÌÆ® °èÁ¤À» »ı¼ºÇÕ´Ï´Ù.</p>
+        <h1 className={styles.title}>íšŒì›ê°€ì…</h1>
+        <p className={styles.description}>ê°€ì¡± ì‚¬ì´íŠ¸ ê³„ì •ì„ ìƒì„±í•©ë‹ˆë‹¤.</p>
 
         <form className={styles.form} onSubmit={onSubmit}>
           <div className={styles.field}>
-            <label>ÀÌ¸§</label>
+            <label>ì´ë¦„</label>
             <input
               name="name"
               value={form.name}
               onChange={onChange}
-              placeholder="È«±æµ¿"
+              placeholder="í™ê¸¸ë™"
               className={styles.input}
             />
           </div>
 
           <div className={styles.field}>
-            <label>¾ÆÀÌµğ *</label>
+            <label>ì•„ì´ë”” *</label>
             <input
               name="id"
               value={form.id}
@@ -99,7 +99,7 @@ export default function Signup() {
           </div>
 
           <div className={styles.field}>
-            <label>ÀÌ¸ŞÀÏ *</label>
+            <label>ì´ë©”ì¼ *</label>
             <input
               name="email"
               type="email"
@@ -112,42 +112,42 @@ export default function Signup() {
           </div>
 
           <div className={styles.field}>
-            <label>ºñ¹Ğ¹øÈ£ *</label>
+            <label>ë¹„ë°€ë²ˆí˜¸ *</label>
             <input
               name="password"
               type="password"
               value={form.password}
               onChange={onChange}
-              placeholder="8ÀÚ ÀÌ»ó"
+              placeholder="8ì ì´ìƒ"
               className={styles.input}
               required
             />
           </div>
 
           <div className={styles.field}>
-            <label>ºñ¹Ğ¹øÈ£ È®ÀÎ *</label>
+            <label>ë¹„ë°€ë²ˆí˜¸ í™•ì¸ *</label>
             <input
               name="passwordConfirm"
               type="password"
               value={form.passwordConfirm}
               onChange={onChange}
-              placeholder="ºñ¹Ğ¹øÈ£¸¦ ÇÑ ¹ø ´õ ÀÔ·Â"
+              placeholder="ë¹„ë°€ë²ˆí˜¸ë¥¼ í•œ ë²ˆ ë” ì…ë ¥"
               className={styles.input}
               required
             />
           </div>
 
           <button className={styles.submitButton} type="submit" disabled={submitting}>
-            {submitting ? "Ã³¸® Áß..." : "°¡ÀÔÇÏ±â"}
+            {submitting ? "ì²˜ë¦¬ ì¤‘..." : "ê°€ì…í•˜ê¸°"}
           </button>
         </form>
 
         <div className={styles.linkRow}>
-          ÀÌ¹Ì °èÁ¤ÀÌ ÀÖ³ª¿ä? <Link to="/login">·Î±×ÀÎ</Link>
+          ì´ë¯¸ ê³„ì •ì´ ìˆë‚˜ìš”? <Link to="/login">ë¡œê·¸ì¸</Link>
         </div>
 
         <div className={styles.linkRow}>
-          <Link to="/">Ã³À½À¸·Î</Link>
+          <Link to="/">ì²˜ìŒìœ¼ë¡œ</Link>
         </div>
       </section>
     </div>
