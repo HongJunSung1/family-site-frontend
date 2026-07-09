@@ -84,10 +84,11 @@ const Calendar: React.FC = () => {
   const modalBackStackRef = useRef<ModalSnapshot[]>([]);
   const backConfirmRef = useRef<BackConfirmState | null>(null);
   const homeExitConfirmOpenRef = useRef(false);
-  const calendarPageUrlRef = useRef("");
+  const calendarBaseUrlRef = useRef("");
   const allowBackStepsRef = useRef(0);
   const historyGuardArmedRef = useRef(false);
   const backGuardDepthRef = useRef(0);
+  const backGuardSeqRef = useRef(0);
   const modeRef = useRef<ModalMode>("none");
   const [viewRange, setViewRange] = useState<{ start: Dayjs; end: Dayjs }>(() => {
     const now = dayjs();
@@ -320,12 +321,17 @@ const Calendar: React.FC = () => {
     return JSON.stringify(form) !== openedFormSnapshotRef.current;
   };
 
-  const getCalendarPageUrl = React.useCallback(() => {
+  const getCalendarBaseUrl = React.useCallback(() => {
     return (
-      calendarPageUrlRef.current ||
-      `${window.location.pathname}${window.location.search}${window.location.hash}`
+      calendarBaseUrlRef.current ||
+      `${window.location.pathname}${window.location.search}`
     );
   }, []);
+
+  const getBackGuardUrl = React.useCallback(() => {
+    backGuardSeqRef.current += 1;
+    return `${getCalendarBaseUrl()}#calendar-back-guard-${backGuardSeqRef.current}`;
+  }, [getCalendarBaseUrl]);
 
   const pushBackGuard = React.useCallback((count = 1) => {
     if (!canUseCalendarHistoryGuard()) return;
@@ -334,11 +340,11 @@ const Calendar: React.FC = () => {
       window.history.pushState(
         { ...(window.history.state ?? {}), calendarBackGuard: true },
         "",
-        getCalendarPageUrl()
+        getBackGuardUrl()
       );
       backGuardDepthRef.current += 1;
     }
-  }, [getCalendarPageUrl]);
+  }, [getBackGuardUrl]);
 
   const ensureBackGuards = React.useCallback(() => {
     const missing = MIN_BACK_GUARD_DEPTH - backGuardDepthRef.current;
@@ -348,7 +354,7 @@ const Calendar: React.FC = () => {
   const armBackGuard = React.useCallback(() => {
     if (!canUseCalendarHistoryGuard() || historyGuardArmedRef.current) return;
 
-    const url = getCalendarPageUrl();
+    const url = getCalendarBaseUrl();
     window.history.replaceState(
       { ...(window.history.state ?? {}), calendarBase: true },
       "",
@@ -357,7 +363,7 @@ const Calendar: React.FC = () => {
     backGuardDepthRef.current = 0;
     ensureBackGuards();
     historyGuardArmedRef.current = true;
-  }, [ensureBackGuards, getCalendarPageUrl]);
+  }, [ensureBackGuards, getCalendarBaseUrl]);
 
   const closeBackConfirm = React.useCallback(() => {
     backConfirmRef.current = null;
@@ -467,7 +473,7 @@ const Calendar: React.FC = () => {
   }, [closeBackConfirm, closeHomeExitConfirm, ensureBackGuards]);
 
   React.useLayoutEffect(() => {
-    calendarPageUrlRef.current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    calendarBaseUrlRef.current = `${window.location.pathname}${window.location.search}`;
     armBackGuard();
   }, [armBackGuard]);
 
