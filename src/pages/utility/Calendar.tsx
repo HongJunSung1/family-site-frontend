@@ -79,11 +79,15 @@ const Calendar: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<string>(() => dayjs().format("YYYY-MM-DD"));
   const [modalOpenVersion, setModalOpenVersion] = useState(0);
   const [backConfirm, setBackConfirm] = useState<BackConfirmState | null>(null);
+  const [homeExitConfirmOpen, setHomeExitConfirmOpen] = useState(false);
   const openedFormSnapshotRef = useRef<string>("");
   const modalBackStackRef = useRef<ModalSnapshot[]>([]);
   const modalHistoryDepthRef = useRef(0);
   const ignorePopCountRef = useRef(0);
   const rootHistoryGuardRef = useRef(false);
+  const backConfirmRef = useRef<BackConfirmState | null>(null);
+  const homeExitConfirmOpenRef = useRef(false);
+  const allowNextRootBackRef = useRef(false);
   const [viewRange, setViewRange] = useState<{ start: Dayjs; end: Dayjs }>(() => {
     const now = dayjs();
     return { start: now.startOf("month"), end: now.endOf("month").add(1, "day") };
@@ -337,6 +341,16 @@ const Calendar: React.FC = () => {
     rootHistoryGuardRef.current = true;
   }, []);
 
+  const closeBackConfirm = React.useCallback(() => {
+    backConfirmRef.current = null;
+    setBackConfirm(null);
+  }, []);
+
+  const closeHomeExitConfirm = React.useCallback(() => {
+    homeExitConfirmOpenRef.current = false;
+    setHomeExitConfirmOpen(false);
+  }, []);
+
   const releaseModalHistoryEntries = React.useCallback(() => {
     const depth = modalHistoryDepthRef.current;
     if (!isMobileCalendarViewport() || depth <= 0) return;
@@ -358,10 +372,10 @@ const Calendar: React.FC = () => {
 
   const closeModalFromCalendar = React.useCallback(() => {
     modalBackStackRef.current = [];
-    setBackConfirm(null);
+    closeBackConfirm();
     closeModal();
     releaseModalHistoryEntries();
-  }, [closeModal, releaseModalHistoryEntries]);
+  }, [closeBackConfirm, closeModal, releaseModalHistoryEntries]);
 
   const confirmDiscardIfNeeded = () => {
     if (!hasUnsavedModalChanges()) return true;
@@ -408,22 +422,50 @@ const Calendar: React.FC = () => {
 
       if (!isMobileCalendarViewport()) return;
 
+      if (allowNextRootBackRef.current) {
+        allowNextRootBackRef.current = false;
+        rootHistoryGuardRef.current = false;
+        return;
+      }
+
+      if (backConfirmRef.current) {
+        pushModalHistoryEntry();
+        closeBackConfirm();
+        return;
+      }
+
+      if (homeExitConfirmOpenRef.current) {
+        pushRootHistoryGuard();
+        closeHomeExitConfirm();
+        return;
+      }
+
       if (mode === "none") {
         pushRootHistoryGuard();
+        homeExitConfirmOpenRef.current = true;
+        setHomeExitConfirmOpen(true);
         return;
       }
 
       modalHistoryDepthRef.current = Math.max(0, modalHistoryDepthRef.current - 1);
       pushModalHistoryEntry();
       removeFloatingTooltip();
-      setBackConfirm({
+      const nextBackConfirm = {
         action: modalBackStackRef.current.length > 0 ? "restore" : "close",
-      });
+      } satisfies BackConfirmState;
+      backConfirmRef.current = nextBackConfirm;
+      setBackConfirm(nextBackConfirm);
     };
 
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, [mode, pushModalHistoryEntry, pushRootHistoryGuard]);
+  }, [
+    closeBackConfirm,
+    closeHomeExitConfirm,
+    mode,
+    pushModalHistoryEntry,
+    pushRootHistoryGuard,
+  ]);
 
   React.useEffect(() => {
     if (rootHistoryGuardRef.current || !isMobileCalendarViewport()) return;
@@ -431,12 +473,12 @@ const Calendar: React.FC = () => {
   }, [pushRootHistoryGuard]);
 
   const handleCancelBackClose = () => {
-    setBackConfirm(null);
+    closeBackConfirm();
   };
 
   const handleConfirmBackClose = () => {
     const action = backConfirm?.action;
-    setBackConfirm(null);
+    closeBackConfirm();
 
     if (action === "restore") {
       const previous = modalBackStackRef.current.pop();
@@ -452,7 +494,18 @@ const Calendar: React.FC = () => {
     }
 
     modalBackStackRef.current = [];
+    modalHistoryDepthRef.current = 0;
     closeModal();
+  };
+
+  const handleCancelHomeExit = () => {
+    closeHomeExitConfirm();
+  };
+
+  const handleConfirmHomeExit = () => {
+    closeHomeExitConfirm();
+    allowNextRootBackRef.current = true;
+    window.history.back();
   };
 
   const handleListEventMouseEnter = (
@@ -600,6 +653,15 @@ const Calendar: React.FC = () => {
         confirmLabel="예"
         onClose={handleCancelBackClose}
         onConfirm={handleConfirmBackClose}
+      />
+      <ConfirmDialog
+        open={homeExitConfirmOpen}
+        title="홈페이지를 나가시겠습니까?"
+        message="현재 페이지를 벗어나면 이전 화면으로 이동합니다."
+        cancelLabel="아니요"
+        confirmLabel="예"
+        onClose={handleCancelHomeExit}
+        onConfirm={handleConfirmHomeExit}
       />
     </div>
   );
