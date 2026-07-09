@@ -70,6 +70,7 @@ const canUseCalendarHistoryGuard = () => typeof window !== "undefined";
 const MIN_BACK_GUARD_DEPTH = 2;
 const BACK_DEBUG_STORAGE_KEY = "calendarBackDebugLines";
 const BACK_GUARD_PARAM = "_calendarBackGuard";
+const BACK_GUARD_HASH_PREFIX = "#calendar-back-guard-";
 
 const isBackDebugEnabled = () => {
   if (typeof window === "undefined") return false;
@@ -77,16 +78,15 @@ const isBackDebugEnabled = () => {
   const debugParam = params.get("debugBack");
 
   if (debugParam === "1") {
-    window.localStorage.setItem("calendarBackDebug", "1");
     return true;
   }
 
   if (debugParam === "0") {
-    window.localStorage.removeItem("calendarBackDebug");
+    window.localStorage.removeItem(BACK_DEBUG_STORAGE_KEY);
     return false;
   }
 
-  return window.localStorage.getItem("calendarBackDebug") === "1";
+  return false;
 };
 
 const cloneForm = (form: FormState): FormState => JSON.parse(JSON.stringify(form)) as FormState;
@@ -107,7 +107,8 @@ const getCleanCalendarUrl = () => {
 
   const url = new URL(window.location.href);
   url.searchParams.delete(BACK_GUARD_PARAM);
-  return `${url.pathname}${url.search}`;
+  const cleanHash = url.hash.startsWith(BACK_GUARD_HASH_PREFIX) ? "" : url.hash;
+  return `${url.pathname}${url.search}${cleanHash}`;
 };
 
 const Calendar: React.FC = () => {
@@ -399,7 +400,7 @@ const Calendar: React.FC = () => {
     backGuardSeqRef.current += 1;
     const url = new URL(getCalendarBaseUrl(), window.location.origin);
     url.searchParams.set(BACK_GUARD_PARAM, String(backGuardSeqRef.current));
-    return `${url.pathname}${url.search}`;
+    return `${url.pathname}${url.search}${BACK_GUARD_HASH_PREFIX}${backGuardSeqRef.current}`;
   }, [getCalendarBaseUrl]);
 
   const pushBackGuard = React.useCallback((count = 1) => {
@@ -436,6 +437,16 @@ const Calendar: React.FC = () => {
     ensureBackGuards();
     historyGuardArmedRef.current = true;
   }, [ensureBackGuards, getCalendarBaseUrl]);
+
+  const rearmBackGuardAfterUserActivation = React.useCallback(() => {
+    if (!canUseCalendarHistoryGuard()) return;
+
+    logBackDebug("rearm guard after user activation");
+    calendarBaseUrlRef.current = getCleanCalendarUrl();
+    historyGuardArmedRef.current = false;
+    backGuardDepthRef.current = 0;
+    armBackGuard();
+  }, [armBackGuard, logBackDebug]);
 
   const closeBackConfirm = React.useCallback(() => {
     logBackDebug("close modal confirm");
@@ -571,6 +582,34 @@ const Calendar: React.FC = () => {
     calendarBaseUrlRef.current = getCleanCalendarUrl();
     armBackGuard();
   }, [armBackGuard]);
+
+  React.useEffect(() => {
+    if (!canUseCalendarHistoryGuard()) return;
+
+    const handleFirstUserActivation = () => {
+      rearmBackGuardAfterUserActivation();
+    };
+
+    window.addEventListener("pointerdown", handleFirstUserActivation, {
+      capture: true,
+      once: true,
+    });
+    window.addEventListener("touchstart", handleFirstUserActivation, {
+      capture: true,
+      once: true,
+      passive: true,
+    });
+    window.addEventListener("keydown", handleFirstUserActivation, {
+      capture: true,
+      once: true,
+    });
+
+    return () => {
+      window.removeEventListener("pointerdown", handleFirstUserActivation, true);
+      window.removeEventListener("touchstart", handleFirstUserActivation, true);
+      window.removeEventListener("keydown", handleFirstUserActivation, true);
+    };
+  }, [rearmBackGuardAfterUserActivation]);
 
   React.useEffect(() => {
     if (typeof window === "undefined") return;
