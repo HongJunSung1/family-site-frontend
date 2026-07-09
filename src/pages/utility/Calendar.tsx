@@ -119,7 +119,6 @@ const Calendar: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<string>(() => dayjs().format("YYYY-MM-DD"));
   const [modalOpenVersion, setModalOpenVersion] = useState(0);
   const [backConfirm, setBackConfirm] = useState<BackConfirmState | null>(null);
-  const [homeExitConfirmOpen, setHomeExitConfirmOpen] = useState(false);
   const [backDebugEnabled] = useState(isBackDebugEnabled);
   const [backDebugLines, setBackDebugLines] = useState<string[]>(() =>
     backDebugEnabled ? readBackDebugLines() : []
@@ -127,10 +126,8 @@ const Calendar: React.FC = () => {
   const openedFormSnapshotRef = useRef<string>("");
   const modalBackStackRef = useRef<ModalSnapshot[]>([]);
   const backConfirmRef = useRef<BackConfirmState | null>(null);
-  const homeExitConfirmOpenRef = useRef(false);
   const calendarBaseUrlRef = useRef("");
   const allowBackStepsRef = useRef(0);
-  const allowPageLeaveRef = useRef(false);
   const historyGuardArmedRef = useRef(false);
   const backGuardDepthRef = useRef(0);
   const backGuardSeqRef = useRef(0);
@@ -152,7 +149,6 @@ const Calendar: React.FC = () => {
         message,
         `mode=${modeRef.current}`,
         `modalConfirm=${backConfirmRef.current?.action ?? "none"}`,
-        `homeConfirm=${homeExitConfirmOpenRef.current ? "open" : "closed"}`,
         `guards=${backGuardDepthRef.current}`,
         `search=${window.location.search || "-"}`,
         `hash=${window.location.hash || "-"}`,
@@ -454,12 +450,6 @@ const Calendar: React.FC = () => {
     setBackConfirm(null);
   }, [logBackDebug]);
 
-  const closeHomeExitConfirm = React.useCallback(() => {
-    logBackDebug("close home confirm");
-    homeExitConfirmOpenRef.current = false;
-    setHomeExitConfirmOpen(false);
-  }, [logBackDebug]);
-
   const rememberCurrentModal = () => {
     if (mode === "none") return;
     modalBackStackRef.current.push({ mode, form: cloneForm(form) });
@@ -548,16 +538,13 @@ const Calendar: React.FC = () => {
         return;
       }
 
-      if (homeExitConfirmOpenRef.current) {
-        logBackDebug("back while home confirm open -> cancel");
-        closeHomeExitConfirm();
-        return;
-      }
-
       if (modeRef.current === "none") {
-        logBackDebug("open home confirm");
-        homeExitConfirmOpenRef.current = true;
-        setHomeExitConfirmOpen(true);
+        logBackDebug("home back -> native beforeunload");
+        const exitSteps = backGuardDepthRef.current + 1;
+        allowBackStepsRef.current = exitSteps;
+        historyGuardArmedRef.current = false;
+        backGuardDepthRef.current = 0;
+        window.history.go(-exitSteps);
         return;
       }
 
@@ -576,7 +563,7 @@ const Calendar: React.FC = () => {
       window.removeEventListener("popstate", handleBrowserBack, true);
       window.removeEventListener("hashchange", handleBrowserBack, true);
     };
-  }, [closeBackConfirm, closeHomeExitConfirm, ensureBackGuards]);
+  }, [closeBackConfirm, ensureBackGuards]);
 
   React.useLayoutEffect(() => {
     calendarBaseUrlRef.current = getCleanCalendarUrl();
@@ -615,11 +602,6 @@ const Calendar: React.FC = () => {
     if (typeof window === "undefined") return;
 
     const handleProtectedBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (allowPageLeaveRef.current) {
-        logBackDebug("beforeunload allowed");
-        return;
-      }
-
       logBackDebug("beforeunload blocked");
       event.preventDefault();
       event.returnValue = "";
@@ -672,20 +654,6 @@ const Calendar: React.FC = () => {
 
     modalBackStackRef.current = [];
     closeModal();
-  };
-
-  const handleCancelHomeExit = () => {
-    closeHomeExitConfirm();
-  };
-
-  const handleConfirmHomeExit = () => {
-    closeHomeExitConfirm();
-    allowPageLeaveRef.current = true;
-    const exitSteps = backGuardDepthRef.current + 1;
-    allowBackStepsRef.current = exitSteps;
-    historyGuardArmedRef.current = false;
-    backGuardDepthRef.current = 0;
-    window.history.go(-exitSteps);
   };
 
   const handleListEventMouseEnter = (
@@ -833,15 +801,6 @@ const Calendar: React.FC = () => {
         confirmLabel="예"
         onClose={handleCancelBackClose}
         onConfirm={handleConfirmBackClose}
-      />
-      <ConfirmDialog
-        open={homeExitConfirmOpen}
-        title="홈페이지를 나가시겠습니까?"
-        message="현재 페이지를 벗어나면 이전 화면으로 이동합니다."
-        cancelLabel="아니요"
-        confirmLabel="예"
-        onClose={handleCancelHomeExit}
-        onConfirm={handleConfirmHomeExit}
       />
       {backDebugEnabled && (
         <div
