@@ -70,6 +70,16 @@ export function useCalendarEventForm({
     setMode("none");
   }, [setFormError]);
 
+  const restoreModal = React.useCallback(
+    (snapshot: { mode: Exclude<ModalMode, "none">; form: FormState }) => {
+      setFormError("");
+      setPicker("none");
+      setForm(snapshot.form);
+      setMode(snapshot.mode);
+    },
+    [setFormError]
+  );
+
   const ensureOrderAfterStartChange = (nextStart: Dayjs, currentEnd: Dayjs) => {
     if (nextStart.isAfter(currentEnd)) return { start: nextStart, end: addHours(nextStart, 1) };
     return { start: nextStart, end: currentEnd };
@@ -547,6 +557,7 @@ export function useCalendarEventForm({
     openCreateAtDate,
     onEventClick,
     openEventDetail,
+    restoreModal,
     onToggleAllDay,
     onPickStartDate,
     onPickEndDate,

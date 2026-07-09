@@ -7,10 +7,12 @@ import "dayjs/locale/ko";
 import { useCalendarData } from "./calendar/hooks/useCalendarData";
 import { useCalendarEventForm } from "./calendar/hooks/useCalendarEventForm";
 import { useHolidays } from "./calendar/hooks/useHolidays";
+import { ConfirmDialog } from "../../common/components/ConfirmDialog";
 import { CalendarView } from "./calendar/components/CalendarView";
 import { EventModal } from "./calendar/components/EventModal";
 import { expandRecurringEvents } from "./calendar/utils/recurrence";
 import type { ExpandedEvent } from "./calendar/utils/recurrence";
+import type { FormState, ModalMode } from "./calendar/types";
 
 import styles from "./Calendar.module.css";
 
@@ -55,6 +57,20 @@ const getHolidayDisplayName = (name?: string) => {
   return name === "기독탄신일" ? "크리스마스" : name;
 };
 
+type ModalSnapshot = {
+  mode: Exclude<ModalMode, "none">;
+  form: FormState;
+};
+
+type BackConfirmState = {
+  action: "restore" | "close";
+};
+
+const isMobileCalendarViewport = () =>
+  typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches;
+
+const cloneForm = (form: FormState): FormState => JSON.parse(JSON.stringify(form)) as FormState;
+
 const Calendar: React.FC = () => {
   const calRef = useRef<FullCalendar | null>(null);
 
@@ -62,7 +78,11 @@ const Calendar: React.FC = () => {
   const [holidayYear, setHolidayYear] = useState<number>(dayjs().year());
   const [selectedDate, setSelectedDate] = useState<string>(() => dayjs().format("YYYY-MM-DD"));
   const [modalOpenVersion, setModalOpenVersion] = useState(0);
+  const [backConfirm, setBackConfirm] = useState<BackConfirmState | null>(null);
   const openedFormSnapshotRef = useRef<string>("");
+  const modalBackStackRef = useRef<ModalSnapshot[]>([]);
+  const modalHistoryDepthRef = useRef(0);
+  const ignorePopCountRef = useRef(0);
   const [viewRange, setViewRange] = useState<{ start: Dayjs; end: Dayjs }>(() => {
     const now = dayjs();
     return { start: now.startOf("month"), end: now.endOf("month").add(1, "day") };
@@ -92,6 +112,7 @@ const Calendar: React.FC = () => {
     lockRepeatControls,
     openCreateAtDate,
     openEventDetail,
+    restoreModal,
     onToggleAllDay,
     onPickStartDate,
     onPickEndDate,
@@ -293,6 +314,43 @@ const Calendar: React.FC = () => {
     return JSON.stringify(form) !== openedFormSnapshotRef.current;
   };
 
+  const pushModalHistoryEntry = React.useCallback(() => {
+    if (!isMobileCalendarViewport()) return;
+
+    window.history.pushState(
+      { ...(window.history.state ?? {}), calendarModal: true },
+      "",
+      window.location.href
+    );
+    modalHistoryDepthRef.current += 1;
+  }, []);
+
+  const releaseModalHistoryEntries = React.useCallback(() => {
+    const depth = modalHistoryDepthRef.current;
+    if (!isMobileCalendarViewport() || depth <= 0) return;
+
+    ignorePopCountRef.current += depth;
+    modalHistoryDepthRef.current = 0;
+    window.history.go(-depth);
+  }, []);
+
+  const rememberCurrentModal = () => {
+    if (mode === "none") return;
+    modalBackStackRef.current.push({ mode, form: cloneForm(form) });
+  };
+
+  const openMobileModalHistoryStep = () => {
+    if (!isMobileCalendarViewport()) return;
+    pushModalHistoryEntry();
+  };
+
+  const closeModalFromCalendar = React.useCallback(() => {
+    modalBackStackRef.current = [];
+    setBackConfirm(null);
+    closeModal();
+    releaseModalHistoryEntries();
+  }, [closeModal, releaseModalHistoryEntries]);
+
   const confirmDiscardIfNeeded = () => {
     if (!hasUnsavedModalChanges()) return true;
 
@@ -306,13 +364,15 @@ const Calendar: React.FC = () => {
     removeFloatingTooltip();
     if (!confirmDiscardIfNeeded()) return;
     setSelectedDate(info.dateStr);
-    closeModal();
+    closeModalFromCalendar();
   };
 
   const handleListEventClick = (event: ExpandedEvent) => {
     clearTooltipLayers();
     removeFloatingTooltip();
     if (!confirmDiscardIfNeeded()) return;
+    rememberCurrentModal();
+    openMobileModalHistoryStep();
     setModalOpenVersion((version) => version + 1);
     openEventDetail(event);
   };
@@ -321,8 +381,56 @@ const Calendar: React.FC = () => {
     clearTooltipLayers();
     removeFloatingTooltip();
     if (!confirmDiscardIfNeeded()) return;
+    rememberCurrentModal();
+    openMobileModalHistoryStep();
     setModalOpenVersion((version) => version + 1);
     openCreateAtDate(selectedDate);
+  };
+
+  React.useEffect(() => {
+    const handlePopState = () => {
+      if (ignorePopCountRef.current > 0) {
+        ignorePopCountRef.current -= 1;
+        return;
+      }
+
+      if (!isMobileCalendarViewport() || mode === "none") return;
+
+      modalHistoryDepthRef.current = Math.max(0, modalHistoryDepthRef.current - 1);
+      removeFloatingTooltip();
+      setBackConfirm({
+        action: modalBackStackRef.current.length > 0 ? "restore" : "close",
+      });
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [mode]);
+
+  const handleCancelBackClose = () => {
+    setBackConfirm(null);
+    pushModalHistoryEntry();
+  };
+
+  const handleConfirmBackClose = () => {
+    const action = backConfirm?.action;
+    setBackConfirm(null);
+
+    if (action === "restore") {
+      const previous = modalBackStackRef.current.pop();
+      if (!previous) {
+        closeModal();
+        return;
+      }
+
+      restoreModal(previous);
+      setModalOpenVersion((version) => version + 1);
+      openedFormSnapshotRef.current = JSON.stringify(previous.form);
+      return;
+    }
+
+    modalBackStackRef.current = [];
+    closeModal();
   };
 
   const handleListEventMouseEnter = (
@@ -452,7 +560,7 @@ const Calendar: React.FC = () => {
                 onPickRepeatEndDate={onPickRepeatEndDate}
                 toggleMultiDate={toggleMultiDate}
                 clearMultiDates={clearMultiDates}
-                closeModal={closeModal}
+                closeModal={closeModalFromCalendar}
                 saveNew={saveNew}
                 updateEvent={updateEvent}
                 deleteEvent={deleteEvent}
@@ -462,6 +570,15 @@ const Calendar: React.FC = () => {
           </div>
         </div>
       </div>
+      <ConfirmDialog
+        open={!!backConfirm}
+        title="입력을 취소하시겠습니까?"
+        message="현재 입력하거나 수정하던 내용이 사라질 수 있습니다."
+        cancelLabel="아니요"
+        confirmLabel="예"
+        onClose={handleCancelBackClose}
+        onConfirm={handleConfirmBackClose}
+      />
     </div>
   );
 };
