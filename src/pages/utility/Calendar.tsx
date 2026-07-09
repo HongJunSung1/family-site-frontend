@@ -120,6 +120,7 @@ const Calendar: React.FC = () => {
   const homeExitConfirmOpenRef = useRef(false);
   const calendarBaseUrlRef = useRef("");
   const allowBackStepsRef = useRef(0);
+  const allowPageLeaveRef = useRef(false);
   const historyGuardArmedRef = useRef(false);
   const backGuardDepthRef = useRef(0);
   const backGuardSeqRef = useRef(0);
@@ -563,21 +564,39 @@ const Calendar: React.FC = () => {
   }, [armBackGuard]);
 
   React.useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleProtectedBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (allowPageLeaveRef.current) {
+        logBackDebug("beforeunload allowed");
+        return;
+      }
+
+      logBackDebug("beforeunload blocked");
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handleProtectedBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleProtectedBeforeUnload);
+    };
+  }, [logBackDebug]);
+
+  React.useEffect(() => {
     if (!backDebugEnabled || typeof window === "undefined") return;
 
     const handlePageHide = () => logBackDebug("pagehide");
-    const handleBeforeUnload = () => logBackDebug("beforeunload");
     const handleVisibilityChange = () => {
       logBackDebug(`visibilitychange=${document.visibilityState}`);
     };
 
     window.addEventListener("pagehide", handlePageHide);
-    window.addEventListener("beforeunload", handleBeforeUnload);
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       window.removeEventListener("pagehide", handlePageHide);
-      window.removeEventListener("beforeunload", handleBeforeUnload);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [backDebugEnabled, logBackDebug]);
@@ -613,6 +632,7 @@ const Calendar: React.FC = () => {
 
   const handleConfirmHomeExit = () => {
     closeHomeExitConfirm();
+    allowPageLeaveRef.current = true;
     const exitSteps = backGuardDepthRef.current + 1;
     allowBackStepsRef.current = exitSteps;
     historyGuardArmedRef.current = false;
