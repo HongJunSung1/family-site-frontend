@@ -89,6 +89,7 @@ const Calendar: React.FC = () => {
   const historyGuardArmedRef = useRef(false);
   const backGuardDepthRef = useRef(0);
   const backGuardSeqRef = useRef(0);
+  const backEventLockRef = useRef(false);
   const modeRef = useRef<ModalMode>("none");
   const [viewRange, setViewRange] = useState<{ start: Dayjs; end: Dayjs }>(() => {
     const now = dayjs();
@@ -432,8 +433,18 @@ const Calendar: React.FC = () => {
   }, [mode]);
 
   React.useLayoutEffect(() => {
-    const handlePopState = (event: PopStateEvent) => {
+    const handleBrowserBack = (event: Event) => {
       if (!canUseCalendarHistoryGuard()) return;
+
+      if (backEventLockRef.current) {
+        event.stopImmediatePropagation();
+        return;
+      }
+
+      backEventLockRef.current = true;
+      window.setTimeout(() => {
+        backEventLockRef.current = false;
+      }, 120);
 
       if (allowBackStepsRef.current > 0) {
         allowBackStepsRef.current -= 1;
@@ -468,8 +479,12 @@ const Calendar: React.FC = () => {
       setBackConfirm(nextBackConfirm);
     };
 
-    window.addEventListener("popstate", handlePopState, true);
-    return () => window.removeEventListener("popstate", handlePopState, true);
+    window.addEventListener("popstate", handleBrowserBack, true);
+    window.addEventListener("hashchange", handleBrowserBack, true);
+    return () => {
+      window.removeEventListener("popstate", handleBrowserBack, true);
+      window.removeEventListener("hashchange", handleBrowserBack, true);
+    };
   }, [closeBackConfirm, closeHomeExitConfirm, ensureBackGuards]);
 
   React.useLayoutEffect(() => {
