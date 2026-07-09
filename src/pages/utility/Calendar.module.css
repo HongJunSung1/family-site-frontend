@@ -2137,3 +2137,29 @@
     line-height: 14px !important;
   }
 }
+
+/* Keep today's date number aligned with every other day number. */
+:global(.fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number) {
+  align-items: normal !important;
+  justify-content: flex-start !important;
+  min-width: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  padding: 7px 10px 0 0 !important;
+  margin: 0 !important;
+  line-height: 1 !important;
+  transform: none !important;
+}
+
+:global(.fc .fc-daygrid-day.fc-day-today .dayNumberText) {
+  display: inline !important;
+  align-items: normal !important;
+  justify-content: flex-start !important;
+  min-width: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  line-height: 1 !important;
+  transform: none !important;
+}
