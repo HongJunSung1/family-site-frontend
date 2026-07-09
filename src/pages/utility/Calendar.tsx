@@ -68,6 +68,7 @@ type BackConfirmState = {
 
 const canUseCalendarHistoryGuard = () => typeof window !== "undefined";
 const MIN_BACK_GUARD_DEPTH = 2;
+const BACK_DEBUG_STORAGE_KEY = "calendarBackDebugLines";
 
 const isBackDebugEnabled = () => {
   if (typeof window === "undefined") return false;
@@ -89,6 +90,17 @@ const isBackDebugEnabled = () => {
 
 const cloneForm = (form: FormState): FormState => JSON.parse(JSON.stringify(form)) as FormState;
 
+const readBackDebugLines = () => {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(BACK_DEBUG_STORAGE_KEY) || "[]");
+    return Array.isArray(parsed) ? parsed.map(String).slice(-80) : [];
+  } catch {
+    return [];
+  }
+};
+
 const Calendar: React.FC = () => {
   const calRef = useRef<FullCalendar | null>(null);
 
@@ -98,8 +110,10 @@ const Calendar: React.FC = () => {
   const [modalOpenVersion, setModalOpenVersion] = useState(0);
   const [backConfirm, setBackConfirm] = useState<BackConfirmState | null>(null);
   const [homeExitConfirmOpen, setHomeExitConfirmOpen] = useState(false);
-  const [backDebugLines, setBackDebugLines] = useState<string[]>([]);
   const [backDebugEnabled] = useState(isBackDebugEnabled);
+  const [backDebugLines, setBackDebugLines] = useState<string[]>(() =>
+    backDebugEnabled ? readBackDebugLines() : []
+  );
   const openedFormSnapshotRef = useRef<string>("");
   const modalBackStackRef = useRef<ModalSnapshot[]>([]);
   const backConfirmRef = useRef<BackConfirmState | null>(null);
@@ -133,7 +147,11 @@ const Calendar: React.FC = () => {
       ].join(" | ");
 
       console.info("[calendar-back]", line);
-      setBackDebugLines((prev) => [...prev.slice(-17), line]);
+      setBackDebugLines((prev) => {
+        const next = [...prev, line].slice(-80);
+        window.localStorage.setItem(BACK_DEBUG_STORAGE_KEY, JSON.stringify(next));
+        return next;
+      });
     },
     [backDebugEnabled]
   );
@@ -544,6 +562,26 @@ const Calendar: React.FC = () => {
     armBackGuard();
   }, [armBackGuard]);
 
+  React.useEffect(() => {
+    if (!backDebugEnabled || typeof window === "undefined") return;
+
+    const handlePageHide = () => logBackDebug("pagehide");
+    const handleBeforeUnload = () => logBackDebug("beforeunload");
+    const handleVisibilityChange = () => {
+      logBackDebug(`visibilitychange=${document.visibilityState}`);
+    };
+
+    window.addEventListener("pagehide", handlePageHide);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("pagehide", handlePageHide);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [backDebugEnabled, logBackDebug]);
+
   const handleCancelBackClose = () => {
     closeBackConfirm();
   };
@@ -757,7 +795,26 @@ const Calendar: React.FC = () => {
             whiteSpace: "pre-wrap",
           }}
         >
-          <strong>calendar back debug</strong>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+            <strong>calendar back debug</strong>
+            <button
+              type="button"
+              onClick={() => {
+                window.localStorage.removeItem(BACK_DEBUG_STORAGE_KEY);
+                setBackDebugLines([]);
+              }}
+              style={{
+                border: "1px solid rgba(125, 227, 223, 0.7)",
+                borderRadius: 6,
+                background: "transparent",
+                color: "#d7fffb",
+                fontSize: 10,
+                padding: "2px 6px",
+              }}
+            >
+              clear
+            </button>
+          </div>
           {"\n"}
           {backDebugLines.length === 0 ? "no events yet" : backDebugLines.join("\n")}
         </div>
