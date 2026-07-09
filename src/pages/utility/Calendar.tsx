@@ -399,7 +399,7 @@ const Calendar: React.FC = () => {
   }, [mode]);
 
   React.useEffect(() => {
-    const handlePopState = () => {
+    const handlePopState = (event: PopStateEvent) => {
       if (!isMobileCalendarViewport()) return;
 
       if (allowNextBackRef.current) {
@@ -407,6 +407,7 @@ const Calendar: React.FC = () => {
         return;
       }
 
+      event.stopImmediatePropagation();
       pushBackGuard();
 
       if (backConfirmRef.current) {
@@ -433,8 +434,8 @@ const Calendar: React.FC = () => {
       setBackConfirm(nextBackConfirm);
     };
 
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
+    window.addEventListener("popstate", handlePopState, true);
+    return () => window.removeEventListener("popstate", handlePopState, true);
   }, [closeBackConfirm, closeHomeExitConfirm, pushBackGuard]);
 
   React.useEffect(() => {
@@ -442,6 +443,11 @@ const Calendar: React.FC = () => {
     if (historyGuardDepthRef.current > 0 || !isMobileCalendarViewport()) return;
     pushBackGuard();
   }, [pushBackGuard]);
+
+  React.useEffect(() => {
+    if (mode === "none" || historyGuardDepthRef.current > 0 || !isMobileCalendarViewport()) return;
+    pushBackGuard();
+  }, [mode, pushBackGuard]);
 
   const handleCancelBackClose = () => {
     closeBackConfirm();
