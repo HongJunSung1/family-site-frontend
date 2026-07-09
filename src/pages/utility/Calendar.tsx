@@ -66,8 +66,7 @@ type BackConfirmState = {
   action: "restore" | "close";
 };
 
-const isMobileCalendarViewport = () =>
-  typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches;
+const canUseCalendarHistoryGuard = () => typeof window !== "undefined";
 
 const cloneForm = (form: FormState): FormState => JSON.parse(JSON.stringify(form)) as FormState;
 
@@ -320,7 +319,7 @@ const Calendar: React.FC = () => {
   };
 
   const pushBackGuard = React.useCallback(() => {
-    if (!isMobileCalendarViewport()) return;
+    if (!canUseCalendarHistoryGuard()) return;
 
     const url =
       calendarPageUrlRef.current ||
@@ -400,7 +399,7 @@ const Calendar: React.FC = () => {
 
   React.useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
-      if (!isMobileCalendarViewport()) return;
+      if (!canUseCalendarHistoryGuard()) return;
 
       if (allowNextBackRef.current) {
         allowNextBackRef.current = false;
@@ -438,14 +437,14 @@ const Calendar: React.FC = () => {
     return () => window.removeEventListener("popstate", handlePopState, true);
   }, [closeBackConfirm, closeHomeExitConfirm, pushBackGuard]);
 
-  React.useEffect(() => {
+  React.useLayoutEffect(() => {
     calendarPageUrlRef.current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-    if (historyGuardDepthRef.current > 0 || !isMobileCalendarViewport()) return;
+    if (historyGuardDepthRef.current > 0 || !canUseCalendarHistoryGuard()) return;
     pushBackGuard();
   }, [pushBackGuard]);
 
-  React.useEffect(() => {
-    if (mode === "none" || historyGuardDepthRef.current > 0 || !isMobileCalendarViewport()) return;
+  React.useLayoutEffect(() => {
+    if (mode === "none" || historyGuardDepthRef.current > 0 || !canUseCalendarHistoryGuard()) return;
     pushBackGuard();
   }, [mode, pushBackGuard]);
 
