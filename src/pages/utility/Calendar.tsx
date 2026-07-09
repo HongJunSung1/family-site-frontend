@@ -82,14 +82,12 @@ const Calendar: React.FC = () => {
   const [homeExitConfirmOpen, setHomeExitConfirmOpen] = useState(false);
   const openedFormSnapshotRef = useRef<string>("");
   const modalBackStackRef = useRef<ModalSnapshot[]>([]);
-  const modalHistoryDepthRef = useRef(0);
-  const ignorePopCountRef = useRef(0);
-  const rootHistoryGuardRef = useRef(false);
   const backConfirmRef = useRef<BackConfirmState | null>(null);
   const homeExitConfirmOpenRef = useRef(false);
-  const allowNextRootBackRef = useRef(false);
+  const allowNextBackRef = useRef(false);
   const calendarPageUrlRef = useRef("");
-  const dialogHistoryGuardRef = useRef<"modal" | "home" | null>(null);
+  const historyGuardDepthRef = useRef(0);
+  const modeRef = useRef<ModalMode>("none");
   const [viewRange, setViewRange] = useState<{ start: Dayjs; end: Dayjs }>(() => {
     const now = dayjs();
     return { start: now.startOf("month"), end: now.endOf("month").add(1, "day") };
@@ -321,37 +319,19 @@ const Calendar: React.FC = () => {
     return JSON.stringify(form) !== openedFormSnapshotRef.current;
   };
 
-  const pushCalendarHistoryState = React.useCallback((state: Record<string, unknown>) => {
+  const pushBackGuard = React.useCallback(() => {
     if (!isMobileCalendarViewport()) return;
 
     const url =
       calendarPageUrlRef.current ||
       `${window.location.pathname}${window.location.search}${window.location.hash}`;
-    window.history.pushState({ ...(window.history.state ?? {}), ...state }, "", url);
+    window.history.pushState(
+      { ...(window.history.state ?? {}), calendarBackGuard: true },
+      "",
+      url
+    );
+    historyGuardDepthRef.current += 1;
   }, []);
-
-  const pushModalHistoryEntry = React.useCallback(() => {
-    if (!isMobileCalendarViewport()) return;
-
-    pushCalendarHistoryState({ calendarModal: true });
-    modalHistoryDepthRef.current += 1;
-  }, [pushCalendarHistoryState]);
-
-  const pushRootHistoryGuard = React.useCallback(() => {
-    if (!isMobileCalendarViewport()) return;
-
-    pushCalendarHistoryState({ calendarRootGuard: true });
-    rootHistoryGuardRef.current = true;
-  }, [pushCalendarHistoryState]);
-
-  const pushDialogHistoryGuard = React.useCallback(
-    (kind: "modal" | "home") => {
-      if (!isMobileCalendarViewport()) return;
-      pushCalendarHistoryState({ calendarDialogGuard: kind });
-      dialogHistoryGuardRef.current = kind;
-    },
-    [pushCalendarHistoryState]
-  );
 
   const closeBackConfirm = React.useCallback(() => {
     backConfirmRef.current = null;
@@ -363,31 +343,20 @@ const Calendar: React.FC = () => {
     setHomeExitConfirmOpen(false);
   }, []);
 
-  const releaseModalHistoryEntries = React.useCallback(() => {
-    const depth = modalHistoryDepthRef.current;
-    if (!isMobileCalendarViewport() || depth <= 0) return;
-
-    ignorePopCountRef.current += depth;
-    modalHistoryDepthRef.current = 0;
-    window.history.go(-depth);
-  }, []);
-
   const rememberCurrentModal = () => {
     if (mode === "none") return;
     modalBackStackRef.current.push({ mode, form: cloneForm(form) });
   };
 
   const openMobileModalHistoryStep = () => {
-    if (!isMobileCalendarViewport()) return;
-    pushModalHistoryEntry();
+    pushBackGuard();
   };
 
   const closeModalFromCalendar = React.useCallback(() => {
     modalBackStackRef.current = [];
     closeBackConfirm();
     closeModal();
-    releaseModalHistoryEntries();
-  }, [closeBackConfirm, closeModal, releaseModalHistoryEntries]);
+  }, [closeBackConfirm, closeModal]);
 
   const confirmDiscardIfNeeded = () => {
     if (!hasUnsavedModalChanges()) return true;
@@ -426,42 +395,36 @@ const Calendar: React.FC = () => {
   };
 
   React.useEffect(() => {
-    const handlePopState = () => {
-      if (ignorePopCountRef.current > 0) {
-        ignorePopCountRef.current -= 1;
-        return;
-      }
+    modeRef.current = mode;
+  }, [mode]);
 
+  React.useEffect(() => {
+    const handlePopState = () => {
       if (!isMobileCalendarViewport()) return;
 
-      if (allowNextRootBackRef.current) {
-        allowNextRootBackRef.current = false;
-        rootHistoryGuardRef.current = false;
+      if (allowNextBackRef.current) {
+        allowNextBackRef.current = false;
         return;
       }
 
+      pushBackGuard();
+
       if (backConfirmRef.current) {
-        dialogHistoryGuardRef.current = null;
-        pushModalHistoryEntry();
         closeBackConfirm();
         return;
       }
 
       if (homeExitConfirmOpenRef.current) {
-        dialogHistoryGuardRef.current = null;
-        pushRootHistoryGuard();
         closeHomeExitConfirm();
         return;
       }
 
-      if (mode === "none") {
-        pushRootHistoryGuard();
+      if (modeRef.current === "none") {
         homeExitConfirmOpenRef.current = true;
         setHomeExitConfirmOpen(true);
         return;
       }
 
-      modalHistoryDepthRef.current = Math.max(0, modalHistoryDepthRef.current - 1);
       removeFloatingTooltip();
       const nextBackConfirm = {
         action: modalBackStackRef.current.length > 0 ? "restore" : "close",
@@ -472,38 +435,20 @@ const Calendar: React.FC = () => {
 
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, [
-    closeBackConfirm,
-    closeHomeExitConfirm,
-    mode,
-    pushModalHistoryEntry,
-    pushRootHistoryGuard,
-  ]);
+  }, [closeBackConfirm, closeHomeExitConfirm, pushBackGuard]);
 
   React.useEffect(() => {
     calendarPageUrlRef.current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-    if (rootHistoryGuardRef.current || !isMobileCalendarViewport()) return;
-    pushRootHistoryGuard();
-  }, [pushRootHistoryGuard]);
-
-  React.useEffect(() => {
-    if (!backConfirm || dialogHistoryGuardRef.current === "modal") return;
-    pushDialogHistoryGuard("modal");
-  }, [backConfirm, pushDialogHistoryGuard]);
-
-  React.useEffect(() => {
-    if (!homeExitConfirmOpen || dialogHistoryGuardRef.current === "home") return;
-    pushDialogHistoryGuard("home");
-  }, [homeExitConfirmOpen, pushDialogHistoryGuard]);
+    if (historyGuardDepthRef.current > 0 || !isMobileCalendarViewport()) return;
+    pushBackGuard();
+  }, [pushBackGuard]);
 
   const handleCancelBackClose = () => {
-    dialogHistoryGuardRef.current = null;
     closeBackConfirm();
   };
 
   const handleConfirmBackClose = () => {
     const action = backConfirm?.action;
-    dialogHistoryGuardRef.current = null;
     closeBackConfirm();
 
     if (action === "restore") {
@@ -520,20 +465,19 @@ const Calendar: React.FC = () => {
     }
 
     modalBackStackRef.current = [];
-    modalHistoryDepthRef.current = 0;
     closeModal();
   };
 
   const handleCancelHomeExit = () => {
-    dialogHistoryGuardRef.current = null;
     closeHomeExitConfirm();
   };
 
   const handleConfirmHomeExit = () => {
-    dialogHistoryGuardRef.current = null;
     closeHomeExitConfirm();
-    allowNextRootBackRef.current = true;
-    window.history.go(-2);
+    allowNextBackRef.current = true;
+    const depth = Math.max(1, historyGuardDepthRef.current);
+    historyGuardDepthRef.current = 0;
+    window.history.go(-depth);
   };
 
   const handleListEventMouseEnter = (
