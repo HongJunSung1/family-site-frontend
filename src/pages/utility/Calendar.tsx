@@ -67,6 +67,7 @@ type BackConfirmState = {
 };
 
 const canUseCalendarHistoryGuard = () => typeof window !== "undefined";
+const MIN_BACK_GUARD_DEPTH = 2;
 
 const cloneForm = (form: FormState): FormState => JSON.parse(JSON.stringify(form)) as FormState;
 
@@ -86,6 +87,7 @@ const Calendar: React.FC = () => {
   const calendarPageUrlRef = useRef("");
   const allowBackStepsRef = useRef(0);
   const historyGuardArmedRef = useRef(false);
+  const backGuardDepthRef = useRef(0);
   const modeRef = useRef<ModalMode>("none");
   const [viewRange, setViewRange] = useState<{ start: Dayjs; end: Dayjs }>(() => {
     const now = dayjs();
@@ -325,15 +327,23 @@ const Calendar: React.FC = () => {
     );
   }, []);
 
-  const pushBackGuard = React.useCallback(() => {
+  const pushBackGuard = React.useCallback((count = 1) => {
     if (!canUseCalendarHistoryGuard()) return;
 
-    window.history.pushState(
-      { ...(window.history.state ?? {}), calendarBackGuard: true },
-      "",
-      getCalendarPageUrl()
-    );
+    for (let i = 0; i < count; i += 1) {
+      window.history.pushState(
+        { ...(window.history.state ?? {}), calendarBackGuard: true },
+        "",
+        getCalendarPageUrl()
+      );
+      backGuardDepthRef.current += 1;
+    }
   }, [getCalendarPageUrl]);
+
+  const ensureBackGuards = React.useCallback(() => {
+    const missing = MIN_BACK_GUARD_DEPTH - backGuardDepthRef.current;
+    if (missing > 0) pushBackGuard(missing);
+  }, [pushBackGuard]);
 
   const armBackGuard = React.useCallback(() => {
     if (!canUseCalendarHistoryGuard() || historyGuardArmedRef.current) return;
@@ -344,13 +354,10 @@ const Calendar: React.FC = () => {
       "",
       url
     );
-    window.history.pushState(
-      { ...(window.history.state ?? {}), calendarBackGuard: true },
-      "",
-      url
-    );
+    backGuardDepthRef.current = 0;
+    ensureBackGuards();
     historyGuardArmedRef.current = true;
-  }, [getCalendarPageUrl]);
+  }, [ensureBackGuards, getCalendarPageUrl]);
 
   const closeBackConfirm = React.useCallback(() => {
     backConfirmRef.current = null;
@@ -369,6 +376,7 @@ const Calendar: React.FC = () => {
 
   const openMobileModalHistoryStep = () => {
     armBackGuard();
+    ensureBackGuards();
   };
 
   const closeModalFromCalendar = React.useCallback(() => {
@@ -427,7 +435,8 @@ const Calendar: React.FC = () => {
       }
 
       event.stopImmediatePropagation();
-      pushBackGuard();
+      backGuardDepthRef.current = Math.max(0, backGuardDepthRef.current - 1);
+      ensureBackGuards();
 
       if (backConfirmRef.current) {
         closeBackConfirm();
@@ -455,7 +464,7 @@ const Calendar: React.FC = () => {
 
     window.addEventListener("popstate", handlePopState, true);
     return () => window.removeEventListener("popstate", handlePopState, true);
-  }, [closeBackConfirm, closeHomeExitConfirm, pushBackGuard]);
+  }, [closeBackConfirm, closeHomeExitConfirm, ensureBackGuards]);
 
   React.useLayoutEffect(() => {
     calendarPageUrlRef.current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
@@ -493,9 +502,11 @@ const Calendar: React.FC = () => {
 
   const handleConfirmHomeExit = () => {
     closeHomeExitConfirm();
-    allowBackStepsRef.current = 2;
+    const exitSteps = backGuardDepthRef.current + 1;
+    allowBackStepsRef.current = exitSteps;
     historyGuardArmedRef.current = false;
-    window.history.go(-2);
+    backGuardDepthRef.current = 0;
+    window.history.go(-exitSteps);
   };
 
   const handleListEventMouseEnter = (
