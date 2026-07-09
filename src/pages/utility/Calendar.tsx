@@ -69,6 +69,7 @@ type BackConfirmState = {
 const canUseCalendarHistoryGuard = () => typeof window !== "undefined";
 const MIN_BACK_GUARD_DEPTH = 2;
 const BACK_DEBUG_STORAGE_KEY = "calendarBackDebugLines";
+const BACK_GUARD_PARAM = "_calendarBackGuard";
 
 const isBackDebugEnabled = () => {
   if (typeof window === "undefined") return false;
@@ -99,6 +100,14 @@ const readBackDebugLines = () => {
   } catch {
     return [];
   }
+};
+
+const getCleanCalendarUrl = () => {
+  if (typeof window === "undefined") return "";
+
+  const url = new URL(window.location.href);
+  url.searchParams.delete(BACK_GUARD_PARAM);
+  return `${url.pathname}${url.search}`;
 };
 
 const Calendar: React.FC = () => {
@@ -144,6 +153,7 @@ const Calendar: React.FC = () => {
         `modalConfirm=${backConfirmRef.current?.action ?? "none"}`,
         `homeConfirm=${homeExitConfirmOpenRef.current ? "open" : "closed"}`,
         `guards=${backGuardDepthRef.current}`,
+        `search=${window.location.search || "-"}`,
         `hash=${window.location.hash || "-"}`,
       ].join(" | ");
 
@@ -382,15 +392,14 @@ const Calendar: React.FC = () => {
   };
 
   const getCalendarBaseUrl = React.useCallback(() => {
-    return (
-      calendarBaseUrlRef.current ||
-      `${window.location.pathname}${window.location.search}`
-    );
+    return calendarBaseUrlRef.current || getCleanCalendarUrl();
   }, []);
 
   const getBackGuardUrl = React.useCallback(() => {
     backGuardSeqRef.current += 1;
-    return `${getCalendarBaseUrl()}#calendar-back-guard-${backGuardSeqRef.current}`;
+    const url = new URL(getCalendarBaseUrl(), window.location.origin);
+    url.searchParams.set(BACK_GUARD_PARAM, String(backGuardSeqRef.current));
+    return `${url.pathname}${url.search}`;
   }, [getCalendarBaseUrl]);
 
   const pushBackGuard = React.useCallback((count = 1) => {
@@ -559,7 +568,7 @@ const Calendar: React.FC = () => {
   }, [closeBackConfirm, closeHomeExitConfirm, ensureBackGuards]);
 
   React.useLayoutEffect(() => {
-    calendarBaseUrlRef.current = `${window.location.pathname}${window.location.search}`;
+    calendarBaseUrlRef.current = getCleanCalendarUrl();
     armBackGuard();
   }, [armBackGuard]);
 
