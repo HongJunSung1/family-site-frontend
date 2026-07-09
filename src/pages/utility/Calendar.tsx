@@ -67,7 +67,8 @@ type BackConfirmState = {
 };
 
 const canUseCalendarHistoryGuard = () => typeof window !== "undefined";
-const MIN_BACK_GUARD_DEPTH = 2;
+const HOME_BACK_GUARD_DEPTH = 1;
+const MODAL_BACK_GUARD_DEPTH = 2;
 const BACK_DEBUG_STORAGE_KEY = "calendarBackDebugLines";
 const BACK_GUARD_PARAM = "_calendarBackGuard";
 const BACK_GUARD_HASH_PREFIX = "#calendar-back-guard-";
@@ -413,9 +414,9 @@ const Calendar: React.FC = () => {
     }
   }, [getBackGuardUrl, logBackDebug]);
 
-  const ensureBackGuards = React.useCallback(() => {
-    const missing = MIN_BACK_GUARD_DEPTH - backGuardDepthRef.current;
-    logBackDebug(`ensure guards missing=${missing}`);
+  const ensureBackGuards = React.useCallback((targetDepth = HOME_BACK_GUARD_DEPTH) => {
+    const missing = targetDepth - backGuardDepthRef.current;
+    logBackDebug(`ensure guards target=${targetDepth} missing=${missing}`);
     if (missing > 0) pushBackGuard(missing);
   }, [logBackDebug, pushBackGuard]);
 
@@ -457,7 +458,7 @@ const Calendar: React.FC = () => {
 
   const openMobileModalHistoryStep = () => {
     armBackGuard();
-    ensureBackGuards();
+    ensureBackGuards(MODAL_BACK_GUARD_DEPTH);
   };
 
   const closeModalFromCalendar = React.useCallback(() => {
@@ -528,23 +529,25 @@ const Calendar: React.FC = () => {
         return;
       }
 
-      event.stopImmediatePropagation();
-      backGuardDepthRef.current = Math.max(0, backGuardDepthRef.current - 1);
-      ensureBackGuards();
-
-      if (backConfirmRef.current) {
-        logBackDebug("back while modal confirm open -> cancel");
-        closeBackConfirm();
-        return;
-      }
-
       if (modeRef.current === "none") {
         logBackDebug("home back -> native beforeunload");
-        const exitSteps = backGuardDepthRef.current + 1;
+        event.stopImmediatePropagation();
+        backGuardDepthRef.current = Math.max(0, backGuardDepthRef.current - 1);
+        const exitSteps = Math.max(1, backGuardDepthRef.current + 1);
         allowBackStepsRef.current = exitSteps;
         historyGuardArmedRef.current = false;
         backGuardDepthRef.current = 0;
         window.history.go(-exitSteps);
+        return;
+      }
+
+      event.stopImmediatePropagation();
+      backGuardDepthRef.current = Math.max(0, backGuardDepthRef.current - 1);
+      ensureBackGuards(MODAL_BACK_GUARD_DEPTH);
+
+      if (backConfirmRef.current) {
+        logBackDebug("back while modal confirm open -> cancel");
+        closeBackConfirm();
         return;
       }
 
