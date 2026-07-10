@@ -9,6 +9,7 @@ import { useCalendarEventForm } from "./calendar/hooks/useCalendarEventForm";
 import { useHolidays } from "./calendar/hooks/useHolidays";
 import { ConfirmDialog } from "../../common/components/ConfirmDialog";
 import { LoadingOverlay } from "../../common/components/Loading";
+import { useMobileHeader } from "../../common/components/MobileHeaderContext";
 import { CalendarView } from "./calendar/components/CalendarView";
 import { EventModal } from "./calendar/components/EventModal";
 import { expandRecurringEvents } from "./calendar/utils/recurrence";
@@ -119,6 +120,7 @@ const getCleanCalendarUrl = () => {
 
 const Calendar: React.FC = () => {
   const calRef = useRef<FullCalendar | null>(null);
+  const { setConfig: setMobileHeaderConfig, resetConfig: resetMobileHeaderConfig } = useMobileHeader();
 
   const [formError, setFormError] = useState<string>("");
   const [holidayYear, setHolidayYear] = useState<number>(dayjs().year());
@@ -419,10 +421,10 @@ const Calendar: React.FC = () => {
     });
   };
 
-  const hasUnsavedModalChanges = () => {
+  const hasUnsavedModalChanges = React.useCallback(() => {
     if (mode === "none" || !openedFormSnapshotRef.current) return false;
     return JSON.stringify(form) !== openedFormSnapshotRef.current;
-  };
+  }, [form, mode]);
 
   const getCalendarBaseUrl = React.useCallback(() => {
     return calendarBaseUrlRef.current || getCleanCalendarUrl();
@@ -502,14 +504,14 @@ const Calendar: React.FC = () => {
     closeModal();
   }, [closeBackConfirm, closeModal]);
 
-  const runWithDiscardConfirm = (action: () => void) => {
+  const runWithDiscardConfirm = React.useCallback((action: () => void) => {
     if (!hasUnsavedModalChanges()) {
       action();
       return;
     }
 
     setDiscardConfirm({ onConfirm: action });
-  };
+  }, [hasUnsavedModalChanges]);
 
   const handleDateSelect = (info: DateClickArg) => {
     clearTooltipLayers();
@@ -542,7 +544,7 @@ const Calendar: React.FC = () => {
     });
   };
 
-  const handleCalendarTabSelect = (calendar: (typeof calendars)[number]) => {
+  const handleCalendarTabSelect = React.useCallback((calendar: (typeof calendars)[number]) => {
     if (calendar.calendarId === calendarId) return;
 
     clearTooltipLayers();
@@ -551,7 +553,30 @@ const Calendar: React.FC = () => {
       handleCalendarTabClick(calendar);
       closeModalFromCalendar();
     });
-  };
+  }, [calendarId, closeModalFromCalendar, handleCalendarTabClick, runWithDiscardConfirm]);
+
+  React.useEffect(() => {
+    setMobileHeaderConfig({
+      title: calendarName || "캘린더",
+      menuItems: calendars.map((calendar) => ({
+        id: String(calendar.calendarId),
+        label: calendar.name,
+        active: calendar.calendarId === calendarId,
+        onSelect: () => handleCalendarTabSelect(calendar),
+      })),
+    });
+
+    return () => {
+      resetMobileHeaderConfig();
+    };
+  }, [
+    calendarId,
+    calendarName,
+    calendars,
+    handleCalendarTabSelect,
+    resetMobileHeaderConfig,
+    setMobileHeaderConfig,
+  ]);
 
   React.useEffect(() => {
     modeRef.current = mode;

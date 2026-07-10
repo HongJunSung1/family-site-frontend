@@ -10,7 +10,12 @@
 
 @media (max-width: 768px) {
   .page {
-    height: calc(var(--app-viewport-height, 100dvh) - var(--app-nav-height, 59px));
+    height: calc(
+      var(--app-viewport-height, 100dvh) -
+      var(--app-nav-height, 59px) -
+      var(--app-bottom-nav-height, 50px) -
+      env(safe-area-inset-bottom)
+    );
     padding: 0;
   }
 }

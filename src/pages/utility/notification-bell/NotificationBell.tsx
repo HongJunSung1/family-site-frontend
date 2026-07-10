@@ -10,7 +10,11 @@ import { AlertDialog } from "../../../common/components/ConfirmDialog";
 import notificationBellIcon from "../../../assets/icons/notification-bell.svg";
 import styles from "./NotificationBell.module.css";
 
-export default function NotificationBell() {
+type NotificationBellProps = {
+  placement?: "top" | "bottom";
+};
+
+export default function NotificationBell({ placement = "top" }: NotificationBellProps) {
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -84,7 +88,12 @@ export default function NotificationBell() {
   };
 
   return (
-    <div className={styles.wrap} ref={wrapRef}>
+    <div
+      className={[styles.wrap, placement === "bottom" ? styles.bottomWrap : ""]
+        .filter(Boolean)
+        .join(" ")}
+      ref={wrapRef}
+    >
       <button
         type="button"
         className={styles.bellButton}

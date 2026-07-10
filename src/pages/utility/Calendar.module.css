@@ -2222,4 +2222,25 @@
   .activeCalendarTab::after {
     content: none !important;
   }
+
+  .calendarPane .calendarTabs {
+    display: none !important;
+  }
+}
+
+/* Remove tap/focus rings from calendar tabs and toolbar controls. */
+.calendarTab:focus,
+.calendarTab:focus-visible,
+:global(.fc .fc-button:focus),
+:global(.fc .fc-button:focus-visible),
+:global(.fc .fc-button-primary:focus),
+:global(.fc .fc-button-primary:focus-visible),
+:global(.fc button.fc-myToday-button:focus),
+:global(.fc button.fc-myToday-button:focus-visible),
+:global(.fc .fc-prev-button:focus),
+:global(.fc .fc-prev-button:focus-visible),
+:global(.fc .fc-next-button:focus),
+:global(.fc .fc-next-button:focus-visible) {
+  outline: none !important;
+  box-shadow: none !important;
 }

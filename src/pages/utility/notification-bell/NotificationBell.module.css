@@ -4,6 +4,10 @@
   align-items: center;
 }
 
+.bottomWrap {
+  justify-content: center;
+}
+
 .bellButton {
   position: relative;
   width: 42px;
@@ -31,6 +35,12 @@
   background: #f9fafb;
   box-shadow: 0 12px 28px rgba(37, 99, 235, 0.18);
   transform: translateY(-1px);
+}
+
+.bellButton:focus,
+.bellButton:focus-visible {
+  outline: none;
+  box-shadow: none;
 }
 
 .bellIconImage {
@@ -198,13 +208,53 @@
   background: #e5e7eb;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 640px) {
   .panel {
     position: fixed;
     top: 58px;
     right: 12px;
     left: 12px;
     width: auto;
+  }
+
+  .bottomWrap .bellButton {
+    width: 50px;
+    height: 50px;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .bottomWrap .bellButton:hover {
+    background: transparent;
+    box-shadow: none;
+    transform: none;
+  }
+
+  .bottomWrap .bellIconImage {
+    width: 50px;
+    height: 50px;
+    opacity: 0.82;
+  }
+
+  .bottomWrap .badge {
+    top: -3px;
+    right: -5px;
+    min-width: 15px;
+    height: 15px;
+    padding: 0 4px;
+    border-width: 1px;
+    font-size: 9px;
+    line-height: 13px;
+  }
+
+  .bottomWrap .panel {
+    top: auto;
+    left: 10px;
+    right: 10px;
+    bottom: calc(var(--app-bottom-nav-height, 50px) + env(safe-area-inset-bottom) + 10px);
+    max-height: min(420px, calc(var(--app-viewport-height, 100dvh) - 140px));
+    border-radius: 16px;
   }
 }
 

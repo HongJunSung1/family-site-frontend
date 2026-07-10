@@ -50,10 +50,10 @@ export function useCalendarData({ setFormError }: UseCalendarDataParams) {
   }, []);
 
   // 탭 클릭 시 현재 캘린더를 교체한다.
-  const handleCalendarTabClick = (calendar: MyCalendar) => {
+  const handleCalendarTabClick = React.useCallback((calendar: MyCalendar) => {
     setCalendarId(calendar.calendarId);
     setCalendarName(calendar.name);
-  };
+  }, []);
 
   useEffect(() => {
     (async () => {
