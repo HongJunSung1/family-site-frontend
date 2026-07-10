@@ -20,20 +20,29 @@ export function useCalendarData({ setFormError }: UseCalendarDataParams) {
   const [calendars, setCalendars] = useState<MyCalendar[]>([]);
   const [calendarId, setCalendarId] = useState<number | null>(null);
   const [calendarName, setCalendarName] = useState<string>("");
+  const [calendarsLoading, setCalendarsLoading] = useState(true);
+  const [eventsLoading, setEventsLoading] = useState(false);
 
   useEffect(() => {
     const fetchMyCalendars = async () => {
-      if (!hasAccessToken()) return;
+      if (!hasAccessToken()) {
+        setCalendarsLoading(false);
+        return;
+      }
 
-      const list = await getMyCalendars();
+      try {
+        const list = await getMyCalendars();
 
-      setCalendars(list);
+        setCalendars(list);
 
-      const defaultCalendar = list.find((c) => c.isDefault === 1) ?? list[0];
+        const defaultCalendar = list.find((c) => c.isDefault === 1) ?? list[0];
 
-      if (defaultCalendar) {
-        setCalendarId(defaultCalendar.calendarId);
-        setCalendarName(defaultCalendar.name);
+        if (defaultCalendar) {
+          setCalendarId(defaultCalendar.calendarId);
+          setCalendarName(defaultCalendar.name);
+        }
+      } finally {
+        setCalendarsLoading(false);
       }
     };
 
@@ -76,12 +85,15 @@ export function useCalendarData({ setFormError }: UseCalendarDataParams) {
       if (!hasAccessToken()) return;
 
       try {
+        setEventsLoading(true);
         const data = await getCalendarEvents(targetCalendarId);
         setEvents(data);
       } catch (error) {
         if (error instanceof ApiError && error.status === 403) {
           setFormError("이 캘린더에 대한 권한이 없습니다. (calendar_members 확인)");
         }
+      } finally {
+        setEventsLoading(false);
       }
     },
     [setFormError]
@@ -108,6 +120,8 @@ export function useCalendarData({ setFormError }: UseCalendarDataParams) {
     calendars,
     calendarId,
     calendarName,
+    calendarsLoading,
+    eventsLoading,
     loadEvents,
     handleCalendarTabClick,
   };

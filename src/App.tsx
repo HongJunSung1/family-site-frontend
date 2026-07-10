@@ -11,6 +11,7 @@ import themeSunIcon from "./assets/icons/theme-sun.svg";
 import NotificationBell from "./pages/utility/notification-bell/NotificationBell";
 import PersonalInfoPage from "./pages/utility/info/user-info/PersonalInfoPage";
 import ProtectedRoute from "./routes/ProtectedRoute";
+import { PageLoading } from "./common/components/Loading";
 import styles from "./App.module.css";
 
 type ThemeMode = "light" | "dark";
@@ -130,7 +131,7 @@ export default function App() {
   }, []);
 
   if (checking) {
-    return <div style={{ padding: 24 }}>로그인 상태 확인 중...</div>;
+    return <PageLoading label="로그인 상태 확인 중" />;
   }
 
   return (

@@ -1,0 +1,267 @@
+.familyLoader {
+  position: relative;
+  width: 74px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+}
+
+.nodeWrap {
+  position: relative;
+  width: 64px;
+  height: 34px;
+}
+
+.connector {
+  position: absolute;
+  left: 9px;
+  right: 9px;
+  top: 16px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--color-primary) 62%, var(--color-border)),
+    color-mix(in srgb, var(--cal-accent, #44c7c2) 68%, var(--color-border)),
+    transparent
+  );
+  opacity: 0.56;
+  transform-origin: center;
+  animation: loaderLine 1.65s ease-in-out infinite;
+}
+
+.node {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--color-primary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-primary) 16%, transparent);
+  animation: loaderNode 1.65s ease-in-out infinite;
+}
+
+.node:nth-child(2) {
+  left: 0;
+  top: 12px;
+  background: var(--color-primary);
+}
+
+.node:nth-child(3) {
+  left: 18px;
+  top: 2px;
+  background: var(--cal-accent, #44c7c2);
+  animation-delay: 0.16s;
+}
+
+.node:nth-child(4) {
+  left: 38px;
+  top: 22px;
+  background: color-mix(in srgb, var(--color-primary) 70%, var(--cal-accent, #44c7c2));
+  animation-delay: 0.32s;
+}
+
+.node:nth-child(5) {
+  right: 0;
+  top: 12px;
+  background: var(--cal-accent-2, #7fe3df);
+  animation-delay: 0.48s;
+}
+
+.pageLoading {
+  width: 100%;
+  min-height: var(--app-viewport-height, 100dvh);
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 50% 42%, var(--color-primary-soft), transparent 30rem),
+    var(--color-bg);
+}
+
+.pageLoadingSurface {
+  width: 132px;
+  height: 104px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--color-surface) 88%, transparent);
+  box-shadow: var(--shadow-soft);
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--color-surface) 72%, transparent);
+  backdrop-filter: blur(2px);
+  pointer-events: none;
+}
+
+.overlay.calendarOverlay {
+  align-items: stretch;
+  justify-items: stretch;
+  padding: 96px 18px 18px;
+  box-sizing: border-box;
+}
+
+.calendarSkeleton {
+  width: 100%;
+  height: 100%;
+  min-height: 240px;
+  display: grid;
+  grid-template-rows: repeat(5, 1fr);
+  gap: 14px;
+  opacity: 0.82;
+}
+
+.skeletonWeek {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+}
+
+.skeletonCell {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-surface-muted) 72%, transparent);
+}
+
+.skeletonCell::before,
+.skeletonCell::after {
+  content: "";
+  position: absolute;
+  left: 14%;
+  right: 12%;
+  height: 5px;
+  border-radius: 999px;
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--color-border-strong) 74%, transparent),
+      color-mix(in srgb, var(--cal-accent, #44c7c2) 68%, var(--color-primary)),
+      color-mix(in srgb, var(--color-border-strong) 74%, transparent)
+    );
+  background-size: 220% 100%;
+  animation: skeletonShimmer 1.45s ease-in-out infinite;
+}
+
+.skeletonCell::before {
+  top: 38%;
+}
+
+.skeletonCell::after {
+  top: 52%;
+  right: 28%;
+  animation-delay: 0.18s;
+}
+
+.inlineDots {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: 42px;
+  height: 16px;
+}
+
+.inlineDots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0.45;
+  animation: inlineDot 0.9s ease-in-out infinite;
+}
+
+.inlineDots span:nth-child(2) {
+  animation-delay: 0.12s;
+}
+
+.inlineDots span:nth-child(3) {
+  animation-delay: 0.24s;
+}
+
+@keyframes loaderNode {
+  0%,
+  100% {
+    transform: translateY(0) scale(0.92);
+    opacity: 0.54;
+  }
+
+  45% {
+    transform: translateY(-2px) scale(1.18);
+    opacity: 1;
+  }
+}
+
+@keyframes loaderLine {
+  0%,
+  100% {
+    transform: scaleX(0.72);
+    opacity: 0.32;
+  }
+
+  48% {
+    transform: scaleX(1);
+    opacity: 0.72;
+  }
+}
+
+@keyframes skeletonShimmer {
+  0% {
+    background-position: 160% 0;
+    opacity: 0.42;
+  }
+
+  50% {
+    opacity: 0.9;
+  }
+
+  100% {
+    background-position: -60% 0;
+    opacity: 0.42;
+  }
+}
+
+@keyframes inlineDot {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+
+  50% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .pageLoadingSurface {
+    width: 112px;
+    height: 88px;
+  }
+
+  .overlay.calendarOverlay {
+    padding: 78px 10px 10px;
+  }
+
+  .calendarSkeleton {
+    gap: 8px;
+  }
+
+  .skeletonWeek {
+    gap: 5px;
+  }
+
+  .skeletonCell::before,
+  .skeletonCell::after {
+    height: 3px;
+    left: 10%;
+    right: 10%;
+  }
+}

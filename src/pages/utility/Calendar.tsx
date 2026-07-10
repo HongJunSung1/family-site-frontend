@@ -8,6 +8,7 @@ import { useCalendarData } from "./calendar/hooks/useCalendarData";
 import { useCalendarEventForm } from "./calendar/hooks/useCalendarEventForm";
 import { useHolidays } from "./calendar/hooks/useHolidays";
 import { ConfirmDialog } from "../../common/components/ConfirmDialog";
+import { LoadingOverlay } from "../../common/components/Loading";
 import { CalendarView } from "./calendar/components/CalendarView";
 import { EventModal } from "./calendar/components/EventModal";
 import { expandRecurringEvents } from "./calendar/utils/recurrence";
@@ -177,6 +178,8 @@ const Calendar: React.FC = () => {
     calendars,
     calendarId,
     calendarName,
+    calendarsLoading,
+    eventsLoading,
     loadEvents,
     handleCalendarTabClick,
   } = useCalendarData({ setFormError });
@@ -224,6 +227,10 @@ const Calendar: React.FC = () => {
     const start = dayjs(event.start).startOf("day");
     const end = dayjs(event.end || event.start).startOf("day");
     return !day.isBefore(start, "day") && !day.isAfter(end, "day");
+  }, []);
+
+  const getEventVisualKey = React.useCallback((event: ExpandedEvent) => {
+    return `${event.id}-${event.__occKey ?? event.start}`;
   }, []);
 
   const eventCountByDate = useMemo(() => {
@@ -285,7 +292,7 @@ const Calendar: React.FC = () => {
         const firstDay = eventStart.isAfter(weekStart) ? eventStart : weekStart;
         const lastWeekDay = weekEnd.subtract(1, "day");
         const lastDay = eventEnd.isBefore(lastWeekDay) ? eventEnd : lastWeekDay;
-        const key = `${event.id}-${event.__occKey ?? event.start}`;
+        const key = getEventVisualKey(event);
         const spanDays: string[] = [];
 
         let spanCursor = firstDay;
@@ -327,14 +334,37 @@ const Calendar: React.FC = () => {
     }
 
     return bars;
-  }, [expandedEvents, viewRange.start, viewRange.end]);
+  }, [expandedEvents, getEventVisualKey, viewRange.start, viewRange.end]);
 
   const selectedDateEvents = useMemo(
-    () =>
-      expandedEvents
+    () => {
+      const selectedBars = eventBarsByDate.get(selectedDate) ?? [];
+      const laneByKey = new Map(selectedBars.map((bar) => [bar.key, bar.lane]));
+
+      return expandedEvents
         .filter((event) => eventOccursOnDate(event, selectedDate))
-        .sort((a, b) => dayjs(a.start).valueOf() - dayjs(b.start).valueOf()),
-    [eventOccursOnDate, expandedEvents, selectedDate]
+        .sort((a, b) => {
+          const aLane = laneByKey.get(getEventVisualKey(a)) ?? Number.MAX_SAFE_INTEGER;
+          const bLane = laneByKey.get(getEventVisualKey(b)) ?? Number.MAX_SAFE_INTEGER;
+
+          if (aLane !== bLane) return aLane - bLane;
+
+          const aStart = dayjs(a.start).startOf("day");
+          const bStart = dayjs(b.start).startOf("day");
+          const aEnd = dayjs(a.end || a.start).startOf("day");
+          const bEnd = dayjs(b.end || b.start).startOf("day");
+          const aSpan = aEnd.diff(aStart, "day") + 1;
+          const bSpan = bEnd.diff(bStart, "day") + 1;
+
+          if (aSpan !== bSpan) return bSpan - aSpan;
+
+          const startDiff = aStart.valueOf() - bStart.valueOf();
+          if (startDiff !== 0) return startDiff;
+
+          return String(a.id).localeCompare(String(b.id));
+        });
+    },
+    [eventBarsByDate, eventOccursOnDate, expandedEvents, getEventVisualKey, selectedDate]
   );
 
   const selectedHolidayName = getHolidayDisplayName(holidayMap.get(selectedDate));
@@ -509,6 +539,17 @@ const Calendar: React.FC = () => {
       openMobileModalHistoryStep();
       setModalOpenVersion((version) => version + 1);
       openCreateAtDate(selectedDate);
+    });
+  };
+
+  const handleCalendarTabSelect = (calendar: (typeof calendars)[number]) => {
+    if (calendar.calendarId === calendarId) return;
+
+    clearTooltipLayers();
+    removeFloatingTooltip();
+    runWithDiscardConfirm(() => {
+      handleCalendarTabClick(calendar);
+      closeModalFromCalendar();
     });
   };
 
@@ -695,7 +736,7 @@ const Calendar: React.FC = () => {
                       ? `${styles.calendarTab} ${styles.activeCalendarTab}`
                       : styles.calendarTab
                   }
-                  onClick={() => handleCalendarTabClick(cal)}
+                  onClick={() => handleCalendarTabSelect(cal)}
                 >
                   {cal.name}
                 </button>
@@ -716,6 +757,9 @@ const Calendar: React.FC = () => {
               eventBarsByDate={eventBarsByDate}
               selectedDate={selectedDate}
             />
+            {(calendarsLoading || eventsLoading) && (
+              <LoadingOverlay variant="calendar" label="일정 로딩 중" />
+            )}
           </div>
 
           <div className={styles.sideRail}>
@@ -752,7 +796,7 @@ const Calendar: React.FC = () => {
                 ) : (
                   selectedDateEvents.map((event) => (
                     <button
-                      key={`${event.id}-${event.__occKey ?? event.start}`}
+                      key={getEventVisualKey(event)}
                       type="button"
                       className={styles.dayEventItem}
                       onClick={() => handleListEventClick(event)}

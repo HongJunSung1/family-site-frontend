@@ -1643,6 +1643,7 @@
 }
 
 .calendarPane {
+  position: relative;
   grid-column: 1;
   grid-row: 1;
   min-width: 0;
