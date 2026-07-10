@@ -1,6 +1,7 @@
 ﻿import { useEffect, useState } from "react";
 import { hasAccessToken } from "../../../../api/client";
 import { getPersonalInfo, updateProfile, type PersonalInfoResponse } from "../../../../api/userApi";
+import { FamilyLoader } from "../../../../common/components/Loading";
 import styles from "./BasicPersonalInfo.module.css";
 
 export default function BasicPersonalInfo() {
@@ -121,7 +122,11 @@ export default function BasicPersonalInfo() {
   };
 
   if (loading) {
-    return <div className={styles.pageStateBox}>개인정보를 불러오는 중...</div>;
+    return (
+      <div className={styles.pageStateBox}>
+        <FamilyLoader label="개인정보 로딩 중" />
+      </div>
+    );
   }
 
   if (errorMsg && !user) {

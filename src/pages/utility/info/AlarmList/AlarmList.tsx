@@ -6,6 +6,7 @@ import {
   type NotificationRow,
 } from "../../../../api/notificationApi";
 import { AlertDialog } from "../../../../common/components/ConfirmDialog";
+import { FamilyLoader } from "../../../../common/components/Loading";
 import styles from "./AlarmList.module.css";
 
 function formatDateTime(value?: string | null) {
@@ -28,7 +29,7 @@ export default function AlarmList() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [alertMessage, setAlertMessage] = useState("");
 
@@ -114,7 +115,7 @@ export default function AlarmList() {
             {loading ? (
               <tr>
                 <td colSpan={5} className={styles.emptyRow}>
-                  알림 목록을 불러오는 중입니다.
+                  <FamilyLoader label="알림 목록 로딩 중" />
                 </td>
               </tr>
             ) : notifications.length === 0 ? (

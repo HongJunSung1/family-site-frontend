@@ -5,6 +5,8 @@ import { verifyStoredSession } from "./api/authApi";
 import Home from "./pages/home/Home";
 import Login from "./pages/home/Login";
 import Signup from "./pages/home/Signup";
+import ConferenceReport from "./pages/utility/conference-report/ConferenceReport";
+import HouseholdAccounts from "./pages/utility/household-accounts/HouseholdAccounts";
 import homeIcon from "./assets/icons/home.svg";
 import profilePrivacyIcon from "./assets/icons/profile-privacy.svg";
 import themeMoonIcon from "./assets/icons/theme-moon.svg";
@@ -12,7 +14,7 @@ import themeSunIcon from "./assets/icons/theme-sun.svg";
 import NotificationBell from "./pages/utility/notification-bell/NotificationBell";
 import PersonalInfoPage from "./pages/utility/info/user-info/PersonalInfoPage";
 import ProtectedRoute from "./routes/ProtectedRoute";
-import { PageLoading } from "./common/components/Loading";
+import { FamilyLoader, PageLoading } from "./common/components/Loading";
 import { MobileHeaderProvider, useMobileHeader } from "./common/components/MobileHeaderContext";
 import styles from "./App.module.css";
 
@@ -27,15 +29,42 @@ function TopNav({ theme, onToggleTheme }: TopNavProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { config } = useMobileHeader();
+  const [desktopMenuOpen, setDesktopMenuOpen] = useState(false);
   const [mobileHeaderOpen, setMobileHeaderOpen] = useState(false);
+  const [mobileSubMenuId, setMobileSubMenuId] = useState<string | null>(null);
+  const [mobilePinnedSubMenuId, setMobilePinnedSubMenuId] = useState<string | null>(null);
+  const desktopMenuRef = useRef<HTMLDivElement | null>(null);
   const mobileHeaderRef = useRef<HTMLDivElement | null>(null);
   const hasMobileMenu = !!config.menuItems?.length;
-  const fallbackTitle = location.pathname.startsWith("/profile") ? "개인정보" : "캘린더";
+  const fallbackTitle = location.pathname.startsWith("/profile")
+    ? "개인정보"
+    : location.pathname.startsWith("/household-accounts")
+    ? "가계부"
+    : location.pathname.startsWith("/conference-report")
+    ? "회의록"
+    : "캘린더";
   const mobileTitle = config.title || fallbackTitle;
 
   useEffect(() => {
     setMobileHeaderOpen(false);
+    setMobileSubMenuId(null);
+    setMobilePinnedSubMenuId(null);
+    setDesktopMenuOpen(false);
   }, [location.pathname, mobileTitle]);
+
+  useEffect(() => {
+    if (!desktopMenuOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!desktopMenuRef.current) return;
+      if (!desktopMenuRef.current.contains(event.target as Node)) {
+        setDesktopMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [desktopMenuOpen]);
 
   useEffect(() => {
     if (!mobileHeaderOpen) return;
@@ -44,6 +73,8 @@ function TopNav({ theme, onToggleTheme }: TopNavProps) {
       if (!mobileHeaderRef.current) return;
       if (!mobileHeaderRef.current.contains(event.target as Node)) {
         setMobileHeaderOpen(false);
+        setMobileSubMenuId(null);
+        setMobilePinnedSubMenuId(null);
       }
     };
 
@@ -53,8 +84,17 @@ function TopNav({ theme, onToggleTheme }: TopNavProps) {
 
   const handleMobileHeaderClick = () => {
     if (!hasMobileMenu) return;
-    setMobileHeaderOpen((prev) => !prev);
+    setMobileHeaderOpen((prev) => {
+      const next = !prev;
+      if (!next) {
+        setMobileSubMenuId(null);
+        setMobilePinnedSubMenuId(null);
+      }
+      return next;
+    });
   };
+
+  const hasNestedMobileMenu = !!config.menuItems?.some((item) => item.children?.length);
 
   return (
     <nav className={styles.topNav}>
@@ -62,6 +102,48 @@ function TopNav({ theme, onToggleTheme }: TopNavProps) {
         <Link to="/home" className={styles.homeButton} aria-label="홈" title="홈">
           <img src={homeIcon} alt="" className={styles.navIconImage} aria-hidden="true" />
         </Link>
+
+        <div className={styles.desktopMenuWrap} ref={desktopMenuRef}>
+          <button
+            type="button"
+            className={styles.desktopMenuButton}
+            onClick={() => setDesktopMenuOpen((prev) => !prev)}
+            aria-label="메뉴"
+            aria-expanded={desktopMenuOpen}
+            title="메뉴"
+          >
+            <span className={styles.desktopMenuIcon} aria-hidden="true">
+              <span />
+              <span />
+              <span />
+              <span />
+            </span>
+          </button>
+
+          {desktopMenuOpen && (
+            <div className={styles.desktopMenuDropdown} role="menu">
+              <Link
+                to="/household-accounts"
+                className={styles.desktopMenuItem}
+                role="menuitem"
+                onClick={() => setDesktopMenuOpen(false)}
+              >
+                <span className={`${styles.desktopMenuItemIcon} ${styles.accountBookIcon}`} aria-hidden="true" />
+                <span>가계부</span>
+              </Link>
+
+              <Link
+                to="/conference-report"
+                className={styles.desktopMenuItem}
+                role="menuitem"
+                onClick={() => setDesktopMenuOpen(false)}
+              >
+                <span className={`${styles.desktopMenuItemIcon} ${styles.minutesIcon}`} aria-hidden="true" />
+                <span>회의록</span>
+              </Link>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className={styles.mobileHeaderPicker} ref={mobileHeaderRef}>
@@ -77,24 +159,82 @@ function TopNav({ theme, onToggleTheme }: TopNavProps) {
         </button>
 
         {hasMobileMenu && mobileHeaderOpen && (
-          <div className={styles.mobileHeaderMenu} role="menu">
+          <div
+            className={[
+              styles.mobileHeaderMenu,
+              hasNestedMobileMenu ? styles.mobileHeaderMenuCompact : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+            role="menu"
+          >
             {config.menuItems?.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={
-                  item.active
-                    ? `${styles.mobileHeaderMenuItem} ${styles.mobileHeaderMenuItemActive}`
-                    : styles.mobileHeaderMenuItem
-                }
-                role="menuitem"
-                onClick={() => {
-                  setMobileHeaderOpen(false);
-                  item.onSelect();
-                }}
-              >
-                {item.label}
-              </button>
+              <div key={item.id} className={styles.mobileHeaderMenuBranch}>
+                <button
+                  type="button"
+                  className={
+                    item.active
+                      ? `${styles.mobileHeaderMenuItem} ${styles.mobileHeaderMenuItemActive}`
+                      : styles.mobileHeaderMenuItem
+                  }
+                  role="menuitem"
+                  onClick={() => {
+                    if (item.children?.length) {
+                      setMobilePinnedSubMenuId((prev) => {
+                        const next = prev === item.id ? null : item.id;
+                        setMobileSubMenuId(next);
+                        return next;
+                      });
+                      return;
+                    }
+
+                    setMobileHeaderOpen(false);
+                    setMobileSubMenuId(null);
+                    setMobilePinnedSubMenuId(null);
+                    item.onSelect?.();
+                  }}
+                  onPointerEnter={() => {
+                    if (item.children?.length) {
+                      setMobileSubMenuId(item.id);
+                      return;
+                    }
+
+                    if (!mobilePinnedSubMenuId) {
+                      setMobileSubMenuId(null);
+                    }
+                  }}
+                >
+                  <span>{item.label}</span>
+                  {item.children?.length && (
+                    <span className={styles.mobileHeaderMenuArrow} aria-hidden="true" />
+                  )}
+                </button>
+
+                {item.children?.length && mobileSubMenuId === item.id && (
+                  <div className={styles.mobileHeaderSubMenu} role="menu">
+                    {item.children.map((child) => (
+                      <button
+                        key={child.id}
+                        type="button"
+                        className={
+                          child.active
+                            ? `${styles.mobileHeaderMenuItem} ${styles.mobileHeaderMenuItemActive}`
+                            : styles.mobileHeaderMenuItem
+                        }
+                        role="menuitem"
+                        onClick={() => {
+                          setMobileHeaderOpen(false);
+                          setMobileSubMenuId(null);
+                          setMobilePinnedSubMenuId(null);
+                          child.onSelect?.();
+                        }}
+                      >
+                        {child.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         )}
@@ -163,17 +303,25 @@ function BottomNav() {
         <div className={styles.mobileMenuSheet} role="dialog" aria-label="메뉴" ref={menuSheetRef}>
           <div className={styles.menuSheetHandle} aria-hidden="true" />
 
-          <button type="button" className={styles.menuSheetItem}>
+          <Link
+            to="/household-accounts"
+            className={styles.menuSheetItem}
+            onClick={() => setMenuOpen(false)}
+          >
             <span className={`${styles.menuSheetIcon} ${styles.accountBookIcon}`} aria-hidden="true" />
             <span>가계부</span>
             <span className={styles.menuSheetChevron} aria-hidden="true" />
-          </button>
+          </Link>
 
-          <button type="button" className={styles.menuSheetItem}>
+          <Link
+            to="/conference-report"
+            className={styles.menuSheetItem}
+            onClick={() => setMenuOpen(false)}
+          >
             <span className={`${styles.menuSheetIcon} ${styles.minutesIcon}`} aria-hidden="true" />
             <span>회의록</span>
             <span className={styles.menuSheetChevron} aria-hidden="true" />
-          </button>
+          </Link>
         </div>
       )}
 
@@ -210,6 +358,55 @@ function BottomNav() {
       </nav>
     </>
   );
+}
+
+function RouteTransitionLoading({ enabled }: { enabled: boolean }) {
+  const location = useLocation();
+  const previousPathRef = useRef(location.pathname);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const previousPath = previousPathRef.current;
+    const nextPath = location.pathname;
+    previousPathRef.current = nextPath;
+
+    const isProfileHomeTransition =
+      enabled &&
+      ((previousPath === "/home" && nextPath === "/profile") ||
+        (previousPath === "/profile" && nextPath === "/home"));
+
+    if (!isProfileHomeTransition) return;
+
+    setVisible(true);
+    const timer = window.setTimeout(() => {
+      setVisible(false);
+    }, 360);
+
+    return () => window.clearTimeout(timer);
+  }, [enabled, location.pathname]);
+
+  if (!visible) return null;
+
+  return (
+    <div className={styles.routeLoadingOverlay}>
+      <div className={styles.routeLoadingSurface}>
+        <FamilyLoader label="화면 이동 중" />
+      </div>
+    </div>
+  );
+}
+
+function CalendarHoverCleanup() {
+  const location = useLocation();
+
+  useEffect(() => {
+    document.getElementById("pz-floating-event-tooltip")?.remove();
+    document.querySelectorAll(".pz-tooltip-layer-open").forEach((element) => {
+      element.classList.remove("pz-tooltip-layer-open");
+    });
+  }, [location.pathname]);
+
+  return null;
 }
 
 export default function App() {
@@ -312,8 +509,29 @@ export default function App() {
             }
           />
 
+          <Route
+            path="/household-accounts"
+            element={
+              <ProtectedRoute isLoggedIn={isLoggedIn}>
+                <HouseholdAccounts />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/conference-report"
+            element={
+              <ProtectedRoute isLoggedIn={isLoggedIn}>
+                <ConferenceReport />
+              </ProtectedRoute>
+            }
+          />
+
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+
+        <CalendarHoverCleanup />
+        <RouteTransitionLoading enabled={isLoggedIn} />
 
         {isLoggedIn && <BottomNav />}
       </MobileHeaderProvider>

@@ -5,6 +5,22 @@
   padding: 24px;
 }
 
+.pageStateBox,
+.pageStateBoxError {
+  min-height: 260px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.pageStateBoxError {
+  padding: 24px;
+  color: #b91c1c;
+  text-align: center;
+}
+
 .sectionHeader {
   display: flex;
   align-items: center;
@@ -146,6 +162,8 @@
 
 /* Theme overrides */
 .card,
+.pageStateBox,
+.pageStateBoxError,
 .confirmDialog {
   background: var(--color-surface);
   border-color: var(--color-border);

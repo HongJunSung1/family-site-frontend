@@ -1,4 +1,4 @@
-import styles from "./Loading.module.css";
+﻿import styles from "./Loading.module.css";
 
 type FamilyLoaderProps = {
   label?: string;
@@ -51,10 +51,7 @@ export function InlineLoadingDots({ label = "처리 중" }: Pick<FamilyLoaderPro
 export function LoadingOverlay({ variant = "family", label = "로딩 중" }: LoadingOverlayProps) {
   return (
     <div
-      className={[
-        styles.overlay,
-        variant === "calendar" ? styles.calendarOverlay : "",
-      ]
+      className={[styles.overlay, variant === "calendar" ? styles.calendarOverlay : ""]
         .filter(Boolean)
         .join(" ")}
       role="status"

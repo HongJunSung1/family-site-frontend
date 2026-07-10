@@ -7,6 +7,7 @@ import {
   type FavoriteColorPreset,
 } from "../../../../api/calendarApi";
 import { AlertDialog, ConfirmDialog } from "../../../../common/components/ConfirmDialog";
+import { FamilyLoader } from "../../../../common/components/Loading";
 import styles from "./CalendarSettings.module.css";
 
 type FavoriteColorRow = {
@@ -187,7 +188,11 @@ export default function CalendarSettings() {
   if (loading) {
     return (
       <>
-        <div className={styles.card}>불러오는 중...</div>
+        <div className={styles.card}>
+          <div className={styles.loadingState}>
+            <FamilyLoader label="캘린더 환경설정 로딩 중" />
+          </div>
+        </div>
         {dialogs}
       </>
     );

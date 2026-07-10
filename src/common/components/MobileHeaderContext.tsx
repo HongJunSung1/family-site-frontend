@@ -4,7 +4,8 @@ export type MobileHeaderMenuItem = {
   id: string;
   label: string;
   active?: boolean;
-  onSelect: () => void;
+  onSelect?: () => void;
+  children?: MobileHeaderMenuItem[];
 };
 
 export type MobileHeaderConfig = {

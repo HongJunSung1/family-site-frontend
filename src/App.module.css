@@ -27,6 +27,10 @@
   align-items: center;
 }
 
+.desktopHomeWrap {
+  gap: 8px;
+}
+
 .mobileFamilyButton,
 .mobileHeaderPicker,
 .mobileHeaderMenu,
@@ -37,7 +41,8 @@
 
 .homeButton,
 .navIconButton,
-.profileButton {
+.profileButton,
+.desktopMenuButton {
   box-sizing: border-box;
   width: 42px;
   height: 42px;
@@ -61,13 +66,15 @@
 
 .homeButton:hover,
 .navIconButton:hover,
-.profileButton:hover {
+.profileButton:hover,
+.desktopMenuButton:hover {
   border-color: var(--color-primary);
 }
 
 .homeButton:hover,
 .navIconButton:hover,
-.profileButton:hover {
+.profileButton:hover,
+.desktopMenuButton:hover {
   background: var(--color-surface-muted);
   box-shadow: 0 12px 28px rgba(37, 99, 235, 0.18);
   transform: translateY(-1px);
@@ -79,14 +86,149 @@
 .navIconButton:focus-visible,
 .profileButton:focus,
 .profileButton:focus-visible,
+.desktopMenuButton:focus,
+.desktopMenuButton:focus-visible,
+.desktopMenuItem:focus,
+.desktopMenuItem:focus-visible,
 .mobileFamilyButton:focus,
 .mobileFamilyButton:focus-visible,
 .mobileHeaderMenuItem:focus,
 .mobileHeaderMenuItem:focus-visible,
 .bottomNavItem:focus,
-.bottomNavItem:focus-visible {
+.bottomNavItem:focus-visible,
+.menuSheetItem:focus,
+.menuSheetItem:focus-visible {
   outline: none;
   box-shadow: none;
+}
+
+.desktopMenuWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.desktopMenuIcon {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  grid-template-columns: repeat(2, 8px);
+  grid-template-rows: repeat(2, 8px);
+  gap: 4px;
+  place-content: center;
+  color: var(--color-text-muted);
+  line-height: 0;
+}
+
+.desktopMenuIcon span {
+  width: 8px;
+  height: 8px;
+  border-radius: 3px;
+  background: currentColor;
+}
+
+.desktopMenuDropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 90;
+  width: 190px;
+  padding: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-floating);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.desktopMenuItem {
+  height: 44px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text);
+  box-shadow: none;
+  cursor: pointer;
+  text-decoration: none;
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.desktopMenuItem:hover {
+  background: var(--color-surface-muted);
+  border-color: transparent;
+}
+
+.desktopMenuItemIcon {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--cal-accent, var(--color-primary));
+  border-radius: 6px;
+  color: var(--cal-accent, var(--color-primary));
+}
+
+.desktopMenuItemIcon.accountBookIcon::before,
+.desktopMenuItemIcon.accountBookIcon::after {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  background:
+    linear-gradient(currentColor 0 0) left 50% / 100% 2px no-repeat,
+    linear-gradient(currentColor 0 0) 50% top / 2px 100% no-repeat;
+  opacity: 0.9;
+}
+
+.desktopMenuItemIcon.minutesIcon::before,
+.desktopMenuItemIcon.minutesIcon::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.desktopMenuItemIcon.minutesIcon::before {
+  top: 7px;
+  box-shadow: 0 5px 0 currentColor;
+}
+
+.desktopMenuItemIcon.minutesIcon::after {
+  bottom: 6px;
+  width: 8px;
+  right: auto;
+}
+
+.routeLoadingOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--color-bg) 42%, transparent);
+  backdrop-filter: blur(2px);
+  pointer-events: none;
+}
+
+.routeLoadingSurface {
+  width: 118px;
+  height: 92px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--color-surface) 90%, transparent);
+  box-shadow: var(--shadow-floating);
 }
 
 .navIconImage {
@@ -96,7 +238,7 @@
   pointer-events: none;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   :global(:root) {
     --app-nav-height: 59px;
     --app-bottom-nav-height: 58px;
@@ -164,7 +306,20 @@
     gap: 2px;
   }
 
+  .mobileHeaderMenuCompact {
+    width: max-content;
+    min-width: 100px;
+    max-width: calc(100vw - 24px);
+    overflow: visible;
+  }
+
+  .mobileHeaderMenuBranch {
+    position: relative;
+  }
+
   .mobileHeaderMenuItem {
+    width: 100%;
+    box-sizing: border-box;
     min-height: 38px;
     padding: 8px 10px;
     border: 0;
@@ -175,9 +330,50 @@
     text-align: left;
     font-size: 13px;
     font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .mobileHeaderMenuItem > span:first-child {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mobileHeaderMenuArrow {
+    flex: 0 0 auto;
+    margin-left: auto;
+    width: 7px;
+    height: 7px;
+    border-top: 2px solid currentColor;
+    border-right: 2px solid currentColor;
+    transform: rotate(45deg);
+    opacity: 0.72;
+  }
+
+  .mobileHeaderSubMenu {
+    position: absolute;
+    top: 0;
+    left: calc(100% + 6px);
+    z-index: 96;
+    width: max-content;
+    max-width: calc(100vw - 140px);
+    min-width: 126px;
+    padding: 6px;
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--color-surface) 97%, transparent);
+    box-shadow: var(--shadow-floating);
+    backdrop-filter: blur(18px);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
   }
 
   .mobileHeaderMenuItem:hover {
@@ -373,6 +569,8 @@
     align-items: center;
     gap: 12px;
     color: var(--color-text);
+    cursor: pointer;
+    text-decoration: none;
     text-align: left;
     font-size: 17px;
     font-weight: 800;
@@ -385,6 +583,13 @@
   .menuSheetItem:hover {
     border-color: var(--color-border);
     background: transparent;
+  }
+
+  .menuSheetItem:focus,
+  .menuSheetItem:focus-visible,
+  .menuSheetItem:active {
+    outline: none;
+    box-shadow: none;
   }
 
   .menuSheetIcon {
@@ -469,5 +674,21 @@
   .bottomNavItem {
     height: 48px;
     font-size: 9px;
+  }
+
+  .mobileHeaderMenuCompact {
+    width: max-content;
+    min-width: 100px;
+    max-width: calc(100vw - 16px);
+  }
+
+  .mobileHeaderSubMenu {
+    position: static;
+    width: auto;
+    max-width: none;
+    min-width: 0;
+    margin: 3px 0 3px 12px;
+    box-shadow: none;
+    backdrop-filter: none;
   }
 }

@@ -1,7 +1,8 @@
-﻿import { useState } from "react";
-import AlarmList from "../AlarmList/AlarmList";
+﻿import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutAndClearSession } from "../../../../api/authApi";
+import { useMobileHeader } from "../../../../common/components/MobileHeaderContext";
+import AlarmList from "../AlarmList/AlarmList";
 import CalendarInfo from "../calendar-info/CalendarInfo";
 import CalendarSettings from "../calendar-info/CalendarSettings";
 import BasicPersonalInfo from "./BasicPersonalInfo";
@@ -13,14 +14,77 @@ type Props = {
   onLogout: () => void;
 };
 
+const MENU_LABELS: Record<MenuKey, string> = {
+  basic: "기본 개인정보",
+  calendarList: "캘린더 리스트",
+  calendarSettings: "캘린더 환경설정",
+  AlarmList: "받은 알림",
+};
+
 export default function PersonalInfoPage({ onLogout }: Props) {
   const navigate = useNavigate();
+  const { setConfig: setMobileHeaderConfig, resetConfig: resetMobileHeaderConfig } = useMobileHeader();
   const [selectedMenu, setSelectedMenu] = useState<MenuKey>("basic");
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   const onClickCalendarGroup = () => {
     setIsCalendarOpen((prev) => !prev);
   };
+
+  const selectMenu = useCallback((menu: MenuKey) => {
+    setSelectedMenu(menu);
+    if (menu === "calendarList" || menu === "calendarSettings") {
+      setIsCalendarOpen(true);
+    }
+  }, []);
+
+  const mobileMenuItems = useMemo(
+    () => [
+      {
+        id: "basic",
+        label: MENU_LABELS.basic,
+        active: selectedMenu === "basic",
+        onSelect: () => selectMenu("basic"),
+      },
+      {
+        id: "calendar",
+        label: "캘린더",
+        active: selectedMenu === "calendarList" || selectedMenu === "calendarSettings",
+        children: [
+          {
+            id: "calendarList",
+            label: MENU_LABELS.calendarList,
+            active: selectedMenu === "calendarList",
+            onSelect: () => selectMenu("calendarList"),
+          },
+          {
+            id: "calendarSettings",
+            label: MENU_LABELS.calendarSettings,
+            active: selectedMenu === "calendarSettings",
+            onSelect: () => selectMenu("calendarSettings"),
+          },
+        ],
+      },
+      {
+        id: "AlarmList",
+        label: MENU_LABELS.AlarmList,
+        active: selectedMenu === "AlarmList",
+        onSelect: () => selectMenu("AlarmList"),
+      },
+    ],
+    [selectMenu, selectedMenu]
+  );
+
+  useEffect(() => {
+    setMobileHeaderConfig({
+      title: MENU_LABELS[selectedMenu],
+      menuItems: mobileMenuItems,
+    });
+
+    return () => {
+      resetMobileHeaderConfig();
+    };
+  }, [mobileMenuItems, resetMobileHeaderConfig, selectedMenu, setMobileHeaderConfig]);
 
   const handleLogout = async () => {
     try {
@@ -43,7 +107,7 @@ export default function PersonalInfoPage({ onLogout }: Props) {
             <button
               type="button"
               className={`${styles.treeItem} ${selectedMenu === "basic" ? styles.active : ""}`}
-              onClick={() => setSelectedMenu("basic")}
+              onClick={() => selectMenu("basic")}
             >
               1) 기본 개인정보
             </button>
@@ -67,7 +131,7 @@ export default function PersonalInfoPage({ onLogout }: Props) {
                 className={`${styles.treeItem} ${styles.subTreeItem} ${
                   selectedMenu === "calendarList" ? styles.active : ""
                 }`}
-                onClick={() => setSelectedMenu("calendarList")}
+                onClick={() => selectMenu("calendarList")}
               >
                 · 캘린더 리스트
               </button>
@@ -77,7 +141,7 @@ export default function PersonalInfoPage({ onLogout }: Props) {
                 className={`${styles.treeItem} ${styles.subTreeItem} ${
                   selectedMenu === "calendarSettings" ? styles.active : ""
                 }`}
-                onClick={() => setSelectedMenu("calendarSettings")}
+                onClick={() => selectMenu("calendarSettings")}
               >
                 · 캘린더 환경설정
               </button>
@@ -86,7 +150,7 @@ export default function PersonalInfoPage({ onLogout }: Props) {
             <button
               type="button"
               className={`${styles.treeItem} ${selectedMenu === "AlarmList" ? styles.active : ""}`}
-              onClick={() => setSelectedMenu("AlarmList")}
+              onClick={() => selectMenu("AlarmList")}
             >
               3) 받은 알림
             </button>
@@ -102,6 +166,10 @@ export default function PersonalInfoPage({ onLogout }: Props) {
           {selectedMenu === "calendarList" && <CalendarInfo />}
           {selectedMenu === "calendarSettings" && <CalendarSettings />}
           {selectedMenu === "AlarmList" && <AlarmList />}
+
+          <button type="button" className={styles.mobileLogoutButton} onClick={handleLogout}>
+            로그아웃
+          </button>
         </section>
       </div>
     </div>

@@ -9,6 +9,7 @@ import {
   type GetMyCalendarsInfoResponse,
 } from "../../../../api/calendarApi";
 import { ConfirmDialog } from "../../../../common/components/ConfirmDialog";
+import { FamilyLoader } from "../../../../common/components/Loading";
 import CalendarInvitePopup from "./CalendarInvitePopup";
 import styles from "./CalendarInfo.module.css";
 
@@ -375,7 +376,11 @@ export default function CalendarInfo() {
   };
 
   if (loading) {
-    return <div className={styles.pageStateBox}>캘린더 정보를 불러오는 중...</div>;
+    return (
+      <div className={styles.pageStateBox}>
+        <FamilyLoader label="캘린더 정보 로딩 중" />
+      </div>
+    );
   }
 
   if (errorMsg && !data) {
@@ -539,7 +544,9 @@ export default function CalendarInfo() {
                           }`}
                         >
                           {memberLoadingMap[calendar.id] ? (
-                            <div className={styles.memberLoading}>회원 목록을 불러오는 중...</div>
+                            <div className={styles.memberLoading}>
+                              <FamilyLoader label="회원 목록 로딩 중" />
+                            </div>
                           ) : (
                             (() => {
                               const members = memberMap[calendar.id] ?? [];

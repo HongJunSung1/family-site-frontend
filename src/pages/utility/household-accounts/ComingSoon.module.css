@@ -1,0 +1,52 @@
+.page {
+  min-height: calc(var(--app-viewport-height, 100dvh) - var(--app-nav-height));
+  padding: 24px;
+  box-sizing: border-box;
+  background: var(--color-bg);
+  color: var(--color-text);
+  display: grid;
+  place-items: center;
+}
+
+.card {
+  width: min(420px, 100%);
+  min-height: 180px;
+  padding: 28px;
+  box-sizing: border-box;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-soft);
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.card h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.card p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .page {
+    min-height: calc(
+      var(--app-viewport-height, 100dvh) - var(--app-nav-height) - var(--app-bottom-nav-height) -
+        env(safe-area-inset-bottom)
+    );
+    padding: 16px;
+  }
+
+  .card {
+    min-height: 150px;
+    border-radius: 14px;
+  }
+}
