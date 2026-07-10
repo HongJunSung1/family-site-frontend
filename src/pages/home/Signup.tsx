@@ -1,8 +1,9 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ApiError, isApiBaseConfigured } from "../../api/client";
 import { signup } from "../../api/authApi";
-import { AlertDialog } from "../../common/components/ConfirmDialog";
+import { AlertDialog } from "../../common/dialog";
+import { InputField } from "../../common/input";
 import styles from "./Auth.module.css";
 
 type AlertState = {
@@ -100,66 +101,58 @@ export default function Signup() {
         <p className={styles.description}>가족 사이트 계정을 생성합니다.</p>
 
         <form className={styles.form} onSubmit={onSubmit}>
-          <div className={styles.field}>
-            <label>이름</label>
-            <input
-              name="name"
-              value={form.name}
-              onChange={onChange}
-              placeholder="홍길동"
-              className={styles.input}
-            />
-          </div>
+          <InputField
+            label="이름"
+            name="name"
+            value={form.name}
+            onChange={onChange}
+            placeholder="홍길동"
+          />
 
-          <div className={styles.field}>
-            <label>아이디 *</label>
-            <input
-              name="id"
-              value={form.id}
-              onChange={onChange}
-              placeholder="jshong"
-              className={styles.input}
-            />
-          </div>
+          <InputField
+            label="아이디"
+            name="id"
+            value={form.id}
+            onChange={onChange}
+            placeholder="jshong"
+            requiredMark
+          />
 
-          <div className={styles.field}>
-            <label>이메일 *</label>
-            <input
-              name="email"
-              type="email"
-              value={form.email}
-              onChange={onChange}
-              placeholder="name@example.com"
-              className={styles.input}
-              required
-            />
-          </div>
+          <InputField
+            label="이메일"
+            name="email"
+            type="email"
+            value={form.email}
+            onChange={onChange}
+            placeholder="name@example.com"
+            autoComplete="email"
+            required
+            requiredMark
+          />
 
-          <div className={styles.field}>
-            <label>비밀번호 *</label>
-            <input
-              name="password"
-              type="password"
-              value={form.password}
-              onChange={onChange}
-              placeholder="8자 이상"
-              className={styles.input}
-              required
-            />
-          </div>
+          <InputField
+            label="비밀번호"
+            name="password"
+            type="password"
+            value={form.password}
+            onChange={onChange}
+            placeholder="8자 이상"
+            autoComplete="new-password"
+            required
+            requiredMark
+          />
 
-          <div className={styles.field}>
-            <label>비밀번호 확인 *</label>
-            <input
-              name="passwordConfirm"
-              type="password"
-              value={form.passwordConfirm}
-              onChange={onChange}
-              placeholder="비밀번호를 한 번 더 입력"
-              className={styles.input}
-              required
-            />
-          </div>
+          <InputField
+            label="비밀번호 확인"
+            name="passwordConfirm"
+            type="password"
+            value={form.passwordConfirm}
+            onChange={onChange}
+            placeholder="비밀번호를 한 번 더 입력"
+            autoComplete="new-password"
+            required
+            requiredMark
+          />
 
           <button className={styles.submitButton} type="submit" disabled={submitting}>
             {submitting ? "처리 중..." : "가입하기"}

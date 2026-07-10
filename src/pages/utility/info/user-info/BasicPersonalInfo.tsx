@@ -1,7 +1,9 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { hasAccessToken } from "../../../../api/client";
 import { getPersonalInfo, updateProfile, type PersonalInfoResponse } from "../../../../api/userApi";
-import { FamilyLoader } from "../../../../common/components/Loading";
+import { ConfirmDialog } from "../../../../common/dialog";
+import { Input } from "../../../../common/input";
+import { FamilyLoader } from "../../../../common/loading";
 import styles from "./BasicPersonalInfo.module.css";
 
 export default function BasicPersonalInfo() {
@@ -160,8 +162,8 @@ export default function BasicPersonalInfo() {
         <div className={styles.infoRow}>
           <div className={styles.label}>이름</div>
           <div className={styles.value}>
-            <input
-              className={styles.input}
+            <Input
+              className={styles.valueInput}
               type="text"
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
@@ -174,8 +176,8 @@ export default function BasicPersonalInfo() {
         <div className={styles.infoRow}>
           <div className={styles.label}>이메일</div>
           <div className={styles.value}>
-            <input
-              className={styles.input}
+            <Input
+              className={styles.valueInput}
               type="email"
               value={editEmail}
               onChange={(e) => setEditEmail(e.target.value)}
@@ -191,33 +193,15 @@ export default function BasicPersonalInfo() {
         </div>
       </div>
 
-      {confirmOpen && (
-        <div className={styles.confirmOverlay}>
-          <div className={styles.confirmDialog}>
-            <div className={styles.confirmTitle}>개인정보 수정</div>
-            <div className={styles.confirmText}>수정하시겠습니까?</div>
-
-            <div className={styles.confirmButtons}>
-              <button
-                type="button"
-                className={styles.secondaryButton}
-                onClick={() => setConfirmOpen(false)}
-                disabled={saving}
-              >
-                취소
-              </button>
-              <button
-                type="button"
-                className={styles.primaryButton}
-                onClick={saveBasicInfo}
-                disabled={saving}
-              >
-                {saving ? "수정 중..." : "확인"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={confirmOpen}
+        title="개인정보 수정"
+        message="수정하시겠습니까?"
+        cancelLabel="취소"
+        confirmLabel={saving ? "수정 중..." : "확인"}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={saveBasicInfo}
+      />
     </>
   );
 }

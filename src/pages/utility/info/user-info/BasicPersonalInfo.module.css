@@ -93,22 +93,9 @@
   padding: 8px 0;
 }
 
-.input {
+.valueInput {
   width: 100%;
   max-width: 420px;
-  height: 40px;
-  border: 1px solid #d1d5db;
-  border-radius: 10px;
-  padding: 0 12px;
-  box-sizing: border-box;
-  font-size: 14px;
-  outline: none;
-  background: #ffffff;
-  color: inherit;
-}
-
-.input:focus {
-  border-color: #2563eb;
 }
 
 .confirmOverlay { 
@@ -155,7 +142,7 @@
     grid-template-columns: 110px 1fr;
   }
 
-  .input {
+  .valueInput {
     max-width: 100%;
   }
 }
@@ -184,17 +171,6 @@
 
 .infoRow {
   border-bottom-color: var(--color-border);
-}
-
-.input {
-  background: var(--color-surface-raised);
-  border-color: var(--color-border-strong);
-  color: var(--color-text);
-}
-
-.input:focus {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-focus-ring);
 }
 
 .primaryButton {

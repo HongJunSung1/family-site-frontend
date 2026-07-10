@@ -119,22 +119,6 @@
   color: #6b7280;
 }
 
-.textInput {
-  width: 100%;
-  height: 36px;
-  border: 1px solid #d1d5db;
-  border-radius: 9px;
-  padding: 0 10px;
-  box-sizing: border-box;
-  font-size: 14px;
-  color: #111827;
-}
-
-.textInput:focus {
-  outline: none;
-  border-color: #2563eb;
-}
-
 .emptyCell {
   height: 80px;
   color: #9ca3af;
@@ -164,8 +148,7 @@
 }
 
 .sectionTitle,
-.table td,
-.textInput {
+.table td {
   color: var(--color-text);
 }
 
@@ -177,8 +160,7 @@
 }
 
 .secondaryButton,
-.dangerButton,
-.textInput {
+.dangerButton {
   background: var(--color-surface-raised);
   border-color: var(--color-border-strong);
 }
@@ -190,11 +172,6 @@
 .table th,
 .table td {
   border-color: var(--color-border);
-}
-
-.textInput:focus {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-focus-ring);
 }
 
 .primaryButton {

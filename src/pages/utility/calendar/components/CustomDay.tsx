@@ -30,8 +30,13 @@ export function CustomDay(props: CustomDayProps) {
         ...(isRed && { color: "#dc2626" }),
         ...(isBlue && { color: "#2563eb" }),
         ...(isSelected && {
-          bgcolor: "rgba(30,42,120,0.18)",
-          border: "2px solid rgba(30,42,120,0.7)",
+          color: "#ffffff",
+          bgcolor: "var(--color-primary)",
+          border: "2px solid var(--color-primary-hover)",
+          boxShadow: "0 0 0 2px var(--color-focus-ring)",
+          "&:hover": {
+            bgcolor: "var(--color-primary-hover)",
+          },
         }),
       }}
     />

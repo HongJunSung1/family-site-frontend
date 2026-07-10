@@ -2,6 +2,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ApiError } from "../../api/client";
 import { loginAndStoreSession } from "../../api/authApi";
+import { InputField } from "../../common/input";
 import styles from "./Auth.module.css";
 
 type Props = {
@@ -82,30 +83,24 @@ export default function Login({ onLogin }: Props) {
         <p className={styles.description}>가족 일정을 확인하려면 계정으로 로그인해주세요.</p>
 
         <div className={styles.stack}>
-          <label className={styles.field}>
-            아이디
-            <input
-              type="text"
-              value={id}
-              onChange={(e) => setId(e.target.value)}
-              onKeyDown={onKeyDown}
-              placeholder="아이디를 입력해주세요."
-              autoComplete="username"
-              className={styles.input}
-            />
-          </label>
+          <InputField
+            label="아이디"
+            type="text"
+            value={id}
+            onChange={(e) => setId(e.target.value)}
+            onKeyDown={onKeyDown}
+            placeholder="아이디를 입력해주세요."
+            autoComplete="username"
+          />
 
-          <label className={styles.field}>
-            비밀번호
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onKeyDown={onKeyDown}
-              autoComplete="current-password"
-              className={styles.input}
-            />
-          </label>
+          <InputField
+            label="비밀번호"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            onKeyDown={onKeyDown}
+            autoComplete="current-password"
+          />
 
           <label className={styles.checkRow}>
             <input

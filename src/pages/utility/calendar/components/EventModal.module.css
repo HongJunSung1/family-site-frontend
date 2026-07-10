@@ -16,6 +16,7 @@
 
 .modal {
   width: min(560px, 100%);
+  min-height: min(640px, calc(100vh - 80px));
   background: #f3f4f6;
   color: #111827;
   border-radius: 14px;
@@ -23,6 +24,8 @@
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
   max-height: calc(100vh - 80px);
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 
   position: relative;
 
@@ -52,6 +55,20 @@
 /* 모달창 안의 항목들이 부모 width를 절대 초과하지 않도록  */
 .modal * {
   box-sizing: border-box;
+}
+
+.modal input,
+.modal textarea,
+.modal select {
+  font-size: 14px;
+}
+
+.eventFormControl {
+  font-size: 14px;
+}
+
+textarea.eventFormControl {
+  line-height: 1.45;
 }
 
 .btnOutline {
@@ -134,10 +151,12 @@
 }
 
 .rangeGrid {
-  display: flex;
-  gap: 10px;
-  align-items: flex-end;
-  justify-content: flex-start;
+  display: grid;
+  grid-template-columns: max-content 24px max-content;
+  column-gap: 6px;
+  row-gap: 10px;
+  align-items: center;
+  justify-content: start;
 }
 
 .rangeCol {
@@ -151,17 +170,36 @@
   opacity: 0.6;
 }
 
+.rangeLabelSpacer {
+  width: 24px;
+  height: 1px;
+}
+
 .rangeArrow {
-  padding-bottom: 9px;
-  text-align: left;
-  font-size: 22px;
+  align-self: center;
+  justify-self: center;
+  min-width: 24px;
+  text-align: center;
+  font-size: 16px;
+  line-height: 1;
   opacity: 0.35;
 }
 
 .pillRow {
   display: flex;
   gap: 10px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+.pillRow .pillBtn {
+  min-width: 0;
+  white-space: nowrap;
+  font-size: clamp(11px, 1.8vw, 13px);
+}
+
+.rangeGrid > .pillRow:nth-child(6) {
+  justify-self: start;
 }
 
 .formError {
@@ -268,7 +306,7 @@
 }
 
 .collapsible {
-  display: grid;
+  display: none;
   grid-template-rows: 0fr;
   opacity: 0;
   transform: translateY(-4px);
@@ -279,6 +317,7 @@
 }
 
 .collapsibleOpen {
+  display: grid;
   grid-template-rows: 1fr;
   opacity: 1;
   transform: translateY(0);
@@ -287,6 +326,10 @@
 .collapsibleInner {
   min-height: 0;
   overflow: hidden;
+}
+
+.collapsible:not(.collapsibleOpen) .collapsibleInner {
+  margin-top: 0;
 }
 
 .repeatRow {
@@ -299,17 +342,29 @@
   font-size: 13px;
   opacity: 0.8;
   width: 60px;
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .select {
   flex: 1;
   padding: 10px 12px;
+  padding-right: 34px;
   border-radius: 10px;
   border: 1px solid rgba(0, 0, 0, 0.15);
   outline: none;
   cursor: pointer;
   background: #fff;
+  background-image:
+    linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) 50%,
+    calc(100% - 13px) 50%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
   color: #111827;
+  appearance: none;
 }
 
 .numberInput {
@@ -433,6 +488,15 @@
   align-items: center;
 }
 
+.colorRow {
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.colorRow .labelFixed {
+  width: auto;
+}
+
 .colorInput {
   width: 48px;
   height: 36px;
@@ -485,7 +549,8 @@
 .footer {
   display: flex;
   gap: 10px;
-  margin-top: 14px;
+  margin-top: auto;
+  padding-top: 14px;
   justify-content: flex-end;
 }
 
@@ -658,6 +723,7 @@
   align-items: center;
   gap: 10px;
   flex: 1;
+  min-width: 0;
 }
 
 .favoriteColorDropdown {
@@ -667,6 +733,7 @@
 
 .favoriteColorTrigger {
   width: 100%;
+  min-width: 0;
   height: 34px;
   padding: 0 10px;
 
@@ -683,10 +750,22 @@
   cursor: pointer;
 }
 
+.favoriteColorTrigger > span:nth-child(2) {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 .dropdownArrow {
   margin-left: auto;
-  font-size: 11px;
+  width: 7px;
+  height: 7px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
   color: #64748b;
+  transform: translateY(-2px) rotate(45deg);
+  flex-shrink: 0;
 }
 
 .favoriteColorMenu {
@@ -1062,6 +1141,17 @@
   color: var(--color-text);
 }
 
+.select {
+  background-image:
+    linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) 50%,
+    calc(100% - 13px) 50%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
 :global(html[data-theme="dark"]) .favoriteColorMenu,
 :global(html[data-theme="dark"]) .addColorPopover {
   background: var(--color-surface-raised);
@@ -1148,6 +1238,7 @@
 
   .modal {
     width: 100%;
+    min-height: calc(100dvh - 16px);
     max-height: calc(100dvh - 16px);
     padding: 14px;
     border-radius: 16px 16px 12px 12px;
@@ -1183,25 +1274,30 @@
   }
 
   .rangeGrid {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
+    display: grid;
+    grid-template-columns: max-content 20px max-content;
+    align-items: start;
+    column-gap: 6px;
+    row-gap: 8px;
   }
 
   .rangeArrow {
-    padding-bottom: 0;
-    font-size: 16px;
-    line-height: 1;
+    min-width: 20px;
+    font-size: 14px;
+  }
+
+  .rangeLabelSpacer {
+    width: 20px;
   }
 
   .pillRow {
-    gap: 8px;
+    gap: 4px;
   }
 
   .pillBtn {
     min-height: 36px;
-    padding: 9px 11px;
-    font-size: 13px;
+    padding: 9px clamp(5px, 1.4vw, 9px);
+    font-size: clamp(10px, 2.65vw, 13px);
   }
 
   .sectionRow {
@@ -1223,13 +1319,25 @@
 
   .repeatRow,
   .periodRow,
-  .row,
   .addColorRow {
     flex-wrap: wrap;
   }
 
+  .row {
+    flex-wrap: wrap;
+  }
+
+  .colorRow {
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+
   .labelFixed {
     width: 100%;
+  }
+
+  .colorRow .labelFixed {
+    width: auto;
   }
 
   .select {
@@ -1249,16 +1357,25 @@
   }
 
   .colorArea {
-    flex-wrap: wrap;
-    align-items: flex-start;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .colorRow .colorInput {
+    width: 42px;
+    flex: 0 0 42px;
   }
 
   .favoriteColorDropdown {
-    width: min(220px, calc(100vw - 120px));
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
   }
 
   .addColorBox {
     margin-left: 0;
+    flex: 0 0 auto;
   }
 
   .addColorPopover,
@@ -1267,8 +1384,6 @@
   }
 
   .footer {
-    position: sticky;
-    bottom: 0;
     margin-left: -14px;
     margin-right: -14px;
     margin-bottom: -14px;
@@ -1311,11 +1426,11 @@
   }
 
   .favoriteColorDropdown {
-    width: 100%;
+    width: auto;
   }
 
   .addColorButton {
-    width: 48px;
+    width: 42px;
   }
 
   .footer {
@@ -1389,11 +1504,12 @@
 
 .modalSideCard .rangeGrid {
   display: inline-grid;
-  grid-template-columns: max-content auto max-content;
+  width: auto;
+  grid-template-columns: max-content 24px max-content;
   align-items: center;
   justify-content: start;
-  column-gap: 10px;
-  row-gap: 0;
+  column-gap: 8px;
+  row-gap: 10px;
   text-align: left;
 }
 
@@ -1403,23 +1519,23 @@
 }
 
 .modalSideCard .pillRow {
-  display: grid;
-  grid-template-columns: max-content;
+  display: flex;
+  flex-wrap: nowrap;
   justify-items: start;
   justify-content: start;
-  align-items: start;
+  align-items: center;
   gap: 8px;
 }
 
 .modalSideCard .rangeArrow {
   align-self: center;
-  padding: 25px 2px 0;
+  padding: 0 2px;
 }
 
 .modalSideCard .footer {
-  position: sticky;
-  bottom: 10px;
+  position: static;
   z-index: 5;
+  margin-top: auto;
   margin-left: -14px;
   margin-right: -14px;
   margin-bottom: 10px;
@@ -1450,13 +1566,12 @@
     width: 100%;
     height: 100dvh;
     max-height: 100dvh;
-    min-height: 0;
+    min-height: 100dvh;
     padding: 14px;
     border-radius: 0;
   }
 
   .modalSideCard .footer {
-    bottom: 8px;
     margin-bottom: 8px;
   }
 }

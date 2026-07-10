@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useRef, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import FullCalendar from "@fullcalendar/react";
 import type { DateClickArg } from "@fullcalendar/interaction";
 import dayjs, { Dayjs } from "dayjs";
@@ -7,9 +7,9 @@ import "dayjs/locale/ko";
 import { useCalendarData } from "./calendar/hooks/useCalendarData";
 import { useCalendarEventForm } from "./calendar/hooks/useCalendarEventForm";
 import { useHolidays } from "./calendar/hooks/useHolidays";
-import { ConfirmDialog } from "../../common/components/ConfirmDialog";
-import { LoadingOverlay } from "../../common/components/Loading";
-import { useMobileHeader } from "../../common/components/MobileHeaderContext";
+import { ConfirmDialog } from "../../common/dialog";
+import { LoadingOverlay } from "../../common/loading";
+import { useMobileHeader } from "../../common/mobile-header";
 import { CalendarView } from "./calendar/components/CalendarView";
 import { EventModal } from "./calendar/components/EventModal";
 import { expandRecurringEvents } from "./calendar/utils/recurrence";

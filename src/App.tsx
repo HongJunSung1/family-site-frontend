@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRef } from "react";
 import { BrowserRouter, Link, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { verifyStoredSession } from "./api/authApi";
@@ -14,8 +14,8 @@ import themeSunIcon from "./assets/icons/theme-sun.svg";
 import NotificationBell from "./pages/utility/notification-bell/NotificationBell";
 import PersonalInfoPage from "./pages/utility/info/user-info/PersonalInfoPage";
 import ProtectedRoute from "./routes/ProtectedRoute";
-import { FamilyLoader, PageLoading } from "./common/components/Loading";
-import { MobileHeaderProvider, useMobileHeader } from "./common/components/MobileHeaderContext";
+import { FamilyLoader, PageLoading } from "./common/loading";
+import { MobileHeaderProvider, useMobileHeader } from "./common/mobile-header";
 import styles from "./App.module.css";
 
 type ThemeMode = "light" | "dark";

@@ -1,7 +1,7 @@
-﻿import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutAndClearSession } from "../../../../api/authApi";
-import { useMobileHeader } from "../../../../common/components/MobileHeaderContext";
+import { useMobileHeader } from "../../../../common/mobile-header";
 import AlarmList from "../AlarmList/AlarmList";
 import CalendarInfo from "../calendar-info/CalendarInfo";
 import CalendarSettings from "../calendar-info/CalendarSettings";

@@ -5,6 +5,7 @@ import {
   searchCalendarInviteUsers,
   type InviteSearchUser,
 } from "../../../../api/calendarApi";
+import { Input } from "../../../../common/input";
 import styles from "./CalendarInvitePopup.module.css";
 
 type Props = {
@@ -137,13 +138,18 @@ export default function CalendarInvitePopup({ open, calendarId, calendarName, on
             <div className={styles.subtitle}>{calendarName}</div>
           </div>
 
-          <button type="button" className={styles.closeButton} onClick={onClose}>
-            닫기
+          <button
+            type="button"
+            className={styles.closeButton}
+            onClick={onClose}
+            aria-label="닫기"
+          >
+            ×
           </button>
         </div>
 
         <div className={styles.searchRow}>
-          <input
+          <Input
             type="text"
             value={keyword}
             placeholder="초대할 회원 아이디 또는 이메일"

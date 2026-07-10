@@ -1,4 +1,4 @@
-﻿// EventModal.tsx
+// EventModal.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import dayjs, { Dayjs } from "dayjs";
 import "dayjs/locale/ko";
@@ -10,7 +10,8 @@ import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
 
 import type { ApplyScope, FormState, ModalMode, PickerTarget, RepeatType } from "../types";
 import { CustomDay } from "./CustomDay";
-import { AlertDialog, ConfirmDialog } from "../../../../common/components/ConfirmDialog";
+import { AlertDialog, ConfirmDialog } from "../../../../common/dialog";
+import { Input, InputField, TextareaField } from "../../../../common/input";
 import { EventColorPicker } from "./EventColorPicker";
 import { EventLocationPicker } from "./EventLocationPicker";
 import { WheelTimePicker } from "./WheelTimePicker";
@@ -102,6 +103,7 @@ export function EventModal(props: Props) {
 
   // 삭제 버튼
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
   const [alertDialog, setAlertDialog] = useState({
     open: false,
     title: "",
@@ -126,6 +128,15 @@ export function EventModal(props: Props) {
   const repeatUiDisabled = form.repeat === "none" || lockRepeatControls;
   const { favoriteColors, savingColor, saveFavoriteColor, deleteFavoriteColor } =
     useFavoriteColors({ onAlert: showAlertDialog });
+
+  const requestCloseModal = () => {
+    setCloseConfirmOpen(true);
+  };
+
+  const confirmCloseModal = () => {
+    setCloseConfirmOpen(false);
+    closeModal();
+  };
 
   // 자주 쓰는 색상 변경
   // 자주 쓰는 색상 드롭다운
@@ -180,6 +191,7 @@ export function EventModal(props: Props) {
       .join(" ");
 
   const [repeatOpen, setRepeatOpen] = useState(false);
+  const [memoOpen, setMemoOpen] = useState(false);
   const [multiDateOpen, setMultiDateOpen] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
 
@@ -299,7 +311,7 @@ export function EventModal(props: Props) {
             : { transform: `translate(${dragOffset.x}px, ${dragOffset.y}px)` }
         }
       >
-        <button onClick={closeModal} className={styles.closeBtn} aria-label="close">
+        <button onClick={requestCloseModal} className={styles.closeBtn} aria-label="close">
           ×
         </button>
 
@@ -321,22 +333,18 @@ export function EventModal(props: Props) {
 
             <div className={styles.rangeWrap}>
               <div className={styles.rangeGrid}>
-                <div className={styles.rangeCol}>
-                  <div className={styles.rangeHint}>시작</div>
-                  <div className={styles.pillRow}>
-                    {StartDateBtn}
-                    {StartTimeBtn}
-                  </div>
+                <div className={styles.rangeHint}>시작</div>
+                <div className={styles.rangeLabelSpacer} />
+                <div className={styles.rangeHint}>종료</div>
+
+                <div className={styles.pillRow}>
+                  {StartDateBtn}
+                  {StartTimeBtn}
                 </div>
-
                 <div className={styles.rangeArrow}>~</div>
-
-                <div className={styles.rangeCol}>
-                  <div className={styles.rangeHint}>종료</div>
-                  <div className={styles.pillRow}>
-                    {EndDateBtn}
-                    {EndTimeBtn}
-                  </div>
+                <div className={styles.pillRow}>
+                  {EndDateBtn}
+                  {EndTimeBtn}
                 </div>
               </div>
 
@@ -413,26 +421,43 @@ export function EventModal(props: Props) {
         </div>
 
         <div className={styles.section}>
-          <label className={styles.label}>제목</label>
-          <input
+          <InputField
+            label="제목"
             value={form.title}
             onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
             placeholder="일정을 입력해주세요."
-            className={styles.textInput}
+            className={styles.eventFormControl}
             autoFocus
           />
         </div>
 
-        <div className={styles.section}>
-          <label className={styles.label}>메모</label>
-          <textarea
-            value={form.memo}
-            onChange={(e) => setForm((p) => ({ ...p, memo: e.target.value }))}
-            rows={3}
-            placeholder="일정에 관한 상세 내용을 기재해주세요."
-            className={styles.textarea}
-          />
-        </div>
+        <>
+          <div
+            className={styles.sectionRow}
+            onClick={() => setMemoOpen((prev) => !prev)}
+          >
+            <div className={styles.sectionTitle}>메모</div>
+
+            <div className={styles.sectionRight}>
+              <span className={styles.sectionSummary}>
+                {form.memo.trim() ? "입력됨" : "없음"}
+              </span>
+              <span className={styles.sectionArrow}>{memoOpen ? "▲" : "▼"}</span>
+            </div>
+          </div>
+
+          <div className={`${styles.collapsible} ${memoOpen ? styles.collapsibleOpen : ""}`}>
+            <div className={`${styles.sectionGrid} ${styles.collapsibleInner}`}>
+              <TextareaField
+                value={form.memo}
+                onChange={(e) => setForm((p) => ({ ...p, memo: e.target.value }))}
+                height={92}
+                placeholder="일정 관련 상세 내용을 입력해주세요."
+                className={styles.eventFormControl}
+              />
+            </div>
+          </div>
+        </>
         <EventLocationPicker
           mode={mode}
           form={form}
@@ -480,7 +505,7 @@ export function EventModal(props: Props) {
                   <option value="yearly">매년</option>
                 </select>
 
-                <input
+                <Input
                   type="number"
                   min={1}
                   value={form.repeatInterval}
@@ -748,7 +773,7 @@ export function EventModal(props: Props) {
           />
           <div className={styles.subNote}>※ 고유색 추후 프로필로 이동)</div>
         </div> */}
-        <div className={styles.row}>
+        <div className={`${styles.row} ${styles.colorRow}`}>
           <label className={styles.labelFixed}>색상</label>
 
           <EventColorPicker
@@ -803,7 +828,7 @@ export function EventModal(props: Props) {
         )}
 
         <div className={styles.footer}>
-          <button onClick={closeModal} className={styles.btnOutline}>
+          <button onClick={requestCloseModal} className={styles.btnOutline}>
             취소
           </button>
 
@@ -848,6 +873,16 @@ export function EventModal(props: Props) {
           }}
         />
 
+        <ConfirmDialog
+          open={closeConfirmOpen}
+          title="입력 취소"
+          message="이 창을 닫으면 현재 수정 내역이 사라집니다. 계속하시겠습니까?"
+          cancelLabel="아니요"
+          confirmLabel="예"
+          onClose={() => setCloseConfirmOpen(false)}
+          onConfirm={confirmCloseModal}
+        />
+
         <AlertDialog
           open={alertDialog.open}
           title={alertDialog.title}
@@ -858,4 +893,3 @@ export function EventModal(props: Props) {
     </div>
   );
 }
-

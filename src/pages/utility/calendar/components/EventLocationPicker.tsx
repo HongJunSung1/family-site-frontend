@@ -2,6 +2,7 @@ import type { Dispatch, SetStateAction } from "react";
 
 import type { FormState, ModalMode } from "../types";
 import { useKakaoMapLocation } from "../hooks/useKakaoMapLocation";
+import { Input } from "../../../../common/input";
 
 import styles from "./EventModal.module.css";
 
@@ -45,24 +46,27 @@ export function EventLocationPicker({
     : form.locationAddress?.trim()
     ? "위치 선택됨"
     : "선택된 위치 없음";
+  const hasLocationInfo = !!(
+    form.locationAddress ||
+    form.locationLat != null ||
+    form.locationLng != null
+  );
 
   return (
     <>
-      <div className={styles.section}>
-        {(form.locationAddress || (form.locationLat != null && form.locationLng != null)) && (
-          <div className={styles.placeInfoBox}>
-            <div className={styles.placeInfoTitle}>{form.locationName || "선택한 장소"}</div>
+      {hasLocationInfo && (
+        <div className={styles.placeInfoBox}>
+          <div className={styles.placeInfoTitle}>{form.locationName || "선택한 장소"}</div>
 
-            {form.locationAddress && (
-              <div className={styles.placeInfoAddress}>{form.locationAddress}</div>
-            )}
+          {form.locationAddress && (
+            <div className={styles.placeInfoAddress}>{form.locationAddress}</div>
+          )}
 
-            {/* <div className={styles.placeInfoCoord}>
+          {/* <div className={styles.placeInfoCoord}>
               위도: {form.locationLat ?? "-"} / 경도: {form.locationLng ?? "-"}
             </div> */}
-          </div>
-        )}
-      </div>
+        </div>
+      )}
 
       <div
         className={styles.sectionRow}
@@ -81,7 +85,7 @@ export function EventLocationPicker({
       <div className={`${styles.collapsible} ${mapOpen ? styles.collapsibleOpen : ""}`}>
         <div className={`${styles.sectionGrid} ${styles.collapsibleInner}`}>
           <div className={styles.placeSearchRow}>
-            <input
+            <Input
               type="text"
               value={placeKeyword}
               onChange={(e) => setPlaceKeyword(e.target.value)}
@@ -92,7 +96,6 @@ export function EventLocationPicker({
                 }
               }}
               placeholder="장소명을 입력해주세요."
-              className={styles.textInput}
             />
 
             <button type="button" className={styles.placeSearchBtn} onClick={searchPlaces}>

@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { hasAccessToken } from "../../../api/client";
 import {
   getNotifications,
@@ -6,7 +6,7 @@ import {
   respondCalendarInvitation,
   type NotificationItem,
 } from "../../../api/notificationApi";
-import { AlertDialog } from "../../../common/components/ConfirmDialog";
+import { AlertDialog } from "../../../common/dialog";
 import notificationBellIcon from "../../../assets/icons/notification-bell.svg";
 import styles from "./NotificationBell.module.css";
 

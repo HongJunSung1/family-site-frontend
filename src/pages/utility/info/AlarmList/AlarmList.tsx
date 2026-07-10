@@ -1,12 +1,12 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { hasAccessToken } from "../../../../api/client";
 import {
   getNotificationHistory,
   respondCalendarInvitation,
   type NotificationRow,
 } from "../../../../api/notificationApi";
-import { AlertDialog } from "../../../../common/components/ConfirmDialog";
-import { FamilyLoader } from "../../../../common/components/Loading";
+import { AlertDialog } from "../../../../common/dialog";
+import { FamilyLoader } from "../../../../common/loading";
 import styles from "./AlarmList.module.css";
 
 function formatDateTime(value?: string | null) {

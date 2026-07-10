@@ -1,7 +1,8 @@
-﻿import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-import { ConfirmDialog } from "../../../../common/components/ConfirmDialog";
+import { ConfirmDialog } from "../../../../common/dialog";
+import { Input } from "../../../../common/input";
 import type { CSSProperties } from "react";
 import type { FavoriteColorPreset } from "../hooks/useFavoriteColors";
 import styles from "./EventModal.module.css";
@@ -176,7 +177,7 @@ export function EventColorPicker({
             >
               <span className={styles.favoriteColorDot} style={{ backgroundColor: color }} />
               <span>{selectedFavoriteLabel}</span>
-              <span className={styles.dropdownArrow}>▾</span>
+              <span className={styles.dropdownArrow} aria-hidden="true" />
             </button>
 
             {favoriteColorOpen &&
@@ -284,13 +285,12 @@ export function EventColorPicker({
                     className={styles.addColorInput}
                   />
 
-                  <input
+                  <Input
                     type="text"
                     value={newColorLabel}
                     maxLength={20}
                     onChange={(e) => setNewColorLabel(e.target.value)}
                     placeholder="색상 이름 입력"
-                    className={styles.addColorNameInput}
                   />
                 </div>
 

@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { hasAccessToken } from "../../../../api/client";
 import {
   deleteMyColorPreset,
@@ -6,8 +6,9 @@ import {
   saveMyColorPresets,
   type FavoriteColorPreset,
 } from "../../../../api/calendarApi";
-import { AlertDialog, ConfirmDialog } from "../../../../common/components/ConfirmDialog";
-import { FamilyLoader } from "../../../../common/components/Loading";
+import { AlertDialog, ConfirmDialog } from "../../../../common/dialog";
+import { TableInput } from "../../../../common/input";
+import { FamilyLoader } from "../../../../common/loading";
 import styles from "./CalendarSettings.module.css";
 
 type FavoriteColorRow = {
@@ -269,10 +270,9 @@ export default function CalendarSettings() {
                   </td>
 
                   <td>
-                    <input
+                    <TableInput
                       type="text"
                       value={row.title}
-                      className={styles.textInput}
                       placeholder="예: 가족 일정, 병원, 회사"
                       onChange={(e) => handleChangeColor(row.tempId, "title", e.target.value)}
                       disabled={saving}

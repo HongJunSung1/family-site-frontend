@@ -1,4 +1,4 @@
-﻿import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { hasAccessToken } from "../../../../api/client";
 import {
   deleteMyCalendar,
@@ -8,8 +8,9 @@ import {
   type CalendarMemberItem,
   type GetMyCalendarsInfoResponse,
 } from "../../../../api/calendarApi";
-import { ConfirmDialog } from "../../../../common/components/ConfirmDialog";
-import { FamilyLoader } from "../../../../common/components/Loading";
+import { ConfirmDialog } from "../../../../common/dialog";
+import { TableInput } from "../../../../common/input";
+import { FamilyLoader } from "../../../../common/loading";
 import CalendarInvitePopup from "./CalendarInvitePopup";
 import styles from "./CalendarInfo.module.css";
 
@@ -476,9 +477,8 @@ export default function CalendarInfo() {
                       </td>
 
                       <td>
-                        <input
+                        <TableInput
                           type="text"
-                          className={styles.tableInputText}
                           value={calendarNames[calendar.id] ?? ""}
                           readOnly={!isOwner}
                           onFocus={() => handleCalendarNameFocus(isOwner)}
@@ -529,9 +529,12 @@ export default function CalendarInfo() {
                           title={openMemberCalendarId === calendar.id ? "회원정보 접기" : "회원정보 자세히 보기"}
                         >
                           <span>{openMemberCalendarId === calendar.id ? "접기" : "자세히"}</span>
-                          <span className={styles.memberToggleArrow} aria-hidden="true">
-                            {openMemberCalendarId === calendar.id ? "▴" : "▾"}
-                          </span>
+                          <span
+                            className={`${styles.memberToggleArrow} ${
+                              openMemberCalendarId === calendar.id ? styles.memberToggleArrowOpen : ""
+                            }`}
+                            aria-hidden="true"
+                          />
                         </button>
                       </td>
                     </tr>
@@ -655,16 +658,15 @@ export default function CalendarInfo() {
                 </td>
 
                 <td>
-                  <input
+                  <TableInput
                     type="text"
                     value={newCalendarName}
-                    className={styles.tableInputText}
                     placeholder="새 캘린더명"
                     onChange={(e) => setNewCalendarName(e.target.value)}
                   />
                 </td>
 
-                <td>캘린더장</td>
+                <td className={styles.roleCell}>{newCalendarMain ? "캘린더장" : "일반회원"}</td>
                 <td className={styles.actionCell}>
                   <button
                     type="button"
