@@ -12,12 +12,14 @@ type UseFavoriteColorsOptions = {
   onAlert?: (message: string, title?: string) => void;
 };
 
+// 자주 쓰는 색상 조회/저장/삭제 상태 관리
 export function useFavoriteColors(options: UseFavoriteColorsOptions = {}) {
   const { onAlert } = options;
   const [favoriteColors, setFavoriteColors] = useState<FavoriteColorPreset[]>([]);
   const [savingColor, setSavingColor] = useState(false);
 
   useEffect(() => {
+    // 저장된 자주 쓰는 색상 목록 조회
     const fetchFavoriteColors = async () => {
       if (!hasAccessToken()) return;
 
@@ -35,6 +37,7 @@ export function useFavoriteColors(options: UseFavoriteColorsOptions = {}) {
     fetchFavoriteColors();
   }, []);
 
+  // 새 자주 쓰는 색상 저장
   const saveFavoriteColor = useCallback(
     async (color: string, rawLabel: string) => {
       const label = rawLabel.trim();
@@ -88,6 +91,7 @@ export function useFavoriteColors(options: UseFavoriteColorsOptions = {}) {
     [favoriteColors, onAlert]
   );
 
+  // 자주 쓰는 색상 삭제 후 슬롯 재정렬
   const deleteFavoriteColor = useCallback(
     async (preset: FavoriteColorPreset) => {
       if (!hasAccessToken()) return false;

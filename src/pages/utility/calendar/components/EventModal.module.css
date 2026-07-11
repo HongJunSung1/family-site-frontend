@@ -159,12 +159,6 @@ textarea.eventFormControl {
   justify-content: start;
 }
 
-.rangeCol {
-  display: grid;
-  gap: 10px;
-  min-width: 0;
-}
-
 .rangeHint {
   font-size: 12px;
   opacity: 0.6;
@@ -246,34 +240,6 @@ textarea.eventFormControl {
 .sectionArrow {
   font-size: 14px;
   color: rgba(0,0,0,0.55);
-}
-
-.label {
-  display: block;
-  font-size: 13px;
-  margin-bottom: 6px;
-  opacity: 0.8;
-}
-
-.textInput,
-.textarea {
-  font-family: inherit;
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(0,0,0,0.12);
-  background: #f9fafb;
-  color: #111827;
-  outline: none;
-  resize: none;
-
-  box-sizing: border-box;
-}
-
-.textInput:focus,
-.textarea:focus {
-  border-color: rgba(30, 42, 120, 0.35);
-  box-shadow: 0 0 0 3px rgba(30, 42, 120, 0.08);
 }
 
 /* Reusable pill button */
@@ -436,13 +402,6 @@ textarea.eventFormControl {
   border: 1px solid rgba(17, 24, 39, 0.08);
 }
 
-.cardHead {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
 .cardHeadBtns {
   display: flex;
   gap: 8px;
@@ -465,19 +424,6 @@ textarea.eventFormControl {
   margin-top: 8px;
   font-size: 12px;
   color: rgba(17, 24, 39, 0.78);
-}
-
-.accordionSummary {
-  font-size: 13px;
-  font-weight: 700;
-  color: rgba(17, 24, 39, 0.72);
-}
-
-.accordionArrow {
-  font-size: 18px;
-  font-weight: 900;
-  color: #374151;
-  line-height: 1;
 }
 
 /* Simple row */
@@ -503,11 +449,6 @@ textarea.eventFormControl {
   padding: 0;
   border: none;
   background: transparent;
-}
-
-.subNote {
-  font-size: 12px;
-  opacity: 0.7;
 }
 
 /* Radios */
@@ -618,12 +559,6 @@ textarea.eventFormControl {
   filter: brightness(0.95);
 }
 
-.mapCoordText {
-  margin-top: 8px;
-  font-size: 12px;
-  color: rgba(0, 0, 0, 0.65);
-}
-
 .mapCoordActions {
   margin-top: 4px;
   display: flex;
@@ -649,12 +584,6 @@ textarea.eventFormControl {
   font-size: 12px;
   color: rgba(17, 24, 39, 0.75);
   line-height: 1.45;
-}
-
-.placeInfoCoord {
-  margin-top: 6px;
-  font-size: 12px;
-  color: rgba(17, 24, 39, 0.6);
 }
 
 .placeSearchRow {
@@ -949,24 +878,6 @@ textarea.eventFormControl {
   cursor: pointer;
 }
 
-.addColorNameInput {
-  flex: 1;
-  height: 36px;
-  padding: 0 12px;
-
-  border: 1px solid #d1d5db;
-  border-radius: 9px;
-
-  font-size: 14px;
-  color: #334155;
-}
-
-.addColorNameInput:focus {
-  outline: none;
-  border-color: #25266f;
-  box-shadow: 0 0 0 2px rgba(37, 38, 111, 0.12);
-}
-
 .addColorCount {
   margin-top: 6px;
   text-align: right;
@@ -1078,7 +989,6 @@ textarea.eventFormControl {
 .favoriteColorOption,
 .favoriteColorTrigger,
 .addColorButton,
-.addColorNameInput,
 .addColorCancelButton {
   color: var(--color-text);
 }
@@ -1086,16 +996,12 @@ textarea.eventFormControl {
 .closeBtn,
 .sectionTitle,
 .rangeHint,
-.label,
 .labelFixed,
 .repeatUnit,
-.subNote,
 .radioText,
 .expandHint,
 .bottomHint,
-.mapCoordText,
 .placeInfoAddress,
-.placeInfoCoord,
 .placeSearchHint,
 .placeResultAddress,
 .dropdownArrow,
@@ -1104,9 +1010,7 @@ textarea.eventFormControl {
 .cardText,
 .cardSubText,
 .sectionSummary,
-.sectionArrow,
-.accordionSummary,
-.accordionArrow {
+.sectionArrow {
   color: var(--color-text-muted);
   opacity: 1;
 }
@@ -1122,8 +1026,6 @@ textarea.eventFormControl {
   border-color: var(--color-border);
 }
 
-.textInput,
-.textarea,
 .select,
 .numberInput,
 .pillBtn,
@@ -1134,7 +1036,6 @@ textarea.eventFormControl {
 .favoriteColorTrigger,
 .favoriteColorOption,
 .addColorButton,
-.addColorNameInput,
 .addColorCancelButton {
   background: var(--color-surface-raised);
   border-color: var(--color-border-strong);
@@ -1175,17 +1076,8 @@ textarea.eventFormControl {
   color: var(--color-text);
 }
 
-.textInput::placeholder,
-.textarea::placeholder,
-.addColorNameInput::placeholder {
-  color: var(--color-text-muted);
-}
-
-.textInput:focus,
-.textarea:focus,
 .select:focus,
-.numberInput:focus,
-.addColorNameInput:focus {
+.numberInput:focus {
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px var(--color-focus-ring);
 }
@@ -1511,11 +1403,6 @@ textarea.eventFormControl {
   column-gap: 8px;
   row-gap: 10px;
   text-align: left;
-}
-
-.modalSideCard .rangeCol {
-  justify-items: start;
-  align-items: start;
 }
 
 .modalSideCard .pillRow {

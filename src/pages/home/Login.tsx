@@ -9,6 +9,7 @@ type Props = {
   onLogin: () => void;
 };
 
+// 로그인 화면
 export default function Login({ onLogin }: Props) {
   const navigate = useNavigate();
   const location = useLocation() as { state?: { from?: string } };
@@ -19,6 +20,7 @@ export default function Login({ onLogin }: Props) {
   const [loading, setLoading] = useState(false);
   const [rememberId, setRememberId] = useState(false);
 
+  // 저장된 아이디 복원
   useEffect(() => {
     const savedId = localStorage.getItem("rememberId");
     if (savedId) {
@@ -27,6 +29,7 @@ export default function Login({ onLogin }: Props) {
     }
   }, []);
 
+  // 로그인 요청 및 로그인 성공 후 이동 처리
   const handleLogin = async () => {
     setErrorMsg("");
 
@@ -72,6 +75,7 @@ export default function Login({ onLogin }: Props) {
     }
   };
 
+  // 엔터 입력 시 로그인 실행
   const onKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
     if (e.key === "Enter") handleLogin();
   };

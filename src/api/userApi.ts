@@ -26,10 +26,12 @@ export type UpdateProfileResponse = {
   user?: PersonalInfoUser;
 };
 
+// 개인정보 기본 정보 조회
 export async function getPersonalInfo() {
   return apiFetch<PersonalInfoResponse>("/api/auth/personalInfo");
 }
 
+// 개인정보 이름/이메일 수정 요청
 export async function updateProfile(payload: { name: string; email: string }) {
   return apiFetch<UpdateProfileResponse>("/api/auth/profile", {
     method: "PUT",

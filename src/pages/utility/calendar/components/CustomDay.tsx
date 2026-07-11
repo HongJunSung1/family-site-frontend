@@ -7,6 +7,7 @@ type CustomDayProps = PickersDayProps & {
   selectedSet?: Set<string>;
 };
 
+// 날짜 선택 달력의 공휴일/주말/선택 날짜 색상 표시
 export function CustomDay(props: CustomDayProps) {
   const { day, outsideCurrentMonth, holidaySet, selectedSet, ...other } = props;
 

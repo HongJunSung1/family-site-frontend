@@ -1,5 +1,6 @@
 import styles from "../household-accounts/ComingSoon.module.css";
 
+// 회의록 준비 중 화면
 export default function ConferenceReport() {
   return (
     <main className={styles.page}>

@@ -35,6 +35,7 @@ export type MeResponse = {
   message?: string;
 };
 
+// 로그인 API 요청
 export async function login(loginId: string, password: string) {
   return apiFetch<LoginResponse>("/api/auth/login", {
     method: "POST",
@@ -46,6 +47,7 @@ export async function login(loginId: string, password: string) {
   });
 }
 
+// 회원가입 API 요청
 export async function signup(payload: SignupPayload) {
   return apiFetch<SignupResponse>("/api/auth/signup", {
     method: "POST",
@@ -54,33 +56,39 @@ export async function signup(payload: SignupPayload) {
   });
 }
 
+// 로그아웃 API 요청
 export async function logout() {
   return apiFetch<{ ok: boolean; message?: string }>("/api/auth/logout", {
     method: "POST",
   });
 }
 
+// 현재 로그인 사용자 정보 조회
 export async function getMe() {
   return apiFetch<MeResponse>("/api/auth/me");
 }
 
+// 로컬 저장소 accessToken 조회
 export function getStoredAccessToken() {
   return localStorage.getItem(ACCESS_TOKEN_KEY);
 }
 
+// 로컬 저장소 accessToken 저장
 export function storeAccessToken(accessToken: string) {
   localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
 }
 
+// 로컬 저장소 accessToken 삭제
 export function clearStoredAccessToken() {
   localStorage.removeItem(ACCESS_TOKEN_KEY);
 }
 
+// 저장된 accessToken 존재 여부 확인
 export function hasStoredAccessToken() {
   return !!getStoredAccessToken();
 }
 
-// 로그인 요청과 토큰 저장을 하나의 흐름으로 묶는다.
+// 로그인 요청과 토큰 저장 통합 처리
 export async function loginAndStoreSession(loginId: string, password: string) {
   const data = await login(loginId, password);
 
@@ -92,7 +100,7 @@ export async function loginAndStoreSession(loginId: string, password: string) {
   return data;
 }
 
-// 저장된 토큰이 실제로 유효한지 서버 기준으로 확인한다.
+// 저장된 토큰의 서버 기준 유효성 확인
 export async function verifyStoredSession() {
   if (!hasStoredAccessToken()) return null;
 
@@ -104,7 +112,7 @@ export async function verifyStoredSession() {
   }
 }
 
-// 서버 로그아웃과 로컬 토큰 정리를 한 번에 처리한다.
+// 서버 로그아웃과 로컬 토큰 정리 통합 처리
 export async function logoutAndClearSession() {
   try {
     if (hasStoredAccessToken()) {

@@ -6,6 +6,7 @@ import { Input } from "../../../../common/input";
 import { FamilyLoader } from "../../../../common/loading";
 import styles from "./BasicPersonalInfo.module.css";
 
+// 기본 개인정보 조회와 이름/이메일 수정 화면
 export default function BasicPersonalInfo() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -16,7 +17,9 @@ export default function BasicPersonalInfo() {
   const [editEmail, setEditEmail] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
 
+  // 기본 개인정보 최초 조회
   useEffect(() => {
+    // 서버 기준 기본 개인정보 조회
     const fetchPersonalInfo = async () => {
       if (!hasAccessToken()) {
         setErrorMsg("로그인 정보가 없습니다.");
@@ -46,6 +49,7 @@ export default function BasicPersonalInfo() {
     fetchPersonalInfo();
   }, []);
 
+  // 저장 전 입력값 검증과 확인창 열기
   const openSaveConfirm = () => {
     if (!user) return;
 
@@ -73,6 +77,7 @@ export default function BasicPersonalInfo() {
     setConfirmOpen(true);
   };
 
+  // 기본 개인정보 서버 저장
   const saveBasicInfo = async () => {
     if (!hasAccessToken()) {
       setErrorMsg("로그인 정보가 없습니다.");

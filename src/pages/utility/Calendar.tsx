@@ -22,10 +22,12 @@ dayjs.locale("ko");
 
 const EVENT_TOOLTIP_ID = "pz-floating-event-tooltip";
 
+// 떠 있는 일정 hover 툴팁 제거
 const removeFloatingTooltip = () => {
   document.getElementById(EVENT_TOOLTIP_ID)?.remove();
 };
 
+// 일정 목록 hover 툴팁 위치 계산과 표시
 const showFloatingTooltip = (eventEl: HTMLElement, tooltipText: string) => {
   removeFloatingTooltip();
 
@@ -54,6 +56,7 @@ const showFloatingTooltip = (eventEl: HTMLElement, tooltipText: string) => {
   tooltip.style.top = `${top}px`;
 };
 
+// 공휴일 표시명 보정
 const getHolidayDisplayName = (name?: string) => {
   if (!name) return "";
   return name === "기독탄신일" ? "크리스마스" : name;
@@ -72,6 +75,7 @@ type DiscardConfirmState = {
   onConfirm: () => void;
 };
 
+// 브라우저 history guard 사용 가능 여부 확인
 const canUseCalendarHistoryGuard = () => typeof window !== "undefined";
 const HOME_BACK_GUARD_DEPTH = 1;
 const MODAL_BACK_GUARD_DEPTH = 2;
@@ -79,6 +83,7 @@ const BACK_DEBUG_STORAGE_KEY = "calendarBackDebugLines";
 const BACK_GUARD_PARAM = "_calendarBackGuard";
 const BACK_GUARD_HASH_PREFIX = "#calendar-back-guard-";
 
+// 뒤로가기 디버그 모드 활성 여부 확인
 const isBackDebugEnabled = () => {
   if (typeof window === "undefined") return false;
   const params = new URLSearchParams(window.location.search);
@@ -96,8 +101,10 @@ const isBackDebugEnabled = () => {
   return false;
 };
 
+// 모달 폼 스냅샷 복제
 const cloneForm = (form: FormState): FormState => JSON.parse(JSON.stringify(form)) as FormState;
 
+// 저장된 뒤로가기 디버그 로그 조회
 const readBackDebugLines = () => {
   if (typeof window === "undefined") return [];
 
@@ -109,6 +116,7 @@ const readBackDebugLines = () => {
   }
 };
 
+// history guard 파라미터를 제외한 캘린더 기준 URL 생성
 const getCleanCalendarUrl = () => {
   if (typeof window === "undefined") return "";
 
@@ -118,6 +126,7 @@ const getCleanCalendarUrl = () => {
   return `${url.pathname}${url.search}${cleanHash}`;
 };
 
+// 캘린더 화면과 선택 날짜 일정 패널 관리
 const Calendar: React.FC = () => {
   const calRef = useRef<FullCalendar | null>(null);
   const { setConfig: setMobileHeaderConfig, resetConfig: resetMobileHeaderConfig } = useMobileHeader();
@@ -149,6 +158,7 @@ const Calendar: React.FC = () => {
 
   const { holidaySet, holidayMap } = useHolidays(holidayYear);
 
+  // 뒤로가기 제어 디버그 로그 기록
   const logBackDebug = React.useCallback(
     (message: string) => {
       if (!backDebugEnabled || typeof window === "undefined") return;
@@ -219,11 +229,13 @@ const Calendar: React.FC = () => {
     setFormError,
   });
 
+  // 반복 일정을 현재 표시 범위의 실제 발생 일정으로 확장
   const expandedEvents = useMemo(
     () => expandRecurringEvents(events, viewRange.start, viewRange.end),
     [events, viewRange.start, viewRange.end]
   );
 
+  // 특정 일정이 선택 날짜에 포함되는지 확인
   const eventOccursOnDate = React.useCallback((event: ExpandedEvent, ymd: string) => {
     const day = dayjs(ymd);
     const start = dayjs(event.start).startOf("day");
@@ -231,10 +243,12 @@ const Calendar: React.FC = () => {
     return !day.isBefore(start, "day") && !day.isAfter(end, "day");
   }, []);
 
+  // 반복 발생 일정을 구분하는 화면 표시용 키 생성
   const getEventVisualKey = React.useCallback((event: ExpandedEvent) => {
     return `${event.id}-${event.__occKey ?? event.start}`;
   }, []);
 
+  // 날짜별 전체 일정 개수 계산
   const eventCountByDate = useMemo(() => {
     const counts = new Map<string, number>();
     let cursor = viewRange.start.startOf("day");
@@ -250,6 +264,7 @@ const Calendar: React.FC = () => {
     return counts;
   }, [eventOccursOnDate, expandedEvents, viewRange.start, viewRange.end]);
 
+  // 날짜별 일정 막대 lane 배치 계산
   const eventBarsByDate = useMemo(() => {
     const bars = new Map<
       string,
@@ -264,6 +279,7 @@ const Calendar: React.FC = () => {
         ? rangeEnd
         : weekStart.add(7, "day");
 
+      // 긴 일정 우선 배치를 위한 주 단위 일정 정렬
       const weekEvents = expandedEvents
         .filter((event) => {
           const start = dayjs(event.start).startOf("day");
@@ -303,6 +319,7 @@ const Calendar: React.FC = () => {
           spanCursor = spanCursor.add(1, "day");
         }
 
+        // 겹치는 날짜 전체에서 비어 있는 lane 탐색
         let lane = 0;
         while (spanDays.some((ymd) => occupiedByDate.get(ymd)?.has(lane))) {
           lane += 1;
@@ -338,6 +355,7 @@ const Calendar: React.FC = () => {
     return bars;
   }, [expandedEvents, getEventVisualKey, viewRange.start, viewRange.end]);
 
+  // 선택 날짜의 일정 목록을 막대 표시 순서와 동일하게 정렬
   const selectedDateEvents = useMemo(
     () => {
       const selectedBars = eventBarsByDate.get(selectedDate) ?? [];
@@ -371,6 +389,7 @@ const Calendar: React.FC = () => {
 
   const selectedHolidayName = getHolidayDisplayName(holidayMap.get(selectedDate));
 
+  // 날짜별 공휴일/주말 색상 타입 계산
   const getDayType = React.useCallback(
     (d: Dayjs) => {
       const dow = d.day();
@@ -382,6 +401,8 @@ const Calendar: React.FC = () => {
     [holidaySet]
   );
 
+  // 모달이 열릴 때 변경 감지 기준 스냅샷 저장
+  // 모바일 상단 헤더에 캘린더 목록 드롭다운 연결
   React.useEffect(() => {
     if (mode === "none") {
       openedFormSnapshotRef.current = "";
@@ -391,11 +412,13 @@ const Calendar: React.FC = () => {
     openedFormSnapshotRef.current = JSON.stringify(form);
   }, [mode, modalOpenVersion]);
 
+  // hover 툴팁 긴 텍스트 말줄임 처리
   const ellipsis = (text: string, max = 18) => {
     if (!text) return "";
     return text.length > max ? text.slice(0, max) + "..." : text;
   };
 
+  // 일정 hover 툴팁 문구 구성
   const makeTooltipText = (event: ExpandedEvent) => {
     const createdByName = String(event.createdByName ?? "").trim();
     const memo = String(event.memo ?? "").trim();
@@ -415,21 +438,25 @@ const Calendar: React.FC = () => {
       .join("\n");
   };
 
+  // 일정 hover 레이어 클래스 초기화
   const clearTooltipLayers = () => {
     document.querySelectorAll(".pz-tooltip-layer-open").forEach((el) => {
       el.classList.remove("pz-tooltip-layer-open");
     });
   };
 
+  // 현재 모달 입력값 변경 여부 확인
   const hasUnsavedModalChanges = React.useCallback(() => {
     if (mode === "none" || !openedFormSnapshotRef.current) return false;
     return JSON.stringify(form) !== openedFormSnapshotRef.current;
   }, [form, mode]);
 
+  // 캘린더 뒤로가기 기준 URL 조회
   const getCalendarBaseUrl = React.useCallback(() => {
     return calendarBaseUrlRef.current || getCleanCalendarUrl();
   }, []);
 
+  // 브라우저 뒤로가기 가드용 URL 생성
   const getBackGuardUrl = React.useCallback(() => {
     backGuardSeqRef.current += 1;
     const url = new URL(getCalendarBaseUrl(), window.location.origin);
@@ -437,6 +464,7 @@ const Calendar: React.FC = () => {
     return `${url.pathname}${url.search}${BACK_GUARD_HASH_PREFIX}${backGuardSeqRef.current}`;
   }, [getCalendarBaseUrl]);
 
+  // history stack에 뒤로가기 가드 추가
   const pushBackGuard = React.useCallback((count = 1) => {
     if (!canUseCalendarHistoryGuard()) return;
 
@@ -451,12 +479,14 @@ const Calendar: React.FC = () => {
     }
   }, [getBackGuardUrl, logBackDebug]);
 
+  // 필요한 개수만큼 뒤로가기 가드 보강
   const ensureBackGuards = React.useCallback((targetDepth = HOME_BACK_GUARD_DEPTH) => {
     const missing = targetDepth - backGuardDepthRef.current;
     logBackDebug(`ensure guards target=${targetDepth} missing=${missing}`);
     if (missing > 0) pushBackGuard(missing);
   }, [logBackDebug, pushBackGuard]);
 
+  // 캘린더 화면 진입 시 뒤로가기 가드 장착
   const armBackGuard = React.useCallback(() => {
     if (!canUseCalendarHistoryGuard() || historyGuardArmedRef.current) return;
 
@@ -472,6 +502,7 @@ const Calendar: React.FC = () => {
     historyGuardArmedRef.current = true;
   }, [ensureBackGuards, getCalendarBaseUrl]);
 
+  // 모바일 첫 사용자 액션 이후 뒤로가기 가드 재장착
   const rearmBackGuardAfterUserActivation = React.useCallback(() => {
     if (!canUseCalendarHistoryGuard()) return;
 
@@ -482,28 +513,33 @@ const Calendar: React.FC = () => {
     armBackGuard();
   }, [armBackGuard, logBackDebug]);
 
+  // 뒤로가기 확인창 닫기
   const closeBackConfirm = React.useCallback(() => {
     logBackDebug("close modal confirm");
     backConfirmRef.current = null;
     setBackConfirm(null);
   }, [logBackDebug]);
 
+  // 현재 모달 상태를 뒤로가기 복원 스택에 저장
   const rememberCurrentModal = () => {
     if (mode === "none") return;
     modalBackStackRef.current.push({ mode, form: cloneForm(form) });
   };
 
+  // 모바일 일정 상세 화면용 뒤로가기 단계 추가
   const openMobileModalHistoryStep = () => {
     armBackGuard();
     ensureBackGuards(MODAL_BACK_GUARD_DEPTH);
   };
 
+  // 캘린더 화면에서 모달과 복원 스택 닫기
   const closeModalFromCalendar = React.useCallback(() => {
     modalBackStackRef.current = [];
     closeBackConfirm();
     closeModal();
   }, [closeBackConfirm, closeModal]);
 
+  // 수정 중인 모달이 있을 때 전환 전 유실 확인
   const runWithDiscardConfirm = React.useCallback((action: () => void) => {
     if (!hasUnsavedModalChanges()) {
       action();
@@ -513,6 +549,7 @@ const Calendar: React.FC = () => {
     setDiscardConfirm({ onConfirm: action });
   }, [hasUnsavedModalChanges]);
 
+  // 날짜 클릭 시 선택 날짜 변경
   const handleDateSelect = (info: DateClickArg) => {
     clearTooltipLayers();
     removeFloatingTooltip();
@@ -522,6 +559,7 @@ const Calendar: React.FC = () => {
     });
   };
 
+  // 선택 날짜 일정 클릭 시 상세 모달 열기
   const handleListEventClick = (event: ExpandedEvent) => {
     clearTooltipLayers();
     removeFloatingTooltip();
@@ -533,6 +571,7 @@ const Calendar: React.FC = () => {
     });
   };
 
+  // 선택 날짜 기준 새 일정 추가 모달 열기
   const handleCreateClick = () => {
     clearTooltipLayers();
     removeFloatingTooltip();
@@ -544,6 +583,7 @@ const Calendar: React.FC = () => {
     });
   };
 
+  // 캘린더 탭 선택과 수정 중 전환 확인 처리
   const handleCalendarTabSelect = React.useCallback((calendar: (typeof calendars)[number]) => {
     if (calendar.calendarId === calendarId) return;
 
@@ -555,6 +595,7 @@ const Calendar: React.FC = () => {
     });
   }, [calendarId, closeModalFromCalendar, handleCalendarTabClick, runWithDiscardConfirm]);
 
+  // 최신 모달 모드를 ref에 동기화
   React.useEffect(() => {
     setMobileHeaderConfig({
       title: calendarName || "캘린더",
@@ -582,7 +623,9 @@ const Calendar: React.FC = () => {
     modeRef.current = mode;
   }, [mode]);
 
+  // 브라우저 뒤로가기 이벤트를 캘린더 내부 동작으로 변환
   React.useLayoutEffect(() => {
+    // 뒤로가기 시 모달 복원/닫기 확인 또는 네이티브 이탈 처리
     const handleBrowserBack = (event: Event) => {
       if (!canUseCalendarHistoryGuard()) return;
 
@@ -643,14 +686,17 @@ const Calendar: React.FC = () => {
     };
   }, [closeBackConfirm, ensureBackGuards]);
 
+  // 최초 화면 표시 후 캘린더 기준 URL 저장과 가드 장착
   React.useLayoutEffect(() => {
     calendarBaseUrlRef.current = getCleanCalendarUrl();
     armBackGuard();
   }, [armBackGuard]);
 
+  // 모바일 브라우저 첫 상호작용 이후 history guard 보정
   React.useEffect(() => {
     if (!canUseCalendarHistoryGuard()) return;
 
+    // 첫 사용자 입력을 기준으로 가드 재장착
     const handleFirstUserActivation = () => {
       rearmBackGuardAfterUserActivation();
     };
@@ -676,9 +722,11 @@ const Calendar: React.FC = () => {
     };
   }, [rearmBackGuardAfterUserActivation]);
 
+  // 브라우저 이탈 전 시스템 확인창 호출
   React.useEffect(() => {
     if (typeof window === "undefined") return;
 
+    // 새로고침/외부 이탈 전 기본 확인창 표시
     const handleProtectedBeforeUnload = (event: BeforeUnloadEvent) => {
       logBackDebug("beforeunload blocked");
       event.preventDefault();
@@ -692,10 +740,14 @@ const Calendar: React.FC = () => {
     };
   }, [logBackDebug]);
 
+  // 뒤로가기 디버그용 페이지 상태 이벤트 기록
   React.useEffect(() => {
     if (!backDebugEnabled || typeof window === "undefined") return;
 
+    // 페이지 숨김 이벤트 디버그 로그 기록
     const handlePageHide = () => logBackDebug("pagehide");
+
+    // 문서 표시 상태 변경 디버그 로그 기록
     const handleVisibilityChange = () => {
       logBackDebug(`visibilitychange=${document.visibilityState}`);
     };
@@ -709,10 +761,12 @@ const Calendar: React.FC = () => {
     };
   }, [backDebugEnabled, logBackDebug]);
 
+  // 뒤로가기 확인창 취소 처리
   const handleCancelBackClose = () => {
     closeBackConfirm();
   };
 
+  // 뒤로가기 확인창 확인 시 이전 모달 복원 또는 닫기
   const handleConfirmBackClose = () => {
     const action = backConfirm?.action;
     closeBackConfirm();
@@ -734,6 +788,7 @@ const Calendar: React.FC = () => {
     closeModal();
   };
 
+  // 일정 목록 hover 시 요약 툴팁 표시
   const handleListEventMouseEnter = (
     event: ExpandedEvent,
     target: React.MouseEvent<HTMLButtonElement>
@@ -741,6 +796,7 @@ const Calendar: React.FC = () => {
     showFloatingTooltip(target.currentTarget, makeTooltipText(event));
   };
 
+  // 일정 목록 hover 해제 시 요약 툴팁 제거
   const handleListEventMouseLeave = () => {
     removeFloatingTooltip();
   };

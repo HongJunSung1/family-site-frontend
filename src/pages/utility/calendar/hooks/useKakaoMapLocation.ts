@@ -23,6 +23,7 @@ type UseKakaoMapLocationArgs = {
 
 const KAKAO_MAP_KEY = import.meta.env.VITE_KAKAO_MAP_JS_KEY;
 
+// 카카오 지도 검색, 위치 선택, 좌표/주소 변환 관리
 export function useKakaoMapLocation({
   mode,
   form,
@@ -40,6 +41,7 @@ export function useKakaoMapLocation({
   const [searchResults, setSearchResults] = useState<KakaoPlaceSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
+  // 지도 마커를 지정 좌표로 이동
   const moveMarkerTo = (lat: number, lng: number) => {
     if (!mapInstance.current || !window.kakao?.maps) return;
 
@@ -57,6 +59,7 @@ export function useKakaoMapLocation({
     mapInstance.current.setCenter(position);
   };
 
+  // 좌표를 주소로 변환해 일정 위치 정보에 반영
   const reverseGeocode = (lat: number, lng: number, placeName?: string) => {
     const kakaoMaps = window.kakao?.maps;
     if (!geocoderRef.current || !kakaoMaps) return;
@@ -83,6 +86,7 @@ export function useKakaoMapLocation({
     });
   };
 
+  // 선택한 장소를 폼 상태와 지도 마커에 반영
   const applyLocation = (lat: number, lng: number, placeName: string, address?: string) => {
     moveMarkerTo(lat, lng);
 
@@ -99,6 +103,7 @@ export function useKakaoMapLocation({
     }
   };
 
+  // 카카오 지도 인스턴스와 검색/주소 변환 서비스 초기화
   const initMap = () => {
     if (!mapRef.current || !window.kakao?.maps) return;
 
@@ -140,6 +145,7 @@ export function useKakaoMapLocation({
     }, 0);
   };
 
+  // 키워드 기준 장소 검색
   const searchPlaces = () => {
     const keyword = placeKeyword.trim();
 
@@ -164,6 +170,7 @@ export function useKakaoMapLocation({
     });
   };
 
+  // 선택/입력 위치를 네이버 지도에서 새 창으로 검색
   const openInNaverMap = () => {
     const keyword =
       form.locationName?.trim() || form.locationAddress?.trim() || placeKeyword.trim();
@@ -177,6 +184,7 @@ export function useKakaoMapLocation({
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
+  // 검색 결과에서 선택한 장소를 일정 위치로 지정
   const handleSelectPlace = (place: KakaoPlaceSearchResult) => {
     const lat = Number(place.y);
     const lng = Number(place.x);
@@ -192,6 +200,7 @@ export function useKakaoMapLocation({
     setSearchResults([]);
   };
 
+  // 일정 위치 정보와 지도 마커 초기화
   const clearLocation = () => {
     setForm((p) => ({
       ...p,
@@ -222,6 +231,7 @@ export function useKakaoMapLocation({
       return;
     }
 
+    // SDK 로딩 완료 후 지도 초기화 실행
     const bootMap = () => {
       if (!window.kakao?.maps) return;
 

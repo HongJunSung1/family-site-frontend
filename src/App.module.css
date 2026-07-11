@@ -1,12 +1,12 @@
 :global(:root) {
-  --app-nav-height: 67px;
+  --app-nav-height: 56px;
   --app-bottom-nav-height: 0px;
 }
 
 .topNav {
   height: var(--app-nav-height);
   box-sizing: border-box;
-  padding: 12px 16px;
+  padding: 10px 16px;
   border-bottom: 1px solid var(--color-border);
   background: var(--color-surface);
   display: flex;
@@ -44,8 +44,8 @@
 .profileButton,
 .desktopMenuButton {
   box-sizing: border-box;
-  width: 42px;
-  height: 42px;
+  width: 36px;
+  height: 36px;
   padding: 0;
   border-radius: 50%;
   border: 1px solid var(--color-border-strong);
@@ -232,8 +232,8 @@
 }
 
 .navIconImage {
-  width: 32px;
-  height: 32px;
+  width: 25px;
+  height: 25px;
   display: block;
   pointer-events: none;
 }

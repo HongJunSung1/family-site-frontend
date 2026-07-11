@@ -10,6 +10,7 @@ type LoadingOverlayProps = {
   label?: string;
 };
 
+// 가족 공유 서비스 공통 로딩 애니메이션
 export function FamilyLoader({ label = "로딩 중", className = "" }: FamilyLoaderProps) {
   return (
     <div
@@ -28,6 +29,7 @@ export function FamilyLoader({ label = "로딩 중", className = "" }: FamilyLoa
   );
 }
 
+// 페이지 전체 전환 시 표시할 중앙 로딩 화면
 export function PageLoading({ label = "로딩 중" }: Pick<FamilyLoaderProps, "label">) {
   return (
     <div className={styles.pageLoading}>
@@ -38,6 +40,7 @@ export function PageLoading({ label = "로딩 중" }: Pick<FamilyLoaderProps, "l
   );
 }
 
+// 버튼이나 문장 안에서 쓰는 작은 점 로딩 표시
 export function InlineLoadingDots({ label = "처리 중" }: Pick<FamilyLoaderProps, "label">) {
   return (
     <span className={styles.inlineDots} role="status" aria-label={label}>
@@ -48,6 +51,7 @@ export function InlineLoadingDots({ label = "처리 중" }: Pick<FamilyLoaderPro
   );
 }
 
+// 특정 영역 위에 덮어 표시하는 로딩 오버레이
 export function LoadingOverlay({ variant = "family", label = "로딩 중" }: LoadingOverlayProps) {
   return (
     <div
@@ -62,6 +66,7 @@ export function LoadingOverlay({ variant = "family", label = "로딩 중" }: Loa
   );
 }
 
+// 캘린더 데이터 로딩 중 표시할 격자형 스켈레톤
 function CalendarSkeleton() {
   return (
     <div className={styles.calendarSkeleton} aria-hidden="true">

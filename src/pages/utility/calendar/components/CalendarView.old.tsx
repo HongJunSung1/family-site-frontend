@@ -11,7 +11,7 @@ import type { DayType, ViewRange } from "../types";
 import type { ExpandedEvent } from "../utils/recurrence";
 import styles from "../../Calendar.module.css";
 
-
+// 배경색 기준 읽기 쉬운 텍스트 색상 계산
 const getReadableTextColor = (bgColor?: string) => {
   if (!bgColor) return "#ffffff";
 
@@ -35,12 +35,14 @@ const getReadableTextColor = (bgColor?: string) => {
   return brightness >= 160 ? "#111827" : "#ffffff";
 };
 
+// FullCalendar 기본 popover 제거
 const closeCalendarPopovers = () => {
   document.querySelectorAll<HTMLElement>(".fc-popover").forEach((popover) => {
     popover.remove();
   });
 };
 
+// 렌더 타이밍 차이를 고려한 popover 반복 제거
 const closeCalendarPopoversReliably = () => {
   closeCalendarPopovers();
   window.requestAnimationFrame(closeCalendarPopovers);
@@ -51,6 +53,7 @@ type CalendarDisplayState = {
   isMobileCalendar: boolean;
 };
 
+// 현재 화면 너비 기준 캘린더 표시 상태 계산
 const getCalendarDisplayState = () => {
   if (typeof window === "undefined") {
     return { isMobileCalendar: false };
@@ -83,7 +86,7 @@ type Props = {
   selectedDate: string;
 };
 
-
+// 이전 FullCalendar 월간 화면 구현
 export function CalendarView({
   calRef,
   expandedEvents,
@@ -101,7 +104,9 @@ export function CalendarView({
 }: Props) {
   const [, setCalendarDisplay] = useState<CalendarDisplayState>(getCalendarDisplayState);
 
+  // 화면 크기 변경 시 캘린더 표시 상태 갱신
   useEffect(() => {
+    // 캘린더 표시 상태 최신화
     const updateCalendarDisplay = () => setCalendarDisplay(getCalendarDisplayState());
 
     updateCalendarDisplay();
@@ -112,7 +117,9 @@ export function CalendarView({
     };
   }, []);
 
+  // FullCalendar popover 닫기 버튼 클릭 처리
   useEffect(() => {
+    // popover 닫기 버튼 클릭 시 popover 제거
     const handlePopoverCloseClick = (event: MouseEvent | TouchEvent) => {
       const target = event.target as HTMLElement | null;
       if (!target?.closest(".fc-popover-close")) return;
@@ -129,6 +136,7 @@ export function CalendarView({
     };
   }, []);
 
+  // 일정 클릭 시 popover 정리 후 상위 클릭 처리 호출
   const handleEventClick = (info: EventClickArg) => {
     closeCalendarPopoversReliably();
 

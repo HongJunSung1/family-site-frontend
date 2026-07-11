@@ -59,6 +59,7 @@ type Props = {
   getDayType: (d: Dayjs) => "red" | "blue" | "black";
 };
 
+// 일정 추가/상세 입력 화면과 날짜, 반복, 색상, 지도 설정 관리
 export function EventModal(props: Props) {
   const {
     mode,
@@ -92,8 +93,10 @@ export function EventModal(props: Props) {
   const startD = toDayjs(form.start);
   const endD = toDayjs(form.end);
 
+  // 여러 날짜 선택 달력의 선택 여부 확인용 Set
   const multiDatesSet = useMemo(() => new Set(form.multiDates ?? []), [form.multiDates]);
 
+  // 반복 일정과 여러 날짜 복제 기능 동시 사용 제한
   const isRecurring =
     (form.repeat ?? "none") !== "none" || (form.repeatSnap?.repeat ?? "none") !== "none";
   const disableMultiDates = isRecurring;
@@ -110,6 +113,7 @@ export function EventModal(props: Props) {
     message: "",
   });
 
+  // 하위 기능의 공통 안내창 호출 헬퍼
   const showAlertDialog = React.useCallback((message: string, title = "안내") => {
     setAlertDialog({ open: true, title, message });
   }, []);
@@ -129,10 +133,12 @@ export function EventModal(props: Props) {
   const { favoriteColors, savingColor, saveFavoriteColor, deleteFavoriteColor } =
     useFavoriteColors({ onAlert: showAlertDialog });
 
+  // 취소/X 버튼 클릭 시 수정 내역 유실 확인창 표시
   const requestCloseModal = () => {
     setCloseConfirmOpen(true);
   };
 
+  // 닫기 확인창 확인 시 실제 모달 닫기
   const confirmCloseModal = () => {
     setCloseConfirmOpen(false);
     closeModal();
@@ -148,6 +154,7 @@ export function EventModal(props: Props) {
   // 자주 쓰는 색상 조회
 
 
+  // 날짜 버튼의 주말/공휴일 색상 계산
   const dateTextColor = (d: Dayjs) => {
     const t = getDayType(d);
     if (t === "red") return "#dc2626";
@@ -155,6 +162,7 @@ export function EventModal(props: Props) {
     return "var(--event-modal-date-text)";
   };
 
+  // MUI 날짜 선택기의 라이트/다크모드와 선택 상태 스타일 통일
   const calendarSx = {
     color: "var(--color-text)",
     "& .MuiPickersCalendarHeader-label": { color: "var(--color-text)" },
@@ -185,6 +193,7 @@ export function EventModal(props: Props) {
     },
   };
 
+  // 날짜/시간 pill 버튼의 활성/비활성 클래스 조합
   const pillClass = (active: boolean, disabled?: boolean) =>
     [styles.pillBtn, active ? styles.pillBtnActive : "", disabled ? styles.pillBtnDisabled : ""]
       .filter(Boolean)
@@ -195,6 +204,7 @@ export function EventModal(props: Props) {
   const [multiDateOpen, setMultiDateOpen] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
 
+  // 날짜 선택기 직접 열기와 아코디언 자동 펼침
   useEffect(() => {
     if (picker === "repeatStartDate" || picker === "repeatEndDate") {
       setRepeatOpen(true);
@@ -204,6 +214,7 @@ export function EventModal(props: Props) {
     }
   }, [picker]);
 
+  // 접힌 반복 섹션에 표시할 현재 반복 설정 요약
   const repeatSummary =
     form.repeat === "none"
       ? "반복 안함"
@@ -217,6 +228,7 @@ export function EventModal(props: Props) {
             : `매년 / ${Math.max(1, form.repeatInterval || 1)}년 간격`
         }`;
 
+  // 접힌 여러 날짜 섹션의 선택 날짜 개수 요약
   const multiDateSummary =
     (form.multiDates?.length ?? 0) > 0
       ? `${form.multiDates?.length ?? 0}개 날짜 선택됨`
@@ -224,6 +236,7 @@ export function EventModal(props: Props) {
 
   const { dragOffset, modalRef, handleDragStart } = useDraggableModal();
 
+  // 반복 유형 변경과 여러 날짜 선택 충돌 방지
   const onChangeRepeat = (next: RepeatType) => {
     setFormError("");
 
@@ -244,6 +257,7 @@ export function EventModal(props: Props) {
     });
   };
 
+  // 여러 날짜 선택 달력 열기와 반복 일정 사용 제한
   const openMultiDatesPicker = () => {
     if (disableMultiDates) {
       setFormError("반복 일정에서는 여러 날짜 선택을 사용할 수 없습니다.");
@@ -253,9 +267,11 @@ export function EventModal(props: Props) {
     setPicker((p) => (p === "multiDates" ? "none" : "multiDates"));
   };
 
+  // 상세 화면 여러 날짜 선택 시 기존 일정 수정 대신 복제 추가 처리
   const isDetailCloneMode =
     mode === "detail" && (form.multiDates?.length ?? 0) > 0 && !disableMultiDates;
 
+  // 시작 날짜 선택 버튼
   const StartDateBtn = (
     <button
       type="button"
@@ -267,6 +283,7 @@ export function EventModal(props: Props) {
     </button>
   );
 
+  // 시작 시간 선택 버튼
   const StartTimeBtn = (
     <button
       type="button"
@@ -278,6 +295,7 @@ export function EventModal(props: Props) {
     </button>
   );
 
+  // 종료 날짜 선택 버튼
   const EndDateBtn = (
     <button
       type="button"
@@ -289,6 +307,7 @@ export function EventModal(props: Props) {
     </button>
   );
 
+  // 종료 시간 선택 버튼
   const EndTimeBtn = (
     <button
       type="button"
@@ -763,16 +782,6 @@ export function EventModal(props: Props) {
           </>
         )}
 
-        {/* <div className={styles.row}>
-          <label className={styles.labelFixed}>색상</label>
-          <input
-            type="color"
-            value={form.color}
-            onChange={(e) => setForm((p) => ({ ...p, color: e.target.value }))}
-            className={styles.colorInput}
-          />
-          <div className={styles.subNote}>※ 고유색 추후 프로필로 이동)</div>
-        </div> */}
         <div className={`${styles.row} ${styles.colorRow}`}>
           <label className={styles.labelFixed}>색상</label>
 

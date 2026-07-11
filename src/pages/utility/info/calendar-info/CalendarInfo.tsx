@@ -14,6 +14,7 @@ import { FamilyLoader } from "../../../../common/loading";
 import CalendarInvitePopup from "./CalendarInvitePopup";
 import styles from "./CalendarInfo.module.css";
 
+// 사용자가 소유하거나 참여 중인 캘린더 목록과 회원 정보 관리
 export default function CalendarInfo() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -35,6 +36,7 @@ export default function CalendarInfo() {
   const [memberLoadingMap, setMemberLoadingMap] = useState<Record<number, boolean>>({});
   const [deleteCalendarId, setDeleteCalendarId] = useState<number | null>(null);
 
+  // 서버 캘린더 목록과 기본 회원 정보 조회
   const loadCalendarInfo = async () => {
     if (!hasAccessToken()) {
       setErrorMsg("로그인 정보가 없습니다.");
@@ -79,6 +81,7 @@ export default function CalendarInfo() {
     loadCalendarInfo();
   }, []);
 
+  // 화면 표시용 캘린더 순서 정렬
   const getSortedCalendars = () => {
     if (!data?.calendars) return [];
 
@@ -89,6 +92,7 @@ export default function CalendarInfo() {
     });
   };
 
+  // 변경된 캘린더 순서 즉시 저장
   const saveCalendarOrderImmediately = async (
     orderedCalendarIds: number[],
     nextDefaultCalendarId: number | null
@@ -136,6 +140,7 @@ export default function CalendarInfo() {
     }
   };
 
+  // 캘린더 순서 위/아래 이동
   const handleMoveCalendar = async (calendarId: number, direction: "up" | "down") => {
     if (!data || saving) return;
 
@@ -155,6 +160,7 @@ export default function CalendarInfo() {
     );
   };
 
+  // 선택한 캘린더의 메인 캘린더 설정
   const handleCheckChange = async (calendarId: number) => {
     if (!data || saving) return;
 
@@ -180,25 +186,19 @@ export default function CalendarInfo() {
     await saveCalendarOrderImmediately(orderedCalendarIds, calendarId);
   };
 
+  // 캘린더 이름 입력값 화면 상태 반영
   const handleCalendarNameChange = (calendarId: number, isOwner: boolean, value: string) => {
     setErrorMsg("");
     setSuccessMsg("");
 
     if (!isOwner) {
-      setErrorMsg("캘린더명은 캘린더장만 변경할 수 있습니다.");
       return;
     }
 
     setCalendarNames((prev) => ({ ...prev, [calendarId]: value }));
   };
 
-  const handleCalendarNameFocus = (isOwner: boolean) => {
-    if (!isOwner) {
-      setErrorMsg("캘린더명은 캘린더장만 변경할 수 있습니다.");
-      setSuccessMsg("");
-    }
-  };
-
+  // 새 캘린더 추가용 임시 행 열기
   const handleAddCalendarRow = () => {
     setErrorMsg("");
     setSuccessMsg("");
@@ -209,6 +209,7 @@ export default function CalendarInfo() {
     setNewCalendarMain(false);
   };
 
+  // 캘린더 이름 변경과 새 캘린더 추가 내용 저장
   const handleSave = async () => {
     setErrorMsg("");
     setSuccessMsg("");
@@ -285,12 +286,14 @@ export default function CalendarInfo() {
     }
   };
 
+  // 삭제할 캘린더 선택과 확인창 열기
   const handleDeleteClick = (calendarId: number) => {
     setErrorMsg("");
     setSuccessMsg("");
     setDeleteCalendarId(calendarId);
   };
 
+  // 삭제 확인 후 서버 캘린더 제거
   const handleConfirmDelete = async () => {
     if (deleteCalendarId == null) return;
 
@@ -322,6 +325,7 @@ export default function CalendarInfo() {
     }
   };
 
+  // 캘린더 초대 팝업 열기
   const handleInvitation = (calendarId: number, calendarName: string, isOwner: boolean) => {
     setErrorMsg("");
     setSuccessMsg("");
@@ -336,6 +340,7 @@ export default function CalendarInfo() {
     setInviteOpen(true);
   };
 
+  // 캘린더 회원 목록 열기/닫기와 최초 회원 정보 조회
   const handleToggleMembers = async (calendarId: number) => {
     setErrorMsg("");
     setSuccessMsg("");
@@ -372,6 +377,7 @@ export default function CalendarInfo() {
     }
   };
 
+  // 펼쳐진 회원 목록 페이지 변경
   const handleMemberPageChange = (calendarId: number, page: number) => {
     setMemberPageMap((prev) => ({ ...prev, [calendarId]: page }));
   };
@@ -481,7 +487,6 @@ export default function CalendarInfo() {
                           type="text"
                           value={calendarNames[calendar.id] ?? ""}
                           readOnly={!isOwner}
-                          onFocus={() => handleCalendarNameFocus(isOwner)}
                           onChange={(e) => handleCalendarNameChange(calendar.id, isOwner, e.target.value)}
                         />
                       </td>

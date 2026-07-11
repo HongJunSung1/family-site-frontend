@@ -18,6 +18,7 @@ type AlertDialogProps = {
   onClose: () => void;
 };
 
+// 예/아니요 선택이 필요한 공통 확인창
 export function ConfirmDialog({
   open,
   title,
@@ -63,6 +64,7 @@ export function ConfirmDialog({
   );
 }
 
+// 확인 버튼 하나만 필요한 공통 안내창
 export function AlertDialog({
   open,
   title,

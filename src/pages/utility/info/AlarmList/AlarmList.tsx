@@ -9,6 +9,7 @@ import { AlertDialog } from "../../../../common/dialog";
 import { FamilyLoader } from "../../../../common/loading";
 import styles from "./AlarmList.module.css";
 
+// 알림 일시 표시 형식 변환
 function formatDateTime(value?: string | null) {
   if (!value) return "-";
 
@@ -24,6 +25,7 @@ function formatDateTime(value?: string | null) {
   });
 }
 
+// 받은 알림 이력 목록과 초대 응답 관리
 export default function AlarmList() {
   const [notifications, setNotifications] = useState<NotificationRow[]>([]);
   const [page, setPage] = useState(1);
@@ -33,6 +35,7 @@ export default function AlarmList() {
   const [error, setError] = useState("");
   const [alertMessage, setAlertMessage] = useState("");
 
+  // 받은 알림 이력 페이지 조회
   const fetchNotifications = async (targetPage: number) => {
     if (!hasAccessToken()) {
       setError("로그인이 필요합니다.");
@@ -63,6 +66,7 @@ export default function AlarmList() {
     }
   };
 
+  // 알림 목록에서 캘린더 초대 수락/거절 처리
   const respondInvite = async (notification: NotificationRow, action: "accept" | "reject") => {
     if (!hasAccessToken() || !notification.ref_id) return;
 
@@ -76,6 +80,7 @@ export default function AlarmList() {
     await fetchNotifications(page);
   };
 
+  // 최초 진입 시 첫 페이지 조회
   useEffect(() => {
     fetchNotifications(1);
   }, []);

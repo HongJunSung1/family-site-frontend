@@ -13,7 +13,7 @@ type UseCalendarDataParams = {
   setFormError: (message: string) => void;
 };
 
-// 로그인 사용자, 캘린더 탭, 이벤트 목록 조회를 한 곳에서 관리한다.
+// 로그인 사용자, 캘린더 탭, 이벤트 목록 조회 통합 관리
 export function useCalendarData({ setFormError }: UseCalendarDataParams) {
   const [events, setEvents] = useState<CalEvent[]>([]);
   const [userId, setUserId] = useState<string>("");
@@ -24,6 +24,7 @@ export function useCalendarData({ setFormError }: UseCalendarDataParams) {
   const [eventsLoading, setEventsLoading] = useState(false);
 
   useEffect(() => {
+    // 내 캘린더 목록 조회와 기본 캘린더 선택
     const fetchMyCalendars = async () => {
       if (!hasAccessToken()) {
         setCalendarsLoading(false);
@@ -49,7 +50,7 @@ export function useCalendarData({ setFormError }: UseCalendarDataParams) {
     fetchMyCalendars().catch(() => undefined);
   }, []);
 
-  // 탭 클릭 시 현재 캘린더를 교체한다.
+  // 탭 클릭 시 현재 캘린더 교체
   const handleCalendarTabClick = React.useCallback((calendar: MyCalendar) => {
     setCalendarId(calendar.calendarId);
     setCalendarName(calendar.name);
@@ -80,6 +81,7 @@ export function useCalendarData({ setFormError }: UseCalendarDataParams) {
     });
   }, [setFormError]);
 
+  // 특정 캘린더의 일정 목록 조회
   const loadEventsByCalendarId = React.useCallback(
     async (targetCalendarId: number) => {
       if (!hasAccessToken()) return;
@@ -99,6 +101,7 @@ export function useCalendarData({ setFormError }: UseCalendarDataParams) {
     [setFormError]
   );
 
+  // 현재 선택된 캘린더의 일정 목록 재조회
   const loadEvents = React.useCallback(async () => {
     if (!calendarId) return;
     await loadEventsByCalendarId(calendarId);

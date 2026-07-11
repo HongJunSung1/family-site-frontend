@@ -44,20 +44,24 @@ export type NotificationHistoryResponse = {
 
 export type InvitationAction = "accept" | "reject";
 
+// 최근 알림 목록과 안 읽은 개수 조회
 export async function getNotifications() {
   return apiFetch<NotificationsResponse>("/api/notifications");
 }
 
+// 알림 읽음 처리 요청
 export async function markNotificationRead(notificationId: number) {
   return apiFetch<{ ok: boolean; message?: string }>(`/api/notifications/${notificationId}/read`, {
     method: "POST",
   });
 }
 
+// 받은 알림 이력 페이지 조회
 export async function getNotificationHistory(page: number) {
   return apiFetch<NotificationHistoryResponse>(`/api/notifications/history?page=${page}`);
 }
 
+// 캘린더 초대 수락/거절 요청
 export async function respondCalendarInvitation(invitationId: number, action: InvitationAction) {
   return apiFetch<{ ok: boolean; message?: string }>(`/api/calendar-invitations/${invitationId}/respond`, {
     method: "POST",

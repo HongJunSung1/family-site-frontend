@@ -15,6 +15,7 @@ type EventLocationPickerProps = {
   setFormError: (message: string) => void;
 };
 
+// 일정에 연결할 장소 검색과 선택 위치 정보 관리
 export function EventLocationPicker({
   mode,
   form,
@@ -41,11 +42,13 @@ export function EventLocationPicker({
     setFormError,
   });
 
+  // 접힌 상태에서 보여줄 지도 요약 문구
   const mapSummary = form.locationName?.trim()
     ? form.locationName
     : form.locationAddress?.trim()
     ? "위치 선택됨"
     : "선택된 위치 없음";
+  // 실제 위치 정보가 있을 때만 위치 정보 박스 표시
   const hasLocationInfo = !!(
     form.locationAddress ||
     form.locationLat != null ||
@@ -62,9 +65,6 @@ export function EventLocationPicker({
             <div className={styles.placeInfoAddress}>{form.locationAddress}</div>
           )}
 
-          {/* <div className={styles.placeInfoCoord}>
-              위도: {form.locationLat ?? "-"} / 경도: {form.locationLng ?? "-"}
-            </div> */}
         </div>
       )}
 

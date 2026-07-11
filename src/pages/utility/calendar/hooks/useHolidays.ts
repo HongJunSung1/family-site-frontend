@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getHolidays, type HolidayItem } from "../../../../api/calendarApi";
 
+// 선택 연도의 공휴일 목록과 날짜별 공휴일명 조회
 export function useHolidays(holidayYear: number) {
   const [holidaySet, setHolidaySet] = useState<Set<string>>(new Set());
   const [holidayMap, setHolidayMap] = useState<Map<string, string>>(new Map());

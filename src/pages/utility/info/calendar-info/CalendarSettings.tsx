@@ -24,12 +24,14 @@ type AlertState = {
   message: string;
 };
 
+// 새 색상 설정 행 기본값 생성
 const createEmptyRow = (): FavoriteColorRow => ({
   tempId: crypto.randomUUID(),
   color: "#3b82f6",
   title: "",
 });
 
+// 캘린더 자주 쓰는 색상 목록 관리 화면
 export default function CalendarSettings() {
   const [colors, setColors] = useState<FavoriteColorRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,10 +43,12 @@ export default function CalendarSettings() {
   });
   const [deleteTarget, setDeleteTarget] = useState<FavoriteColorRow | null>(null);
 
+  // 설정 화면 공통 안내창 표시
   const showAlert = (message: string, title = "안내") => {
     setAlertState({ open: true, title, message });
   };
 
+  // 서버 저장 자주 쓰는 색상 목록 조회
   const fetchColorPresets = async () => {
     if (!hasAccessToken()) {
       showAlert("로그인 정보가 없습니다.");
@@ -81,6 +85,7 @@ export default function CalendarSettings() {
     fetchColorPresets();
   }, []);
 
+  // 새 색상 입력 행 추가
   const handleAddColor = () => {
     if (colors.length >= 12) {
       showAlert("자주 쓰는 색상은 최대 12개까지 등록할 수 있습니다.");
@@ -90,16 +95,19 @@ export default function CalendarSettings() {
     setColors((prev) => [...prev, createEmptyRow()]);
   };
 
+  // 색상 행의 색상값 또는 제목 변경
   const handleChangeColor = (tempId: string, field: "color" | "title", value: string) => {
     setColors((prev) =>
       prev.map((row) => (row.tempId === tempId ? { ...row, [field]: value } : row))
     );
   };
 
+  // 삭제 확인창 대상 색상 지정
   const handleDeleteColor = (row: FavoriteColorRow) => {
     setDeleteTarget(row);
   };
 
+  // 삭제 확인 후 서버 또는 화면 상태 색상 제거
   const handleConfirmDeleteColor = async () => {
     if (!deleteTarget) return;
 
@@ -126,6 +134,7 @@ export default function CalendarSettings() {
     }
   };
 
+  // 현재 색상 목록 서버 저장
   const handleSave = async () => {
     const invalidTitle = colors.some((row) => row.title.trim() === "");
 

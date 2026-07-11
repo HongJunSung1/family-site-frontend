@@ -10,8 +10,8 @@
 
 .bellButton {
   position: relative;
-  width: 42px;
-  height: 42px;
+  width: 36px;
+  height: 36px;
   padding: 0;
   border-radius: 50%;
   border: 1px solid #d1d5db;
@@ -44,16 +44,16 @@
 }
 
 .bellIconImage {
-  width: 32px;
-  height: 32px;
+  width: 25px;
+  height: 25px;
   display: block;
   pointer-events: none;
 }
 
 .badge {
   position: absolute;
-  top: -4px;
-  right: -4px;
+  top: -5px;
+  right: -5px;
 
   min-width: 18px;
   height: 18px;

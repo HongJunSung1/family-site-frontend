@@ -14,6 +14,7 @@ type NotificationBellProps = {
   placement?: "top" | "bottom";
 };
 
+// 알림 버튼, 알림 목록, 초대 응답 처리
 export default function NotificationBell({ placement = "top" }: NotificationBellProps) {
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -22,6 +23,7 @@ export default function NotificationBell({ placement = "top" }: NotificationBell
   const [alertMessage, setAlertMessage] = useState("");
   const wrapRef = useRef<HTMLDivElement | null>(null);
 
+  // 최근 알림 목록 조회
   const loadNotifications = async () => {
     if (!hasAccessToken()) return;
 
@@ -37,6 +39,7 @@ export default function NotificationBell({ placement = "top" }: NotificationBell
     }
   };
 
+  // 알림 읽음 상태 반영
   const markRead = async (notificationId: number) => {
     if (!hasAccessToken()) return;
 
@@ -49,6 +52,7 @@ export default function NotificationBell({ placement = "top" }: NotificationBell
     setUnreadCount((prev) => Math.max(0, prev - 1));
   };
 
+  // 캘린더 초대 수락/거절 처리
   const respondInvite = async (notification: NotificationItem, action: "accept" | "reject") => {
     if (!hasAccessToken() || !notification.ref_id) return;
 
@@ -62,11 +66,14 @@ export default function NotificationBell({ placement = "top" }: NotificationBell
     await loadNotifications();
   };
 
+  // 최초 진입 시 알림 목록 조회
   useEffect(() => {
     loadNotifications();
   }, []);
 
+  // 알림 패널 바깥 클릭 시 닫기
   useEffect(() => {
+    // 알림 버튼/패널 외부 클릭 감지
     const handleClickOutside = (e: MouseEvent) => {
       if (!wrapRef.current) return;
       if (!wrapRef.current.contains(e.target as Node)) {
@@ -78,6 +85,7 @@ export default function NotificationBell({ placement = "top" }: NotificationBell
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // 알림 버튼 클릭 시 패널 열기/닫기와 최신 목록 조회
   const handleBellClick = async () => {
     const nextOpen = !open;
     setOpen(nextOpen);

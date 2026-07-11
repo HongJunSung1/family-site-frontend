@@ -215,16 +215,19 @@ export type DeleteCalendarEventPayload = {
   occKey: string;
 };
 
+// 내 캘린더 탭 목록 조회
 export async function getMyCalendars() {
   const data = await apiFetch<MyCalendarsResponse>("/api/auth/myCalendar");
   return data.calendars ?? [];
 }
 
+// 선택 캘린더 일정 목록 조회
 export async function getCalendarEvents(calendarId: number) {
   const data = await apiFetch<CalendarEventsResponse>(`/api/calendar/events?calendarId=${calendarId}`);
   return toCalendarEvents(data);
 }
 
+// 새 일정 생성 요청
 export async function createCalendarEvent(payload: CalendarEventPayload) {
   return apiFetch<CalendarMutationResponse>("/api/calendar/events", {
     method: "POST",
@@ -232,6 +235,7 @@ export async function createCalendarEvent(payload: CalendarEventPayload) {
   });
 }
 
+// 기존 일정 수정 요청
 export async function updateCalendarEvent(eventId: number, payload: UpdateCalendarEventPayload) {
   return apiFetch<CalendarMutationResponse>(`/api/calendar/events/${eventId}`, {
     method: "PUT",
@@ -239,6 +243,7 @@ export async function updateCalendarEvent(eventId: number, payload: UpdateCalend
   });
 }
 
+// 기존 일정 삭제 요청
 export async function deleteCalendarEvent(eventId: number, payload: DeleteCalendarEventPayload) {
   return apiFetch<CalendarMutationResponse>(`/api/calendar/events/${eventId}`, {
     method: "DELETE",
@@ -246,10 +251,12 @@ export async function deleteCalendarEvent(eventId: number, payload: DeleteCalend
   });
 }
 
+// 개인정보 화면의 캘린더 목록 정보 조회
 export async function getMyCalendarsInfo() {
   return apiFetch<GetMyCalendarsInfoResponse>("/api/calendars/getMyCalendarsInfo");
 }
 
+// 캘린더 이름/순서/메인 설정 저장
 export async function saveMyCalendarsInfo(payload: SaveMyCalendarsInfoPayload) {
   return apiFetch<SaveMyCalendarsInfoResponse>("/api/calendars/saveMyCalendarsInfo", {
     method: "POST",
@@ -257,22 +264,26 @@ export async function saveMyCalendarsInfo(payload: SaveMyCalendarsInfoPayload) {
   });
 }
 
+// 캘린더 삭제 요청
 export async function deleteMyCalendar(calendarId: number) {
   return apiFetch<DeleteMyCalendarResponse>(`/api/calendars/${calendarId}`, {
     method: "DELETE",
   });
 }
 
+// 캘린더 상세 회원 정보 조회
 export async function getCalendarDetail(calendarId: number) {
   return apiFetch<CalendarDetailResponse>(`/api/calendars/getCalendarDetail?calendarId=${calendarId}`);
 }
 
+// 캘린더 초대 대상 회원 검색
 export async function searchCalendarInviteUsers(calendarId: number, keyword: string) {
   return apiFetch<InviteSearchUsersResponse>(
     `/api/calendars/${calendarId}/invite/search-users?keyword=${encodeURIComponent(keyword)}`
   );
 }
 
+// 선택 회원 캘린더 초대 요청
 export async function inviteCalendarUsers(calendarId: number, inviteeIds: number[]) {
   return apiFetch<InviteCalendarResponse>(`/api/calendars/${calendarId}/invite`, {
     method: "POST",
@@ -280,10 +291,12 @@ export async function inviteCalendarUsers(calendarId: number, inviteeIds: number
   });
 }
 
+// 내 자주 쓰는 색상 목록 조회
 export async function getMyColorPresets() {
   return apiFetch<GetColorPresetsResponse>("/api/calendars/getMyColorPresets");
 }
 
+// 내 자주 쓰는 색상 목록 저장
 export async function saveMyColorPresets(presets: FavoriteColorPreset[]) {
   return apiFetch<SaveColorPresetsResponse>("/api/calendars/saveMyColorPresets", {
     method: "POST",
@@ -291,6 +304,7 @@ export async function saveMyColorPresets(presets: FavoriteColorPreset[]) {
   });
 }
 
+// 내 자주 쓰는 색상 단건 삭제
 export async function deleteMyColorPreset(slot: number) {
   return apiFetch<{ ok: boolean; message?: string }>("/api/calendars/deleteMyColorPreset", {
     method: "POST",
@@ -298,12 +312,14 @@ export async function deleteMyColorPreset(slot: number) {
   });
 }
 
+// 선택 연도 공휴일 목록 조회
 export async function getHolidays(year: number) {
   return apiFetch<HolidaysResponse>(`/api/holidays?year=${year}`, {
     auth: false,
   });
 }
 
+// 서버 일정 응답을 캘린더 화면용 이벤트로 변환
 function toCalendarEvents(data: CalendarEventsResponse): CalEvent[] {
   const exceptionsById: Record<number, string[]> = {};
   for (const ex of data.exceptions ?? []) {

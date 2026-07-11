@@ -25,6 +25,7 @@ type TopNavProps = {
   onToggleTheme: () => void;
 };
 
+// PC 상단 네비게이션과 모바일 상단 헤더 관리
 function TopNav({ theme, onToggleTheme }: TopNavProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -45,6 +46,7 @@ function TopNav({ theme, onToggleTheme }: TopNavProps) {
     : "캘린더";
   const mobileTitle = config.title || fallbackTitle;
 
+  // 경로 변경 시 열린 메뉴 상태 초기화
   useEffect(() => {
     setMobileHeaderOpen(false);
     setMobileSubMenuId(null);
@@ -52,9 +54,11 @@ function TopNav({ theme, onToggleTheme }: TopNavProps) {
     setDesktopMenuOpen(false);
   }, [location.pathname, mobileTitle]);
 
+  // PC 메뉴 바깥 클릭 시 메뉴 닫기
   useEffect(() => {
     if (!desktopMenuOpen) return;
 
+    // PC 메뉴 영역 밖 pointer 이벤트 감지
     const handlePointerDown = (event: PointerEvent) => {
       if (!desktopMenuRef.current) return;
       if (!desktopMenuRef.current.contains(event.target as Node)) {
@@ -66,9 +70,11 @@ function TopNav({ theme, onToggleTheme }: TopNavProps) {
     return () => document.removeEventListener("pointerdown", handlePointerDown);
   }, [desktopMenuOpen]);
 
+  // 모바일 헤더 드롭다운 바깥 클릭 시 닫기
   useEffect(() => {
     if (!mobileHeaderOpen) return;
 
+    // 모바일 헤더 영역 밖 pointer 이벤트 감지
     const handlePointerDown = (event: PointerEvent) => {
       if (!mobileHeaderRef.current) return;
       if (!mobileHeaderRef.current.contains(event.target as Node)) {
@@ -82,6 +88,7 @@ function TopNav({ theme, onToggleTheme }: TopNavProps) {
     return () => document.removeEventListener("pointerdown", handlePointerDown);
   }, [mobileHeaderOpen]);
 
+  // 모바일 헤더 타이틀 클릭 시 드롭다운 열기/닫기
   const handleMobileHeaderClick = () => {
     if (!hasMobileMenu) return;
     setMobileHeaderOpen((prev) => {
@@ -276,14 +283,17 @@ function TopNav({ theme, onToggleTheme }: TopNavProps) {
   );
 }
 
+// 모바일 하단 네비게이션과 메뉴 시트 관리
 function BottomNav() {
   const [menuOpen, setMenuOpen] = useState(false);
   const bottomNavRef = useRef<HTMLElement | null>(null);
   const menuSheetRef = useRef<HTMLDivElement | null>(null);
 
+  // 하단 메뉴 시트 바깥 클릭 시 닫기
   useEffect(() => {
     if (!menuOpen) return;
 
+    // 하단바와 메뉴 시트 밖 pointer 이벤트 감지
     const handlePointerDown = (event: PointerEvent) => {
       const target = event.target as Node;
       if (bottomNavRef.current?.contains(target) || menuSheetRef.current?.contains(target)) {
@@ -360,11 +370,13 @@ function BottomNav() {
   );
 }
 
+// 홈/개인정보 전환 중 표시할 짧은 로딩 오버레이
 function RouteTransitionLoading({ enabled }: { enabled: boolean }) {
   const location = useLocation();
   const previousPathRef = useRef(location.pathname);
   const [visible, setVisible] = useState(false);
 
+  // 홈과 개인정보 사이 이동 감지 후 로딩 표시
   useEffect(() => {
     const previousPath = previousPathRef.current;
     const nextPath = location.pathname;
@@ -396,6 +408,7 @@ function RouteTransitionLoading({ enabled }: { enabled: boolean }) {
   );
 }
 
+// 라우트 이동 시 캘린더 hover 툴팁 잔상 제거
 function CalendarHoverCleanup() {
   const location = useLocation();
 
@@ -409,6 +422,7 @@ function CalendarHoverCleanup() {
   return null;
 }
 
+// 앱 라우팅, 로그인 상태, 테마, 공통 네비게이션 관리
 export default function App() {
   const [checking, setChecking] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -419,19 +433,23 @@ export default function App() {
     return storedTheme === "dark" || storedTheme === "light" ? storedTheme : "light";
   });
 
+  // 테마 상태를 document와 로컬 저장소에 반영
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     window.localStorage.setItem("theme", theme);
   }, [theme]);
 
+  // 모바일 브라우저 주소창 변동을 고려한 앱 높이 고정
   useEffect(() => {
     let viewportWidth = window.innerWidth;
     let lockedViewportHeight = window.innerHeight;
 
+    // CSS 변수에 현재 앱 높이 반영
     const applyViewportHeight = () => {
       document.documentElement.style.setProperty("--app-viewport-height", `${lockedViewportHeight}px`);
     };
 
+    // 화면 크기 변경 시 앱 높이 재계산
     const updateViewportHeight = () => {
       const nextWidth = window.innerWidth;
       const nextHeight = window.innerHeight;
@@ -454,11 +472,14 @@ export default function App() {
     };
   }, []);
 
+  // 라이트/다크 테마 전환
   const toggleTheme = () => {
     setTheme((prev) => (prev === "dark" ? "light" : "dark"));
   };
 
+  // 저장된 세션 확인 후 로그인 상태 초기화
   useEffect(() => {
+    // 서버 기준 로그인 세션 검증
     const checkLogin = async () => {
       try {
         const session = await verifyStoredSession();

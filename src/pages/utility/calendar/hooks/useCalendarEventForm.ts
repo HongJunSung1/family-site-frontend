@@ -23,6 +23,7 @@ type UseCalendarEventFormParams = {
   setFormError: (message: string) => void;
 };
 
+// 일정 폼 기본값 생성
 const createEmptyForm = (): FormState => ({
   id: "",
   title: "",
@@ -48,7 +49,7 @@ const createEmptyForm = (): FormState => ({
   locationAddress: "",
 });
 
-// 일정 모달의 폼 상태와 저장/수정/삭제 액션을 관리한다.
+// 일정 모달 폼 상태와 저장/수정/삭제 액션 관리
 export function useCalendarEventForm({
   userId,
   events,
@@ -60,16 +61,18 @@ export function useCalendarEventForm({
   const [picker, setPicker] = useState<PickerTarget>("none");
   const [form, setForm] = useState<FormState>(() => createEmptyForm());
 
-  // 반복이면 multiDates 금지 (기존 정책 유지)
+  // 반복 일정의 여러 날짜 선택 제한 여부
   const isRecurringForMultiDates =
     (form.repeatSnap?.repeat ?? "none") !== "none" || (form.repeat ?? "none") !== "none";
 
+  // 일정 모달 닫기와 선택기 상태 초기화
   const closeModal = React.useCallback(() => {
     setFormError("");
     setPicker("none");
     setMode("none");
   }, [setFormError]);
 
+  // 뒤로가기 취소 시 이전 모달 상태 복원
   const restoreModal = React.useCallback(
     (snapshot: { mode: Exclude<ModalMode, "none">; form: FormState }) => {
       setFormError("");
@@ -80,16 +83,19 @@ export function useCalendarEventForm({
     [setFormError]
   );
 
+  // 시작 시간이 종료 시간보다 늦을 때 종료 시간 자동 보정
   const ensureOrderAfterStartChange = (nextStart: Dayjs, currentEnd: Dayjs) => {
     if (nextStart.isAfter(currentEnd)) return { start: nextStart, end: addHours(nextStart, 1) };
     return { start: nextStart, end: currentEnd };
   };
 
+  // 종료 시간이 시작 시간보다 빠를 때 시작 시간 자동 보정
   const ensureOrderAfterEndChange = (currentStart: Dayjs, nextEnd: Dayjs) => {
     if (nextEnd.isBefore(currentStart)) return { start: addHours(nextEnd, -1), end: nextEnd };
     return { start: currentStart, end: nextEnd };
   };
 
+  // 반복 일정 이후 수정 범위에서 시작일 하한 보정
   const clampFollowingStart = (p: FormState, nextStart: Dayjs) => {
     if (p.applyScope !== "following" || !p.clickedOccKey) return nextStart;
 
@@ -101,6 +107,7 @@ export function useCalendarEventForm({
     return nextStart;
   };
 
+  // 반복 시작일이 선택한 발생일보다 앞서지 않도록 보정
   const clampFollowingRepeatStartYmd = (p: FormState, ymd: string) => {
     if (p.applyScope !== "following" || !p.clickedOccKey) return ymd;
 
@@ -112,7 +119,7 @@ export function useCalendarEventForm({
     return ymd;
   };
 
-  // 반복이면 multiDates 조작 금지(기존 정책 유지)
+  // 여러 날짜 선택 토글과 반복 일정 제한
   const toggleMultiDate = (ymd: string) => {
     if (isRecurringForMultiDates) {
       setFormError("반복일정에서는 '여러 날짜에 동일 일정 추가'를 사용할 수 없습니다.");
@@ -126,6 +133,7 @@ export function useCalendarEventForm({
     });
   };
 
+  // 선택한 여러 날짜 초기화
   const clearMultiDates = () => {
     if (isRecurringForMultiDates) {
       setFormError("반복일정에서는 '여러 날짜에 동일 일정 추가'를 사용할 수 없습니다.");
@@ -134,6 +142,7 @@ export function useCalendarEventForm({
     setForm((p) => ({ ...p, multiDates: [] }));
   };
 
+  // 특정 날짜 기준 새 일정 모달 열기
   const openCreateAtDate = (dateStr: string) => {
     setFormError("");
     const base = dayjs(`${dateStr}T09:00`);
@@ -151,10 +160,12 @@ export function useCalendarEventForm({
     setMode("create");
   };
 
+  // 캘린더 날짜 클릭 시 새 일정 생성 시작
   const onDateClick = (info: DateClickArg) => {
     openCreateAtDate(info.dateStr);
   };
 
+  // 일정 목록/막대 클릭 시 상세 모달 열기
   const openEventDetail = (event: ExpandedEvent) => {
     setFormError("");
 
@@ -198,7 +209,7 @@ export function useCalendarEventForm({
         repeatRangeEnd: snapRE,
       },
 
-      // detail에서도 multiDates 사용 가능(단, 반복은 toggle/clear에서 막음)
+      // 상세 화면 여러 날짜 복제용 선택값 초기화
       multiDates: [],
 
       color: occColor,
@@ -223,6 +234,7 @@ export function useCalendarEventForm({
     setMode("detail");
   };
 
+  // FullCalendar 이벤트 클릭 데이터를 상세 모달 데이터로 변환
   const onEventClick = (info: EventClickArg) => {
     const e = info.event;
 
@@ -257,6 +269,7 @@ export function useCalendarEventForm({
     mode === "detail" && !!form.clickedOccKey && (form.repeatSnap.repeat ?? "none") !== "none";
   const lockRepeatControls = isEditingRecurringOccurrence && form.applyScope === "this";
 
+  // 저장/수정 API에 전달할 일정 payload 생성
   const buildEventPayload = (
     title: string,
     options: { calendarId?: number; multiDates?: string[]; forceSingle?: boolean } = {}
@@ -280,6 +293,7 @@ export function useCalendarEventForm({
     repeatAnchorDom: options.forceSingle || form.repeat !== "monthly" ? null : Number(form.start.slice(8, 10)),
   });
 
+  // 새 일정 저장
   const saveNew = async () => {
     const t = form.title.trim();
     if (!t) return;
@@ -293,7 +307,7 @@ export function useCalendarEventForm({
       return;
     }
 
-    // 안전장치: multiDates는 "2개 이상"일 때만 서버로 보냄 (단건 저장과 충돌 방지)
+    // 단건 저장과 충돌하지 않도록 여러 날짜는 2개 이상일 때만 전송
     const mdRaw = (form.multiDates ?? []).filter(Boolean);
     const multiDatesToSend = mdRaw.length >= 2 ? mdRaw : [];
 
@@ -309,10 +323,7 @@ export function useCalendarEventForm({
     await loadEvents();
   };
 
-  /**
-   * detail에서 multiDates 선택 시 => "수정"이 아니라 "복제 생성"으로 처리
-   * - 반복 일정에서는 기존 정책대로 금지
-   */
+  // 상세 화면에서 여러 날짜 선택 시 수정 대신 복제 생성
   const createClonesFromDetail = async () => {
     const t = form.title.trim();
     if (!t) return;
@@ -349,11 +360,12 @@ export function useCalendarEventForm({
     await loadEvents();
   };
 
+  // 기존 일정 수정 또는 여러 날짜 복제 생성
   const updateEvent = async () => {
     const t = form.title.trim();
     if (!t) return;
 
-    // detail에서 multiDates가 선택되어 있으면 => "수정" 대신 "복제 생성"
+    // 상세 화면 여러 날짜 선택 시 수정 대신 복제 생성
     if (mode === "detail" && (form.multiDates?.length ?? 0) > 0) {
       await createClonesFromDetail();
       return;
@@ -389,6 +401,7 @@ export function useCalendarEventForm({
     }
   };
 
+  // 일정 삭제
   const deleteEvent = async () => {
     if (!hasAccessToken()) {
       setFormError("로그인이 필요합니다.");
@@ -414,6 +427,7 @@ export function useCalendarEventForm({
     }
   };
 
+  // 하루 종일 토글과 기존 시간 백업/복원
   const onToggleAllDay = (checked: boolean) => {
     setForm((p) => {
       const s = toDayjs(p.start);
@@ -451,6 +465,7 @@ export function useCalendarEventForm({
     });
   };
 
+  // 시작 날짜 선택 처리
   const onPickStartDate = (d: Dayjs) => {
     setFormError("");
     setForm((p) => {
@@ -468,6 +483,7 @@ export function useCalendarEventForm({
     });
   };
 
+  // 종료 날짜 선택 처리
   const onPickEndDate = (d: Dayjs) => {
     setFormError("");
     setForm((p) => {
@@ -483,6 +499,7 @@ export function useCalendarEventForm({
     });
   };
 
+  // 시작 시간 선택 처리
   const onPickStartTime = (t: Dayjs) => {
     setFormError("");
     setForm((p) => {
@@ -501,6 +518,7 @@ export function useCalendarEventForm({
     });
   };
 
+  // 종료 시간 선택 처리
   const onPickEndTime = (t: Dayjs) => {
     setFormError("");
     setForm((p) => {
@@ -519,6 +537,7 @@ export function useCalendarEventForm({
     });
   };
 
+  // 반복 시작일 선택 처리
   const onPickRepeatStartDate = (d: Dayjs) => {
     setFormError("");
     const ymdRaw = d.format("YYYY-MM-DD");
@@ -533,6 +552,7 @@ export function useCalendarEventForm({
     });
   };
 
+  // 반복 종료일 선택 처리
   const onPickRepeatEndDate = (d: Dayjs) => {
     setFormError("");
     const ymd = d.format("YYYY-MM-DD");

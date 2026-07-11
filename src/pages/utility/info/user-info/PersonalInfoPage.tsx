@@ -21,16 +21,19 @@ const MENU_LABELS: Record<MenuKey, string> = {
   AlarmList: "받은 알림",
 };
 
+// 개인정보 하위 메뉴와 로그아웃 처리 화면
 export default function PersonalInfoPage({ onLogout }: Props) {
   const navigate = useNavigate();
   const { setConfig: setMobileHeaderConfig, resetConfig: resetMobileHeaderConfig } = useMobileHeader();
   const [selectedMenu, setSelectedMenu] = useState<MenuKey>("basic");
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
+  // PC 사이드바 캘린더 그룹 열기/닫기
   const onClickCalendarGroup = () => {
     setIsCalendarOpen((prev) => !prev);
   };
 
+  // 선택한 개인정보 하위 메뉴로 전환
   const selectMenu = useCallback((menu: MenuKey) => {
     setSelectedMenu(menu);
     if (menu === "calendarList" || menu === "calendarSettings") {
@@ -38,6 +41,7 @@ export default function PersonalInfoPage({ onLogout }: Props) {
     }
   }, []);
 
+  // 모바일 상단 헤더 드롭다운 메뉴 구성
   const mobileMenuItems = useMemo(
     () => [
       {
@@ -75,6 +79,7 @@ export default function PersonalInfoPage({ onLogout }: Props) {
     [selectMenu, selectedMenu]
   );
 
+  // 모바일 상단 헤더 제목과 메뉴 동기화
   useEffect(() => {
     setMobileHeaderConfig({
       title: MENU_LABELS[selectedMenu],
@@ -86,6 +91,7 @@ export default function PersonalInfoPage({ onLogout }: Props) {
     };
   }, [mobileMenuItems, resetMobileHeaderConfig, selectedMenu, setMobileHeaderConfig]);
 
+  // 로그아웃 요청 후 로그인 화면 이동
   const handleLogout = async () => {
     try {
       await logoutAndClearSession();

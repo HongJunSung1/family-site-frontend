@@ -5,6 +5,7 @@ export type ApiErrorData = {
   message?: string;
 };
 
+// API 실패 응답을 상태코드와 응답 데이터로 함께 전달하는 에러
 export class ApiError<TData extends ApiErrorData | null = ApiErrorData | null> extends Error {
   status: number;
   data: TData;
@@ -21,6 +22,7 @@ type ApiFetchOptions = RequestInit & {
   auth?: boolean;
 };
 
+// API 공통 fetch 래퍼와 인증 헤더/오류 처리
 export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): Promise<T> {
   const { auth = true, headers, ...requestOptions } = options;
   const token = auth ? localStorage.getItem("accessToken") : null;
@@ -43,10 +45,12 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
   return data as T;
 }
 
+// 현재 브라우저의 accessToken 존재 여부 확인
 export function hasAccessToken() {
   return !!localStorage.getItem("accessToken");
 }
 
+// API 기본 주소 설정 여부 확인
 export function isApiBaseConfigured() {
   return !!API_BASE;
 }

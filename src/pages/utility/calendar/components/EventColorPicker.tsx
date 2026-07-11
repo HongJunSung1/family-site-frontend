@@ -16,6 +16,7 @@ type EventColorPickerProps = {
   onDeleteFavoriteColor: (preset: FavoriteColorPreset) => Promise<boolean>;
 };
 
+// 일정 색상 선택과 자주 쓰는 색상 저장/삭제 담당
 export function EventColorPicker({
   color,
   favoriteColors,
@@ -39,7 +40,9 @@ export function EventColorPicker({
   const [addColorPopoverStyle, setAddColorPopoverStyle] = useState<CSSProperties>({});
   const [addColorPopoverOpenAbove, setAddColorPopoverOpenAbove] = useState(false);
 
+  // 드롭다운과 색상 추가 팝오버 바깥 클릭 시 메뉴 닫기
   useEffect(() => {
+    // 바깥 클릭 대상 확인 후 열린 메뉴 초기화
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
 
@@ -67,7 +70,9 @@ export function EventColorPicker({
     };
   }, []);
 
+  // 화면 아래/위 공간 기준 드롭다운/팝오버 위치 보정
   useLayoutEffect(() => {
+    // 드롭다운과 팝오버의 위/아래 표시 방향 계산
     const updateFloatingPositions = () => {
       if (favoriteColorOpen && dropdownRef.current) {
         const rect = dropdownRef.current.getBoundingClientRect();
@@ -137,10 +142,12 @@ export function EventColorPicker({
     };
   }, [addColorOpen, favoriteColorOpen]);
 
+  // 현재 색상과 일치하는 자주 쓰는 색상 이름 표시
   const selectedFavoriteLabel =
     favoriteColors.find((c) => c.color.toLowerCase() === color.toLowerCase())?.label ||
     "자주 쓰는 색상 선택";
 
+  // 새 자주 쓰는 색상 저장 후 현재 일정 색상 반영
   const handleSave = async () => {
     const saved = await onSaveFavoriteColor(newColor, newColorLabel);
     if (!saved) return;
@@ -150,6 +157,7 @@ export function EventColorPicker({
     setAddColorOpen(false);
   };
 
+  // 삭제 확인 후 선택한 자주 쓰는 색상 제거
   const handleConfirmDelete = async () => {
     if (!deleteTarget) return;
 

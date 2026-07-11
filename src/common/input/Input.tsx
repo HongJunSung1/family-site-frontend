@@ -36,6 +36,7 @@ type TextareaFieldProps = TextareaInputProps & {
   requiredMark?: boolean;
 };
 
+// 공통 input 기본 렌더러와 좌우 슬롯 처리
 export function Input({
   variant = "default",
   invalid = false,
@@ -82,6 +83,7 @@ export function Input({
   );
 }
 
+// 라벨과 안내/오류 문구가 포함된 일반 입력 필드
 export function InputField({
   label,
   labelPosition = "top",
@@ -120,10 +122,12 @@ export function InputField({
   );
 }
 
+// 테이블 셀 안에서 쓰는 테두리 없는 입력 필드
 export function TableInput(props: TableInputProps) {
   return <Input variant="table" {...props} />;
 }
 
+// 높이를 외부에서 지정하는 공통 textarea
 export function TextareaInput({
   invalid = false,
   height,
@@ -158,6 +162,7 @@ export function TextareaInput({
   );
 }
 
+// 라벨과 안내/오류 문구가 포함된 textarea 필드
 export function TextareaField({
   label,
   helperText,

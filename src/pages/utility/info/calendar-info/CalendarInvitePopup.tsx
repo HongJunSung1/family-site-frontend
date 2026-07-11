@@ -15,6 +15,7 @@ type Props = {
   onClose: () => void;
 };
 
+// 캘린더 초대 회원 검색과 초대장 발송
 export default function CalendarInvitePopup({ open, calendarId, calendarName, onClose }: Props) {
   const [keyword, setKeyword] = useState("");
   const [users, setUsers] = useState<InviteSearchUser[]>([]);
@@ -24,6 +25,7 @@ export default function CalendarInvitePopup({ open, calendarId, calendarName, on
   const [message, setMessage] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
 
+  // 팝업 닫힘 시 검색어, 검색 결과, 선택 상태 초기화
   useEffect(() => {
     if (!open) {
       setKeyword("");
@@ -40,6 +42,7 @@ export default function CalendarInvitePopup({ open, calendarId, calendarName, on
 
   const token = hasAccessToken();
 
+  // 아이디/이메일 기준 초대 가능 회원 검색
   const handleSearch = async () => {
     setMessage("");
     setErrorMsg("");
@@ -80,6 +83,7 @@ export default function CalendarInvitePopup({ open, calendarId, calendarName, on
     }
   };
 
+  // 검색 결과 테이블의 초대 회원 선택 상태 갱신
   const handleCheck = (userId: number, checked: boolean) => {
     setSelectedIds((prev) => {
       if (checked) {
@@ -91,6 +95,7 @@ export default function CalendarInvitePopup({ open, calendarId, calendarName, on
     });
   };
 
+  // 선택 회원 대상 캘린더 초대장 발송
   const handleInvite = async () => {
     setMessage("");
     setErrorMsg("");

@@ -31,6 +31,7 @@ type Props = {
   selectedDate: string;
 };
 
+// FullCalendar 월간 화면과 날짜칸 부가 표시 관리
 export function CalendarView({
   calRef,
   holidayMap,
@@ -44,11 +45,13 @@ export function CalendarView({
 }: Props) {
   const shellRef = useRef<HTMLDivElement | null>(null);
 
+  // 공휴일 표시명 보정
   const getHolidayDisplayName = (name: string) => {
     if (name === "기독탄신일") return "크리스마스";
     return name;
   };
 
+  // 날짜칸의 공휴일명, 일정 막대, 일정 개수 표시
   const renderCellExtras = (ymd: string, cellEl: HTMLElement) => {
     const frame = cellEl.querySelector(".fc-daygrid-day-frame") as HTMLElement | null;
     const target = frame ?? cellEl;
@@ -102,7 +105,9 @@ export function CalendarView({
     }
   };
 
+  // 데이터 변경 후 현재 보이는 날짜칸 부가 표시 동기화
   useEffect(() => {
+    // 화면에 표시된 모든 날짜칸의 부가 표시 재적용
     const syncVisibleCells = () => {
       shellRef.current
         ?.querySelectorAll<HTMLElement>(".fc-daygrid-day[data-date]")

@@ -13,6 +13,7 @@ type AlertState = {
   onClose?: () => void;
 };
 
+// 회원가입 화면
 export default function Signup() {
   const navigate = useNavigate();
 
@@ -31,21 +32,25 @@ export default function Signup() {
     message: "",
   });
 
+  // 공통 안내창 상태 설정
   const showAlert = (message: string, title = "안내", onClose?: () => void) => {
     setAlertState({ open: true, title, message, onClose });
   };
 
+  // 안내창 닫기 및 후속 이동 콜백 실행
   const closeAlert = () => {
     const callback = alertState.onClose;
     setAlertState((prev) => ({ ...prev, open: false, onClose: undefined }));
     callback?.();
   };
 
+  // 회원가입 입력값 변경 처리
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  // 회원가입 유효성 검사 및 가입 요청
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 

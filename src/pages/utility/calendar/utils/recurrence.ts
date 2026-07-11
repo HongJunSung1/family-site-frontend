@@ -10,12 +10,14 @@ export type ExpandedEvent = CalEvent & {
   __occKey?: string;
 };
 
+// 해당 월의 마지막 날짜 계산
 const daysInMonth = (d: Dayjs) => d.daysInMonth();
 
 /**
  * 월 반복용: anchorDOM(원래 일자)을 유지하면서,
  * 해당 월에 일자가 없으면 말일로 보정
  */
+// 월 반복 기준 일자 유지와 말일 보정
 const addMonthsEomSticky = (base: Dayjs, monthsToAdd: number, anchorDOM: number) => {
   const targetMonth = base.add(monthsToAdd, "month");
   const last = daysInMonth(targetMonth);
@@ -23,6 +25,7 @@ const addMonthsEomSticky = (base: Dayjs, monthsToAdd: number, anchorDOM: number)
   return targetMonth.date(day);
 };
 
+// 반복 유형을 dayjs 단위로 변환
 const getRepeatUnit = (repeat: RepeatType): dayjs.ManipulateType | null => {
   if (repeat === "daily") return "day";
   if (repeat === "weekly") return "week";
@@ -31,6 +34,7 @@ const getRepeatUnit = (repeat: RepeatType): dayjs.ManipulateType | null => {
   return null;
 };
 
+// 반복 일정을 화면 범위 안의 실제 발생 일정으로 확장
 export const expandRecurringEvents = (items: CalEvent[], viewStart: Dayjs, viewEnd: Dayjs): ExpandedEvent[] => {
   const out: ExpandedEvent[] = [];
 
