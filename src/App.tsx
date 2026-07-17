@@ -1,22 +1,26 @@
-import { useEffect, useState } from "react";
-import { useRef } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { BrowserRouter, Link, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { verifyStoredSession } from "./api/authApi";
-import Home from "./pages/home/Home";
 import Login from "./pages/home/Login";
 import Signup from "./pages/home/Signup";
-import ConferenceReport from "./pages/utility/conference-report/ConferenceReport";
-import HouseholdAccounts from "./pages/utility/household-accounts/HouseholdAccounts";
 import homeIcon from "./assets/icons/home.svg";
 import profilePrivacyIcon from "./assets/icons/profile-privacy.svg";
 import themeMoonIcon from "./assets/icons/theme-moon.svg";
 import themeSunIcon from "./assets/icons/theme-sun.svg";
 import NotificationBell from "./pages/utility/notification-bell/NotificationBell";
-import PersonalInfoPage from "./pages/utility/info/user-info/PersonalInfoPage";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import { FamilyLoader, PageLoading, useStableLoading } from "./common/loading";
 import { MobileHeaderProvider, useMobileHeader } from "./common/mobile-header";
 import styles from "./App.module.css";
+
+const Home = lazy(() => import("./pages/home/Home"));
+const PersonalInfoPage = lazy(() => import("./pages/utility/info/user-info/PersonalInfoPage"));
+const HouseholdAccounts = lazy(
+  () => import("./pages/utility/household-accounts/HouseholdAccounts"),
+);
+const ConferenceReport = lazy(
+  () => import("./pages/utility/conference-report/ConferenceReport"),
+);
 
 type ThemeMode = "light" | "dark";
 
@@ -511,11 +515,12 @@ export default function App() {
       <MobileHeaderProvider>
         {isLoggedIn && <RoutedTopNav theme={theme} onToggleTheme={toggleTheme} />}
 
-        <Routes>
-          <Route
-            path="/"
-            element={isLoggedIn ? <Navigate to="/home" replace /> : <Navigate to="/login" replace />}
-          />
+        <Suspense fallback={<PageLoading label="화면 불러오는 중" />}>
+          <Routes>
+            <Route
+              path="/"
+              element={isLoggedIn ? <Navigate to="/home" replace /> : <Navigate to="/login" replace />}
+            />
 
           <Route path="/login" element={<Login onLogin={() => setIsLoggedIn(true)} />} />
           <Route path="/signup" element={<Signup />} />
@@ -556,8 +561,9 @@ export default function App() {
             }
           />
 
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
 
         <CalendarHoverCleanup />
         <RouteTransitionLoading enabled={isLoggedIn} />
