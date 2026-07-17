@@ -14,7 +14,7 @@ import themeSunIcon from "./assets/icons/theme-sun.svg";
 import NotificationBell from "./pages/utility/notification-bell/NotificationBell";
 import PersonalInfoPage from "./pages/utility/info/user-info/PersonalInfoPage";
 import ProtectedRoute from "./routes/ProtectedRoute";
-import { FamilyLoader, PageLoading } from "./common/loading";
+import { FamilyLoader, PageLoading, useStableLoading } from "./common/loading";
 import { MobileHeaderProvider, useMobileHeader } from "./common/mobile-header";
 import styles from "./App.module.css";
 
@@ -399,10 +399,16 @@ function RouteTransitionLoading({ enabled }: { enabled: boolean }) {
     return () => window.clearTimeout(timer);
   }, [transition.visible]);
 
-  if (!transition.visible) return null;
+  const loadingVisibility = useStableLoading(transition.visible);
+
+  if (!loadingVisibility.mounted) return null;
 
   return (
-    <div className={styles.routeLoadingOverlay}>
+    <div
+      className={`${styles.routeLoadingOverlay} ${
+        loadingVisibility.exiting ? styles.routeLoadingOverlayExiting : styles.routeLoadingOverlayVisible
+      }`}
+    >
       <div className={styles.routeLoadingSurface}>
         <FamilyLoader label="화면 이동 중" />
       </div>

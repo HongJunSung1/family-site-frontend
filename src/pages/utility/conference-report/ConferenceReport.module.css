@@ -1186,18 +1186,6 @@
   display: none;
 }
 
-/* 첨부파일 삭제 중 화면 조작을 막는 공통 로딩 화면 */
-.attachmentDeleteLoading {
-  position: fixed;
-  z-index: 22000;
-  inset: 0;
-  pointer-events: auto;
-}
-
-.attachmentDeleteLoading > div {
-  z-index: 0;
-}
-
 .attachmentActions .primaryButton,
 .attachmentActions .ghostButton,
 .attachmentItem > .dangerButton {

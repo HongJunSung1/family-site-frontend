@@ -271,11 +271,12 @@ export function AttachmentSection({ report, agendaId, initialCount }: Attachment
         </div>
       )}
 
-      {deleting && (
-        <div className={reportStyles.attachmentDeleteLoading}>
-          <LoadingOverlay label="첨부파일 삭제 중" />
-        </div>
-      )}
+      <LoadingOverlay
+        active={deleting}
+        delayMs={0}
+        fixed
+        label="첨부파일 삭제 중"
+      />
 
       <ConfirmDialog
         open={deleteTarget !== null}

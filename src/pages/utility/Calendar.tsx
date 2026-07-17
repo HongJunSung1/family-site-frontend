@@ -855,9 +855,11 @@ const Calendar: React.FC = () => {
               eventBarsByDate={eventBarsByDate}
               selectedDate={selectedDate}
             />
-            {(calendarsLoading || eventsLoading) && (
-              <LoadingOverlay variant="calendar" label="일정 로딩 중" />
-            )}
+            <LoadingOverlay
+              active={calendarsLoading || eventsLoading}
+              variant="calendar"
+              label="일정 로딩 중"
+            />
           </div>
 
           <div className={styles.sideRail}>

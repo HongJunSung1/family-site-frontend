@@ -223,7 +223,7 @@ export default function ConferenceReport() {
         </section>
       </div>
 
-      {loading && <LoadingOverlay label="회의록 로딩 중" />}
+      <LoadingOverlay active={loading} label="회의록 로딩 중" />
       <ConfirmDialog
         open={agendaCancelMode !== null}
         title="취소 확인"

@@ -101,6 +101,21 @@
   pointer-events: none;
 }
 
+.fixedOverlay {
+  position: fixed;
+  z-index: 22000;
+  border-radius: 0;
+  pointer-events: auto;
+}
+
+.overlayVisible {
+  animation: loadingOverlayFadeIn 0.16s ease both;
+}
+
+.overlayExiting {
+  animation: loadingOverlayFadeOut 0.16s ease both;
+}
+
 .overlay.calendarOverlay {
   align-items: stretch;
   justify-items: stretch;
@@ -238,6 +253,23 @@
   50% {
     transform: translateY(-3px);
     opacity: 1;
+  }
+}
+
+@keyframes loadingOverlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes loadingOverlayFadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlayVisible,
+  .overlayExiting {
+    animation-duration: 0.01ms;
   }
 }
 

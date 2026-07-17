@@ -1,13 +1,19 @@
 ﻿import styles from "./Loading.module.css";
 
+import { useStableLoading } from "./useStableLoading";
+
 type FamilyLoaderProps = {
   label?: string;
   className?: string;
 };
 
 type LoadingOverlayProps = {
+  active?: boolean;
   variant?: "family" | "calendar";
   label?: string;
+  delayMs?: number;
+  minimumVisibleMs?: number;
+  fixed?: boolean;
 };
 
 // 가족 공유 서비스 공통 로딩 애니메이션
@@ -52,10 +58,25 @@ export function InlineLoadingDots({ label = "처리 중" }: Pick<FamilyLoaderPro
 }
 
 // 특정 영역 위에 덮어 표시하는 로딩 오버레이
-export function LoadingOverlay({ variant = "family", label = "로딩 중" }: LoadingOverlayProps) {
+export function LoadingOverlay({
+  active = true,
+  variant = "family",
+  label = "로딩 중",
+  delayMs = 200,
+  minimumVisibleMs = 600,
+  fixed = false,
+}: LoadingOverlayProps) {
+  const visibility = useStableLoading(active, { delayMs, minimumVisibleMs });
+  if (!visibility.mounted) return null;
+
   return (
     <div
-      className={[styles.overlay, variant === "calendar" ? styles.calendarOverlay : ""]
+      className={[
+        styles.overlay,
+        variant === "calendar" ? styles.calendarOverlay : "",
+        fixed ? styles.fixedOverlay : "",
+        visibility.exiting ? styles.overlayExiting : styles.overlayVisible,
+      ]
         .filter(Boolean)
         .join(" ")}
       role="status"
