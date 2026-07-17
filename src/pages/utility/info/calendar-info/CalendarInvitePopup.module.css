@@ -147,6 +147,7 @@
 }
 
 /* Theme overrides */
+/* 캘린더 초대 팝업 */
 .backdrop {
   background: var(--overlay-bg);
 }

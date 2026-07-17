@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+﻿import React, { useMemo, useRef, useState } from "react";
 import FullCalendar from "@fullcalendar/react";
 import type { DateClickArg } from "@fullcalendar/interaction";
 import dayjs, { Dayjs } from "dayjs";
@@ -22,7 +22,7 @@ dayjs.locale("ko");
 
 const EVENT_TOOLTIP_ID = "pz-floating-event-tooltip";
 
-// 떠 있는 일정 hover 툴팁 제거
+// 기존 일정 hover 툴팁 제거
 const removeFloatingTooltip = () => {
   document.getElementById(EVENT_TOOLTIP_ID)?.remove();
 };
@@ -101,7 +101,7 @@ const isBackDebugEnabled = () => {
   return false;
 };
 
-// 모달 폼 스냅샷 복제
+// 모달 폼 상태 복제
 const cloneForm = (form: FormState): FormState => JSON.parse(JSON.stringify(form)) as FormState;
 
 // 저장된 뒤로가기 디버그 로그 조회
@@ -126,7 +126,6 @@ const getCleanCalendarUrl = () => {
   return `${url.pathname}${url.search}${cleanHash}`;
 };
 
-// 캘린더 화면과 선택 날짜 일정 패널 관리
 const Calendar: React.FC = () => {
   const calRef = useRef<FullCalendar | null>(null);
   const { setConfig: setMobileHeaderConfig, resetConfig: resetMobileHeaderConfig } = useMobileHeader();
@@ -142,6 +141,7 @@ const Calendar: React.FC = () => {
     backDebugEnabled ? readBackDebugLines() : []
   );
   const openedFormSnapshotRef = useRef<string>("");
+  const formRef = useRef<FormState | null>(null);
   const modalBackStackRef = useRef<ModalSnapshot[]>([]);
   const backConfirmRef = useRef<BackConfirmState | null>(null);
   const calendarBaseUrlRef = useRef("");
@@ -183,7 +183,7 @@ const Calendar: React.FC = () => {
     [backDebugEnabled]
   );
 
-  // 로그인 사용자와 현재 캘린더의 이벤트 목록을 관리한다.
+  // 로그인 사용자의 현재 캘린더와 일정 목록 관리
   const {
     events,
     userId,
@@ -196,7 +196,7 @@ const Calendar: React.FC = () => {
     handleCalendarTabClick,
   } = useCalendarData({ setFormError });
 
-  // 일정 모달의 폼 상태와 생성/수정/삭제 액션을 관리한다.
+  // 일정 모달 상태와 생성/수정/삭제 액션 관리
   const {
     form,
     setForm,
@@ -229,6 +229,20 @@ const Calendar: React.FC = () => {
     setFormError,
   });
 
+  // 최신 일정 폼을 모달 최초 스냅샷 생성에 사용
+  React.useEffect(() => {
+    formRef.current = form;
+  }, [form]);
+  // 회의록에서 연결 일정이 변경되면 캘린더 일정 재조회
+  React.useEffect(() => {
+    const handleMeetingCalendarChanged = () => {
+      loadEvents();
+    };
+
+    window.addEventListener("family-calendar-events-changed", handleMeetingCalendarChanged);
+    return () => window.removeEventListener("family-calendar-events-changed", handleMeetingCalendarChanged);
+  }, [loadEvents]);
+
   // 반복 일정을 현재 표시 범위의 실제 발생 일정으로 확장
   const expandedEvents = useMemo(
     () => expandRecurringEvents(events, viewRange.start, viewRange.end),
@@ -243,7 +257,7 @@ const Calendar: React.FC = () => {
     return !day.isBefore(start, "day") && !day.isAfter(end, "day");
   }, []);
 
-  // 반복 발생 일정을 구분하는 화면 표시용 키 생성
+  // 반복 발생 일정을 구분하는 화면 표시 키 생성
   const getEventVisualKey = React.useCallback((event: ExpandedEvent) => {
     return `${event.id}-${event.__occKey ?? event.start}`;
   }, []);
@@ -279,7 +293,7 @@ const Calendar: React.FC = () => {
         ? rangeEnd
         : weekStart.add(7, "day");
 
-      // 긴 일정 우선 배치를 위한 주 단위 일정 정렬
+      // 湲??쇱젙 ?곗꽑 諛곗튂瑜??꾪븳 二??⑥쐞 ?쇱젙 ?뺣젹
       const weekEvents = expandedEvents
         .filter((event) => {
           const start = dayjs(event.start).startOf("day");
@@ -389,7 +403,7 @@ const Calendar: React.FC = () => {
 
   const selectedHolidayName = getHolidayDisplayName(holidayMap.get(selectedDate));
 
-  // 날짜별 공휴일/주말 색상 타입 계산
+  // 날짜별 공휴일과 주말 색상 타입 계산
   const getDayType = React.useCallback(
     (d: Dayjs) => {
       const dow = d.day();
@@ -401,15 +415,14 @@ const Calendar: React.FC = () => {
     [holidaySet]
   );
 
-  // 모달이 열릴 때 변경 감지 기준 스냅샷 저장
-  // 모바일 상단 헤더에 캘린더 목록 드롭다운 연결
+  // 모달을 열 때 변경 감지 기준 폼 상태 저장
   React.useEffect(() => {
     if (mode === "none") {
       openedFormSnapshotRef.current = "";
       return;
     }
 
-    openedFormSnapshotRef.current = JSON.stringify(form);
+    openedFormSnapshotRef.current = JSON.stringify(formRef.current);
   }, [mode, modalOpenVersion]);
 
   // hover 툴팁 긴 텍스트 말줄임 처리
@@ -429,16 +442,16 @@ const Calendar: React.FC = () => {
 
     return [
       `${event.title}`,
-      `· 시간: ${timeText}`,
-      createdByName ? `· 작성자: ${ellipsis(createdByName)}` : "",
-      memo ? `· 메모: ${ellipsis(memo)}` : "",
-      locationName ? `· 장소: ${ellipsis(locationName)}` : "",
+      `- 시간: ${timeText}`,
+      createdByName ? `- 작성자: ${ellipsis(createdByName)}` : "",
+      memo ? `- 메모: ${ellipsis(memo)}` : "",
+      locationName ? `- 장소: ${ellipsis(locationName)}` : "",
     ]
       .filter(Boolean)
       .join("\n");
   };
 
-  // 일정 hover 레이어 클래스 초기화
+  // 일정 hover 레이어 초기화
   const clearTooltipLayers = () => {
     document.querySelectorAll(".pz-tooltip-layer-open").forEach((el) => {
       el.classList.remove("pz-tooltip-layer-open");
@@ -500,9 +513,9 @@ const Calendar: React.FC = () => {
     backGuardDepthRef.current = 0;
     ensureBackGuards();
     historyGuardArmedRef.current = true;
-  }, [ensureBackGuards, getCalendarBaseUrl]);
+  }, [ensureBackGuards, getCalendarBaseUrl, logBackDebug]);
 
-  // 모바일 첫 사용자 액션 이후 뒤로가기 가드 재장착
+  // 모바일 첫 사용자 동작 이후 뒤로가기 가드 재장착
   const rearmBackGuardAfterUserActivation = React.useCallback(() => {
     if (!canUseCalendarHistoryGuard()) return;
 
@@ -526,18 +539,18 @@ const Calendar: React.FC = () => {
     modalBackStackRef.current.push({ mode, form: cloneForm(form) });
   };
 
-  // 모바일 일정 상세 화면용 뒤로가기 단계 추가
+  // 모바일 일정 상세 화면에 뒤로가기 단계 추가
   const openMobileModalHistoryStep = () => {
     armBackGuard();
     ensureBackGuards(MODAL_BACK_GUARD_DEPTH);
   };
 
   // 캘린더 화면에서 모달과 복원 스택 닫기
-  const closeModalFromCalendar = React.useCallback(() => {
+  const closeModalFromCalendar = () => {
     modalBackStackRef.current = [];
     closeBackConfirm();
     closeModal();
-  }, [closeBackConfirm, closeModal]);
+  };
 
   // 수정 중인 모달이 있을 때 전환 전 유실 확인
   const runWithDiscardConfirm = React.useCallback((action: () => void) => {
@@ -583,7 +596,9 @@ const Calendar: React.FC = () => {
     });
   };
 
-  // 캘린더 탭 선택과 수정 중 전환 확인 처리
+  // 캘린더 선택과 수정 중 전환 확인 처리
+  // 모바일 헤더 설정 effect의 반복 실행을 막기 위해 안정된 함수 참조 유지
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const handleCalendarTabSelect = React.useCallback((calendar: (typeof calendars)[number]) => {
     if (calendar.calendarId === calendarId) return;
 
@@ -591,11 +606,13 @@ const Calendar: React.FC = () => {
     removeFloatingTooltip();
     runWithDiscardConfirm(() => {
       handleCalendarTabClick(calendar);
-      closeModalFromCalendar();
+      modalBackStackRef.current = [];
+      closeBackConfirm();
+      closeModal();
     });
-  }, [calendarId, closeModalFromCalendar, handleCalendarTabClick, runWithDiscardConfirm]);
+  }, [calendarId, closeBackConfirm, closeModal, handleCalendarTabClick, runWithDiscardConfirm]);
 
-  // 최신 모달 모드를 ref에 동기화
+  // 모바일 상단 헤더에 캘린더 목록 연결
   React.useEffect(() => {
     setMobileHeaderConfig({
       title: calendarName || "캘린더",
@@ -623,9 +640,9 @@ const Calendar: React.FC = () => {
     modeRef.current = mode;
   }, [mode]);
 
-  // 브라우저 뒤로가기 이벤트를 캘린더 내부 동작으로 변환
+  // 브라우저 뒤로가기 이벤트를 캘린더 내부 동작으로 처리
   React.useLayoutEffect(() => {
-    // 뒤로가기 시 모달 복원/닫기 확인 또는 네이티브 이탈 처리
+    // 뒤로가기 시 모달 복원/닫기 확인 또는 사이트 이탈 처리
     const handleBrowserBack = (event: Event) => {
       if (!canUseCalendarHistoryGuard()) return;
 
@@ -684,9 +701,9 @@ const Calendar: React.FC = () => {
       window.removeEventListener("popstate", handleBrowserBack, true);
       window.removeEventListener("hashchange", handleBrowserBack, true);
     };
-  }, [closeBackConfirm, ensureBackGuards]);
+  }, [closeBackConfirm, ensureBackGuards, logBackDebug]);
 
-  // 최초 화면 표시 후 캘린더 기준 URL 저장과 가드 장착
+  // 최초 화면 표시 시 캘린더 기준 URL 저장과 가드 장착
   React.useLayoutEffect(() => {
     calendarBaseUrlRef.current = getCleanCalendarUrl();
     armBackGuard();
@@ -722,11 +739,11 @@ const Calendar: React.FC = () => {
     };
   }, [rearmBackGuardAfterUserActivation]);
 
-  // 브라우저 이탈 전 시스템 확인창 호출
+  // 브라우저 이탈 시 시스템 확인창 호출
   React.useEffect(() => {
     if (typeof window === "undefined") return;
 
-    // 새로고침/외부 이탈 전 기본 확인창 표시
+    // 새로고침/외부 이탈 시 기본 확인창 표시
     const handleProtectedBeforeUnload = (event: BeforeUnloadEvent) => {
       logBackDebug("beforeunload blocked");
       event.preventDefault();
@@ -1001,4 +1018,6 @@ const Calendar: React.FC = () => {
 };
 
 export default Calendar;
+
+
 

@@ -1,8 +1,10 @@
+/* 상단/하단 네비게이션과 모바일 메뉴 */
 :global(:root) {
   --app-nav-height: 56px;
   --app-bottom-nav-height: 0px;
 }
 
+/* PC 상단 네비게이션 */
 .topNav {
   height: var(--app-nav-height);
   box-sizing: border-box;
@@ -102,6 +104,7 @@
   box-shadow: none;
 }
 
+/* PC 메뉴 드롭다운 */
 .desktopMenuWrap {
   position: relative;
   display: flex;
@@ -209,6 +212,7 @@
   right: auto;
 }
 
+/* 화면 이동 중 로딩 오버레이 */
 .routeLoadingOverlay {
   position: fixed;
   inset: 0;
@@ -238,6 +242,7 @@
   pointer-events: none;
 }
 
+/* 모바일 상단 헤더, 하단 바, 메뉴 시트 */
 @media (max-width: 768px) {
   :global(:root) {
     --app-nav-height: 59px;

@@ -252,6 +252,7 @@
 }
 
 /* Theme overrides */
+/* 개인정보 페이지 탭/드롭다운 레이아웃 */
 .page {
   background: var(--color-bg);
   color: var(--color-text);

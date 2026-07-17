@@ -156,6 +156,7 @@
 }
 
 /* Theme overrides */
+/* 받은 알림 목록 화면 */
 .card {
   background: var(--color-surface);
   border-color: var(--color-border);

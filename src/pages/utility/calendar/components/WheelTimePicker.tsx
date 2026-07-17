@@ -9,6 +9,20 @@ type WheelTimePickerProps = {
   minutesStep?: number;
 };
 
+// 오전/오후 12시간 값을 24시간 값으로 변환
+const to24h = (meridiem: "오전" | "오후", hour12: number) => {
+  if (meridiem === "오전") return hour12 === 12 ? 0 : hour12;
+  return hour12 === 12 ? 12 : hour12 + 12;
+};
+
+// 11시와 12시 경계에서 오전/오후 자동 전환
+const autoFlipMerIfNeeded = (prevH: number, nextH: number, curMer: "오전" | "오후") => {
+  if ((prevH === 11 && nextH === 12) || (prevH === 12 && nextH === 11)) {
+    return curMer === "오전" ? "오후" : "오전";
+  }
+  return curMer;
+};
+
 // 모바일 친화형 휠 시간 선택기
 export const WheelTimePicker: React.FC<WheelTimePickerProps> = React.memo(
   ({ value, onChange, minutesStep = 5 }) => {
@@ -98,25 +112,14 @@ export const WheelTimePicker: React.FC<WheelTimePickerProps> = React.memo(
       setScrollTopIfNeeded(minRef.current, minTop);
     }, [derived.mer, derived.h12, derived.min, minuteOptions, getTargetTopByIndex]);
 
-    // 오전/오후 12시간 값을 24시간 값으로 변환
-    const to24h = (m_: "오전" | "오후", h12_: number) => {
-      if (m_ === "오전") return h12_ === 12 ? 0 : h12_;
-      return h12_ === 12 ? 12 : h12_ + 12;
-    };
-
     // 선택한 시간 값을 부모 상태에 반영
-    const commit = (nextMer: "오전" | "오후", nextH12: number, nextMin: number) => {
-      const h24 = to24h(nextMer, nextH12);
-      onChange(value.hour(h24).minute(nextMin).second(0));
-    };
-
-    // 11시와 12시 경계에서 오전/오후 자동 전환
-    const autoFlipMerIfNeeded = (prevH: number, nextH: number, curMer: "오전" | "오후") => {
-      if ((prevH === 11 && nextH === 12) || (prevH === 12 && nextH === 11)) {
-        return curMer === "오전" ? "오후" : "오전";
-      }
-      return curMer;
-    };
+    const commit = React.useCallback(
+      (nextMer: "오전" | "오후", nextH12: number, nextMin: number) => {
+        const h24 = to24h(nextMer, nextH12);
+        onChange(value.hour(h24).minute(nextMin).second(0));
+      },
+      [onChange, value]
+    );
 
     // 휠 인덱스를 유효 범위 안으로 제한
     const clampIndex = (idx: number, max: number) => Math.max(0, Math.min(idx, max));
@@ -135,7 +138,7 @@ export const WheelTimePicker: React.FC<WheelTimePickerProps> = React.memo(
         commit(nextMer, h12, min);
         scrollToCenter(merRef.current, idx, smooth);
       },
-      [h12, min, scrollToCenter, value]
+      [commit, h12, min, scrollToCenter]
     );
 
     // 시간 인덱스 선택 반영
@@ -155,7 +158,7 @@ export const WheelTimePicker: React.FC<WheelTimePickerProps> = React.memo(
           scrollToCenter(merRef.current, merIdx, smooth);
         }
       },
-      [h12, mer, min, scrollToCenter, value]
+      [commit, h12, mer, min, scrollToCenter]
     );
 
     // 분 인덱스 선택 반영
@@ -166,7 +169,7 @@ export const WheelTimePicker: React.FC<WheelTimePickerProps> = React.memo(
         commit(mer, h12, nextMin);
         scrollToCenter(minRef.current, idx, smooth);
       },
-      [minuteOptions, mer, h12, scrollToCenter, value]
+      [commit, minuteOptions, mer, h12, scrollToCenter]
     );
 
     // 스크롤 멈춤 후 가까운 항목으로 스냅 예약

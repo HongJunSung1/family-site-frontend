@@ -8,6 +8,10 @@ import {
 import { Input } from "../../../../common/input";
 import styles from "./CalendarInvitePopup.module.css";
 
+// 알 수 없는 API 예외에서 사용자 안내 문구 추출
+const getErrorMessage = (error: unknown, fallback: string) =>
+  error instanceof Error && error.message ? error.message : fallback;
+
 type Props = {
   open: boolean;
   calendarId: number | null;
@@ -76,8 +80,8 @@ export default function CalendarInvitePopup({ open, calendarId, calendarName, on
       }
 
       setUsers(result.users ?? []);
-    } catch (err: any) {
-      setErrorMsg(err?.message ?? "회원 검색 중 오류가 발생했습니다.");
+    } catch (error: unknown) {
+      setErrorMsg(getErrorMessage(error, "회원 검색 중 오류가 발생했습니다."));
     } finally {
       setLoading(false);
     }
@@ -127,8 +131,8 @@ export default function CalendarInvitePopup({ open, calendarId, calendarName, on
 
       setMessage(result.message ?? "초대장을 보냈습니다.");
       setSelectedIds([]);
-    } catch (err: any) {
-      setErrorMsg(err?.message ?? "초대 중 오류가 발생했습니다.");
+    } catch (error: unknown) {
+      setErrorMsg(getErrorMessage(error, "초대 중 오류가 발생했습니다."));
     } finally {
       setSending(false);
     }

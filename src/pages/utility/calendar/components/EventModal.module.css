@@ -1,4 +1,4 @@
-/* EventModal.module.css */
+/* 일정 추가/수정 모달 전체 레이아웃 */
 
 .overlay {
   --event-modal-date-text: rgba(17, 24, 39, 0.9);
@@ -80,6 +80,7 @@ textarea.eventFormControl {
 }
 
 /* Header */
+/* 모달 헤더와 닫기 버튼 */
 .header {
   display: flex;
   justify-content: space-between;
@@ -133,6 +134,7 @@ textarea.eventFormControl {
 }
 
 /* All day */
+/* 하루 종일 토글 */
 .allDayRow {
   margin-top: 10px;
   display: flex;
@@ -146,6 +148,7 @@ textarea.eventFormControl {
 }
 
 /* Range */
+/* 시작/종료 날짜와 시간 선택 */
 .rangeWrap {
   margin-top: 10px;
 }
@@ -204,6 +207,7 @@ textarea.eventFormControl {
 }
 
 /* Common section */
+/* 접기/펼치기 공통 섹션 */
 .section {
   margin-top: 14px;
 }
@@ -243,6 +247,7 @@ textarea.eventFormControl {
 }
 
 /* Reusable pill button */
+/* 날짜/시간 pill 버튼 */
 .pillBtn {
   border: 1px solid rgba(0, 0, 0, 0.15);
   background: #fff;
@@ -265,6 +270,7 @@ textarea.eventFormControl {
 }
 
 /* Repeat area */
+/* 반복 설정 영역 */
 .sectionGrid {
   margin-top: 12px;
   display: grid;
@@ -394,6 +400,7 @@ textarea.eventFormControl {
 }
 
 /* Card */
+/* 내부 카드형 정보 영역 */
 .card {
   margin-top: 12px;
   padding: 12px;
@@ -427,6 +434,7 @@ textarea.eventFormControl {
 }
 
 /* Simple row */
+/* 기본 행 레이아웃 */
 .row {
   margin-top: 12px;
   display: flex;
@@ -452,6 +460,7 @@ textarea.eventFormControl {
 }
 
 /* Radios */
+/* 라디오 옵션 */
 .radioRow {
   display: flex;
   gap: 8px;
@@ -465,6 +474,7 @@ textarea.eventFormControl {
 }
 
 /* Expand */
+/* 확장형 안내 영역 */
 .expand {
   margin-top: 14px;
   border-top: 1px solid rgba(0, 0, 0, 0.08);
@@ -487,6 +497,7 @@ textarea.eventFormControl {
 }
 
 /* Footer buttons */
+/* 하단 저장/취소/삭제 버튼 */
 .footer {
   display: flex;
   gap: 10px;
@@ -534,6 +545,7 @@ textarea.eventFormControl {
 }
 
 
+/* 장소 검색과 지도 표시 */
 .kakaoMap {
   width: 100%;
   height: 240px;
@@ -647,6 +659,7 @@ textarea.eventFormControl {
 }
 
 /* 나만의 색상 */
+/* 색상 선택과 자주 쓰는 색상 */
 .colorArea {
   display: flex;
   align-items: center;

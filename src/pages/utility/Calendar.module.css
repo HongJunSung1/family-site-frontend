@@ -1,4 +1,5 @@
 /* ✅ 다크 테마 팔레트 */
+/* 캘린더 다크 테마 팔레트 */
 :root {
   --cal-bg: #2f3744;
   --cal-panel: #343e4d; /* ✅ 이 색을 '기준'으로 통일 */
@@ -9,6 +10,7 @@
   --cal-accent-2: #7fe3df;
 }
 
+/* 캘린더 셸과 현재 캘린더명 */
 .calendarShell {
   position: relative;
   min-height: 0;
@@ -32,6 +34,7 @@
 
 /* wrapper */
 /* 전체 화면 배경 + 가운데 정렬 */
+/* 캘린더 전체 화면 배경과 정렬 */
 .root {
   width: 100%;
   height: 100%;
@@ -46,6 +49,7 @@
 }
 
 /* 가운데 카드(PC에서 폭 제한) */
+/* 캘린더 본문 컨테이너 */
 .container {
   width: 100%;
   max-width: 1100px;
@@ -70,6 +74,7 @@
 }
 
 /* FullCalendar 전체 프레임 */
+/* FullCalendar 기본 프레임 */
 :global(.fc) {
   color: var(--cal-text);
 }
@@ -103,6 +108,7 @@
 
 
 /* toolbar를 2열 그리드로: 왼쪽=타이틀, 오른쪽=버튼들 */
+/* 캘린더 툴바 레이아웃 */
 :global(.fc .fc-toolbar) {
   display: grid;
   grid-template-columns: 1fr auto; /* 왼쪽 넓게, 오른쪽 버튼 */
@@ -173,6 +179,7 @@
 }
 
 /* 요일 헤더 */
+/* 요일 헤더 */
 :global(.fc .fc-col-header-cell) {
   border-color: var(--cal-line);
   background: rgba(0,0,0,0.08);
@@ -187,6 +194,7 @@
 :global(.fc .fc-scrollgrid-section),
 :global(.fc .fc-scrollgrid-section > td),
 :global(.fc .fc-daygrid-body),
+/* 날짜칸과 날짜 숫자 */
 :global(.fc .fc-daygrid-day) {
   border-color: var(--cal-line) !important;
 }
@@ -300,6 +308,7 @@
   text-decoration: none;
 }
 
+/* 날짜칸 내부 커스텀 콘텐츠 */
 .dayCellContent {
   width: 100%;
   min-height: 30px;
@@ -518,6 +527,7 @@
   box-shadow: none;
 }
 
+/* PC 캘린더 탭 */
 .calendarTabs {
   display: flex;
   align-items: flex-end;
@@ -559,6 +569,7 @@
 
 
 /* 이벤트별 툴팁 */
+/* 일정 hover 요약 툴팁 */
 .eventMemoTooltip {
   position: relative;
 }
@@ -596,6 +607,7 @@
   pointer-events: none;
 }
 
+/* 모바일 캘린더 레이아웃 */
 @media (max-width: 768px) {
   .root {
     height: 100%;
@@ -959,6 +971,7 @@
   z-index: 1;
 }
 
+/* 선택한 날짜의 일정 목록 패널 */
 .dayEventPanel {
   position: absolute;
   top: 72px;
@@ -1229,7 +1242,7 @@
   display: none;
 }
 
-/* Theme palette */
+/* 라이트/다크 테마별 캘린더 팔레트 */
 .calendarShell {
   display: flex;
   flex: 1 1 auto;

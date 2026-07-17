@@ -14,6 +14,10 @@ import { FamilyLoader } from "../../../../common/loading";
 import CalendarInvitePopup from "./CalendarInvitePopup";
 import styles from "./CalendarInfo.module.css";
 
+// 알 수 없는 API 예외에서 사용자 안내 문구 추출
+const getErrorMessage = (error: unknown, fallback: string) =>
+  error instanceof Error && error.message ? error.message : fallback;
+
 // 사용자가 소유하거나 참여 중인 캘린더 목록과 회원 정보 관리
 export default function CalendarInfo() {
   const [loading, setLoading] = useState(true);
@@ -133,8 +137,8 @@ export default function CalendarInfo() {
 
       await loadCalendarInfo();
       setSuccessMsg("순서가 변경되었습니다.");
-    } catch (err: any) {
-      setErrorMsg(err?.message ?? "순서 저장 중 오류가 발생했습니다.");
+    } catch (error: unknown) {
+      setErrorMsg(getErrorMessage(error, "순서 저장 중 오류가 발생했습니다."));
     } finally {
       setSaving(false);
     }
@@ -279,8 +283,8 @@ export default function CalendarInfo() {
       setNewCalendarMain(false);
       await loadCalendarInfo();
       setSuccessMsg("저장되었습니다.");
-    } catch (err: any) {
-      setErrorMsg(err?.message ?? "저장 중 오류가 발생했습니다.");
+    } catch (error: unknown) {
+      setErrorMsg(getErrorMessage(error, "저장 중 오류가 발생했습니다."));
     } finally {
       setSaving(false);
     }
@@ -318,8 +322,8 @@ export default function CalendarInfo() {
 
       setSuccessMsg("캘린더가 삭제되었습니다.");
       await loadCalendarInfo();
-    } catch (err: any) {
-      setErrorMsg(err?.message ?? "캘린더 삭제 중 오류가 발생했습니다.");
+    } catch (error: unknown) {
+      setErrorMsg(getErrorMessage(error, "캘린더 삭제 중 오류가 발생했습니다."));
     } finally {
       setSaving(false);
     }

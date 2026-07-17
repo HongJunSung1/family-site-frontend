@@ -1,3 +1,4 @@
+/* 홈 화면 기본 레이아웃 */
 .page {
   height: calc(var(--app-viewport-height, 100dvh) - var(--app-nav-height, 67px));
   min-height: 0;

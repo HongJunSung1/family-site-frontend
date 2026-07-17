@@ -1,5 +1,5 @@
 // EventModal.tsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import dayjs, { Dayjs } from "dayjs";
 import "dayjs/locale/ko";
 
@@ -7,6 +7,7 @@ import Switch from "@mui/material/Switch";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
+import type { PickersDayProps } from "@mui/x-date-pickers/PickersDay";
 
 import type { ApplyScope, FormState, ModalMode, PickerTarget, RepeatType } from "../types";
 import { CustomDay } from "./CustomDay";
@@ -116,7 +117,7 @@ export function EventModal(props: Props) {
   // 하위 기능의 공통 안내창 호출 헬퍼
   const showAlertDialog = React.useCallback((message: string, title = "안내") => {
     setAlertDialog({ open: true, title, message });
-  }, []);
+  }, [setAlertDialog]);
 
   const RepeatUnitLabel =
     form.repeat === "none"
@@ -203,16 +204,19 @@ export function EventModal(props: Props) {
   const [memoOpen, setMemoOpen] = useState(false);
   const [multiDateOpen, setMultiDateOpen] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
+  const repeatExpanded =
+    repeatOpen || picker === "repeatStartDate" || picker === "repeatEndDate";
+  const multiDateExpanded = multiDateOpen || picker === "multiDates";
 
-  // 날짜 선택기 직접 열기와 아코디언 자동 펼침
-  useEffect(() => {
-    if (picker === "repeatStartDate" || picker === "repeatEndDate") {
-      setRepeatOpen(true);
-    }
-    if (picker === "multiDates") {
-      setMultiDateOpen(true);
-    }
-  }, [picker]);
+  // 일반 날짜 선택 달력의 공휴일과 주말 표시
+  const HolidayCalendarDay = (dayProps: PickersDayProps) => (
+    <CustomDay {...dayProps} holidaySet={holidaySet} />
+  );
+
+  // 여러 날짜 선택 달력의 선택 상태 표시
+  const MultiSelectCalendarDay = (dayProps: PickersDayProps) => (
+    <CustomDay {...dayProps} holidaySet={holidaySet} selectedSet={multiDatesSet} />
+  );
 
   // 접힌 반복 섹션에 표시할 현재 반복 설정 요약
   const repeatSummary =
@@ -395,12 +399,7 @@ export function EventModal(props: Props) {
                               setPicker("none");
                             }
                           }}
-                          slots={{ day: CustomDay as any }}
-                          slotProps={{
-                            day: {
-                              holidaySet,
-                            } as any,
-                          }}
+                          slots={{ day: HolidayCalendarDay }}
                           sx={calendarSx}
                         />
                       </div>
@@ -489,7 +488,7 @@ export function EventModal(props: Props) {
           <div
             className={styles.sectionRow}
             onClick={() => {
-              const next = !repeatOpen;
+              const next = !repeatExpanded;
               setRepeatOpen(next);
 
               if (!next && (picker === "repeatStartDate" || picker === "repeatEndDate")) {
@@ -501,11 +500,11 @@ export function EventModal(props: Props) {
 
             <div className={styles.sectionRight}>
               <span className={styles.sectionSummary}>{repeatSummary}</span>
-              <span className={styles.sectionArrow}>{repeatOpen ? "▲" : "▼"}</span>
+              <span className={styles.sectionArrow}>{repeatExpanded ? "▲" : "▼"}</span>
             </div>
           </div>
 
-          <div className={`${styles.collapsible} ${repeatOpen ? styles.collapsibleOpen : ""}`}>
+          <div className={`${styles.collapsible} ${repeatExpanded ? styles.collapsibleOpen : ""}`}>
             <div className={`${styles.sectionGrid} ${styles.collapsibleInner}`}>
               <div className={[styles.repeatRow, lockRepeatControls ? styles.dim : ""].join(" ")}>
                 <select
@@ -643,12 +642,7 @@ export function EventModal(props: Props) {
                             setPicker("none");
                           }
                         }}
-                        slots={{ day: CustomDay as any }}
-                        slotProps={{
-                          day: {
-                            holidaySet,
-                          } as any,
-                        }}
+                        slots={{ day: HolidayCalendarDay }}
                         sx={calendarSx}
                       />
                     </div>
@@ -664,7 +658,7 @@ export function EventModal(props: Props) {
             <div
               className={styles.sectionRow}
               onClick={() => {
-                const next = !multiDateOpen;
+                const next = !multiDateExpanded;
                 setMultiDateOpen(next);
 
                 if (!next && picker === "multiDates") {
@@ -678,11 +672,11 @@ export function EventModal(props: Props) {
 
               <div className={styles.sectionRight}>
                 <span className={styles.sectionSummary}>{multiDateSummary}</span>
-                <span className={styles.sectionArrow}>{multiDateOpen ? "▲" : "▼"}</span>
+                <span className={styles.sectionArrow}>{multiDateExpanded ? "▲" : "▼"}</span>
               </div>
             </div>
 
-            <div className={`${styles.collapsible} ${multiDateOpen ? styles.collapsibleOpen : ""}`}>
+            <div className={`${styles.collapsible} ${multiDateExpanded ? styles.collapsibleOpen : ""}`}>
               <div className={`${styles.sectionGrid} ${styles.collapsibleInner}`}>
                 <div className={styles.cardHeadBtns} style={{ marginTop: 2 }}>
                   <button
@@ -763,13 +757,7 @@ export function EventModal(props: Props) {
                               }
                               toggleMultiDate(d.format("YYYY-MM-DD"));
                             }}
-                            slots={{ day: CustomDay as any }}
-                            slotProps={{
-                              day: {
-                                holidaySet,
-                                selectedSet: multiDatesSet,
-                              } as any,
-                            }}
+                            slots={{ day: MultiSelectCalendarDay }}
                             sx={calendarSx}
                           />
                         )}

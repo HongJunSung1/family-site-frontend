@@ -2,7 +2,7 @@
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import type { DateClickArg } from "@fullcalendar/interaction";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import dayjs from "dayjs";
 import type { Dayjs } from "dayjs";
 
@@ -31,6 +31,12 @@ type Props = {
   selectedDate: string;
 };
 
+// 공휴일 표시명 보정
+const getHolidayDisplayName = (name: string) => {
+  if (name === "기독탄신일") return "크리스마스";
+  return name;
+};
+
 // FullCalendar 월간 화면과 날짜칸 부가 표시 관리
 export function CalendarView({
   calRef,
@@ -45,14 +51,8 @@ export function CalendarView({
 }: Props) {
   const shellRef = useRef<HTMLDivElement | null>(null);
 
-  // 공휴일 표시명 보정
-  const getHolidayDisplayName = (name: string) => {
-    if (name === "기독탄신일") return "크리스마스";
-    return name;
-  };
-
   // 날짜칸의 공휴일명, 일정 막대, 일정 개수 표시
-  const renderCellExtras = (ymd: string, cellEl: HTMLElement) => {
+  const renderCellExtras = useCallback((ymd: string, cellEl: HTMLElement) => {
     const frame = cellEl.querySelector(".fc-daygrid-day-frame") as HTMLElement | null;
     const target = frame ?? cellEl;
     const name = holidayMap.get(ymd);
@@ -103,7 +103,7 @@ export function CalendarView({
       countEl.textContent = String(count);
       target.appendChild(countEl);
     }
-  };
+  }, [eventBarsByDate, eventCountByDate, holidayMap]);
 
   // 데이터 변경 후 현재 보이는 날짜칸 부가 표시 동기화
   useEffect(() => {
@@ -121,7 +121,7 @@ export function CalendarView({
     syncVisibleCells();
     const raf = window.requestAnimationFrame(syncVisibleCells);
     return () => window.cancelAnimationFrame(raf);
-  }, [holidayMap, eventBarsByDate, eventCountByDate]);
+  }, [renderCellExtras]);
 
   return (
     <div ref={shellRef} className={styles.calendarShell}>

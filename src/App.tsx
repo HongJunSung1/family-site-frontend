@@ -46,14 +46,6 @@ function TopNav({ theme, onToggleTheme }: TopNavProps) {
     : "캘린더";
   const mobileTitle = config.title || fallbackTitle;
 
-  // 경로 변경 시 열린 메뉴 상태 초기화
-  useEffect(() => {
-    setMobileHeaderOpen(false);
-    setMobileSubMenuId(null);
-    setMobilePinnedSubMenuId(null);
-    setDesktopMenuOpen(false);
-  }, [location.pathname, mobileTitle]);
-
   // PC 메뉴 바깥 클릭 시 메뉴 닫기
   useEffect(() => {
     if (!desktopMenuOpen) return;
@@ -283,6 +275,13 @@ function TopNav({ theme, onToggleTheme }: TopNavProps) {
   );
 }
 
+// 경로와 화면별 헤더 제목 변경 시 열린 메뉴 상태 초기화
+function RoutedTopNav(props: TopNavProps) {
+  const location = useLocation();
+  const { config } = useMobileHeader();
+  return <TopNav key={`${location.pathname}:${config.title ?? ""}`} {...props} />;
+}
+
 // 모바일 하단 네비게이션과 메뉴 시트 관리
 function BottomNav() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -373,31 +372,34 @@ function BottomNav() {
 // 홈/개인정보 전환 중 표시할 짧은 로딩 오버레이
 function RouteTransitionLoading({ enabled }: { enabled: boolean }) {
   const location = useLocation();
-  const previousPathRef = useRef(location.pathname);
-  const [visible, setVisible] = useState(false);
+  const [transition, setTransition] = useState({
+    path: location.pathname,
+    visible: false,
+  });
 
-  // 홈과 개인정보 사이 이동 감지 후 로딩 표시
-  useEffect(() => {
-    const previousPath = previousPathRef.current;
-    const nextPath = location.pathname;
-    previousPathRef.current = nextPath;
-
+  if (transition.path !== location.pathname) {
     const isProfileHomeTransition =
       enabled &&
-      ((previousPath === "/home" && nextPath === "/profile") ||
-        (previousPath === "/profile" && nextPath === "/home"));
+      ((transition.path === "/home" && location.pathname === "/profile") ||
+        (transition.path === "/profile" && location.pathname === "/home"));
 
-    if (!isProfileHomeTransition) return;
+    setTransition({
+      path: location.pathname,
+      visible: isProfileHomeTransition,
+    });
+  }
 
-    setVisible(true);
+  // 홈과 개인정보 사이 이동 로딩 표시 시간 관리
+  useEffect(() => {
+    if (!transition.visible) return;
     const timer = window.setTimeout(() => {
-      setVisible(false);
+      setTransition((current) => ({ ...current, visible: false }));
     }, 360);
 
     return () => window.clearTimeout(timer);
-  }, [enabled, location.pathname]);
+  }, [transition.visible]);
 
-  if (!visible) return null;
+  if (!transition.visible) return null;
 
   return (
     <div className={styles.routeLoadingOverlay}>
@@ -501,7 +503,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <MobileHeaderProvider>
-        {isLoggedIn && <TopNav theme={theme} onToggleTheme={toggleTheme} />}
+        {isLoggedIn && <RoutedTopNav theme={theme} onToggleTheme={toggleTheme} />}
 
         <Routes>
           <Route

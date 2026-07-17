@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { hasAccessToken } from "../../../../api/client";
 import {
   deleteMyColorPreset,
@@ -44,12 +44,12 @@ export default function CalendarSettings() {
   const [deleteTarget, setDeleteTarget] = useState<FavoriteColorRow | null>(null);
 
   // 설정 화면 공통 안내창 표시
-  const showAlert = (message: string, title = "안내") => {
+  const showAlert = useCallback((message: string, title = "안내") => {
     setAlertState({ open: true, title, message });
-  };
+  }, []);
 
   // 서버 저장 자주 쓰는 색상 목록 조회
-  const fetchColorPresets = async () => {
+  const fetchColorPresets = useCallback(async () => {
     if (!hasAccessToken()) {
       showAlert("로그인 정보가 없습니다.");
       setLoading(false);
@@ -79,11 +79,11 @@ export default function CalendarSettings() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showAlert]);
 
   useEffect(() => {
     fetchColorPresets();
-  }, []);
+  }, [fetchColorPresets]);
 
   // 새 색상 입력 행 추가
   const handleAddColor = () => {
