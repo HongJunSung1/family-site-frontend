@@ -33,6 +33,21 @@
   gap: 8px;
 }
 
+/* PC 주요 화면 바로가기는 아이콘 실루엣만 표시 */
+.desktopHomeWrap .homeButton,
+.desktopHomeWrap .desktopUtilityButton {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.desktopHomeWrap .homeButton:hover,
+.desktopHomeWrap .desktopUtilityButton:hover {
+  border-color: transparent;
+  background: var(--color-surface-muted);
+  box-shadow: none;
+}
+
 .mobileFamilyButton,
 .mobileHeaderPicker,
 .mobileHeaderMenu,
@@ -42,9 +57,9 @@
 }
 
 .homeButton,
+.desktopUtilityButton,
 .navIconButton,
-.profileButton,
-.desktopMenuButton {
+.profileButton {
   box-sizing: border-box;
   width: 36px;
   height: 36px;
@@ -67,16 +82,16 @@
 }
 
 .homeButton:hover,
+.desktopUtilityButton:hover,
 .navIconButton:hover,
-.profileButton:hover,
-.desktopMenuButton:hover {
+.profileButton:hover {
   border-color: var(--color-primary);
 }
 
 .homeButton:hover,
+.desktopUtilityButton:hover,
 .navIconButton:hover,
-.profileButton:hover,
-.desktopMenuButton:hover {
+.profileButton:hover {
   background: var(--color-surface-muted);
   box-shadow: 0 12px 28px rgba(37, 99, 235, 0.18);
   transform: translateY(-1px);
@@ -84,14 +99,12 @@
 
 .homeButton:focus,
 .homeButton:focus-visible,
+.desktopUtilityButton:focus,
+.desktopUtilityButton:focus-visible,
 .navIconButton:focus,
 .navIconButton:focus-visible,
 .profileButton:focus,
 .profileButton:focus-visible,
-.desktopMenuButton:focus,
-.desktopMenuButton:focus-visible,
-.desktopMenuItem:focus,
-.desktopMenuItem:focus-visible,
 .mobileFamilyButton:focus,
 .mobileFamilyButton:focus-visible,
 .mobileHeaderMenuItem:focus,
@@ -102,114 +115,6 @@
 .menuSheetItem:focus-visible {
   outline: none;
   box-shadow: none;
-}
-
-/* PC 메뉴 드롭다운 */
-.desktopMenuWrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.desktopMenuIcon {
-  width: 24px;
-  height: 24px;
-  display: grid;
-  grid-template-columns: repeat(2, 8px);
-  grid-template-rows: repeat(2, 8px);
-  gap: 4px;
-  place-content: center;
-  color: var(--color-text-muted);
-  line-height: 0;
-}
-
-.desktopMenuIcon span {
-  width: 8px;
-  height: 8px;
-  border-radius: 3px;
-  background: currentColor;
-}
-
-.desktopMenuDropdown {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  z-index: 90;
-  width: 190px;
-  padding: 8px;
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  background: var(--color-surface);
-  box-shadow: var(--shadow-floating);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.desktopMenuItem {
-  height: 44px;
-  padding: 0 10px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--color-text);
-  box-shadow: none;
-  cursor: pointer;
-  text-decoration: none;
-  display: grid;
-  grid-template-columns: 28px 1fr;
-  align-items: center;
-  gap: 10px;
-  text-align: left;
-  font-size: 14px;
-  font-weight: 800;
-}
-
-.desktopMenuItem:hover {
-  background: var(--color-surface-muted);
-  border-color: transparent;
-}
-
-.desktopMenuItemIcon {
-  position: relative;
-  width: 24px;
-  height: 24px;
-  border: 2px solid var(--cal-accent, var(--color-primary));
-  border-radius: 6px;
-  color: var(--cal-accent, var(--color-primary));
-}
-
-.desktopMenuItemIcon.accountBookIcon::before,
-.desktopMenuItemIcon.accountBookIcon::after {
-  content: "";
-  position: absolute;
-  inset: 6px;
-  background:
-    linear-gradient(currentColor 0 0) left 50% / 100% 2px no-repeat,
-    linear-gradient(currentColor 0 0) 50% top / 2px 100% no-repeat;
-  opacity: 0.9;
-}
-
-.desktopMenuItemIcon.minutesIcon::before,
-.desktopMenuItemIcon.minutesIcon::after {
-  content: "";
-  position: absolute;
-  left: 6px;
-  right: 6px;
-  height: 2px;
-  border-radius: 999px;
-  background: currentColor;
-}
-
-.desktopMenuItemIcon.minutesIcon::before {
-  top: 7px;
-  box-shadow: 0 5px 0 currentColor;
-}
-
-.desktopMenuItemIcon.minutesIcon::after {
-  bottom: 6px;
-  width: 8px;
-  right: auto;
 }
 
 /* 화면 이동 중 로딩 오버레이 */
@@ -622,46 +527,11 @@
     box-shadow: none;
   }
 
-  .menuSheetIcon {
-    position: relative;
+  .menuSheetIconImage {
     width: 31px;
     height: 31px;
-    border: 2px solid var(--cal-accent, var(--color-primary));
-    border-radius: 7px;
-    color: var(--cal-accent, var(--color-primary));
-  }
-
-  .accountBookIcon::before,
-  .accountBookIcon::after {
-    content: "";
-    position: absolute;
-    inset: 7px;
-    background:
-      linear-gradient(currentColor 0 0) left 50% / 100% 2px no-repeat,
-      linear-gradient(currentColor 0 0) 50% top / 2px 100% no-repeat;
-    opacity: 0.9;
-  }
-
-  .minutesIcon::before,
-  .minutesIcon::after {
-    content: "";
-    position: absolute;
-    left: 7px;
-    right: 7px;
-    height: 2px;
-    border-radius: 999px;
-    background: currentColor;
-  }
-
-  .minutesIcon::before {
-    top: 9px;
-    box-shadow: 0 6px 0 currentColor;
-  }
-
-  .minutesIcon::after {
-    bottom: 7px;
-    width: 10px;
-    right: auto;
+    display: block;
+    object-fit: contain;
   }
 
   .menuSheetChevron {

@@ -3,7 +3,9 @@ import { BrowserRouter, Link, Navigate, Route, Routes, useLocation, useNavigate 
 import { verifyStoredSession } from "./api/authApi";
 import Login from "./pages/home/Login";
 import Signup from "./pages/home/Signup";
-import homeIcon from "./assets/icons/home.svg";
+import calendarNavIcon from "./assets/icons/calendar-nav.svg";
+import moneyIcon from "./assets/icons/money.svg";
+import meetingNotesIcon from "./assets/icons/meeting-notes.svg";
 import profilePrivacyIcon from "./assets/icons/profile-privacy.svg";
 import themeMoonIcon from "./assets/icons/theme-moon.svg";
 import themeSunIcon from "./assets/icons/theme-sun.svg";
@@ -34,11 +36,9 @@ function TopNav({ theme, onToggleTheme }: TopNavProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { config } = useMobileHeader();
-  const [desktopMenuOpen, setDesktopMenuOpen] = useState(false);
   const [mobileHeaderOpen, setMobileHeaderOpen] = useState(false);
   const [mobileSubMenuId, setMobileSubMenuId] = useState<string | null>(null);
   const [mobilePinnedSubMenuId, setMobilePinnedSubMenuId] = useState<string | null>(null);
-  const desktopMenuRef = useRef<HTMLDivElement | null>(null);
   const mobileHeaderRef = useRef<HTMLDivElement | null>(null);
   const hasMobileMenu = !!config.menuItems?.length;
   const fallbackTitle = location.pathname.startsWith("/profile")
@@ -49,22 +49,6 @@ function TopNav({ theme, onToggleTheme }: TopNavProps) {
     ? "회의록"
     : "캘린더";
   const mobileTitle = config.title || fallbackTitle;
-
-  // PC 메뉴 바깥 클릭 시 메뉴 닫기
-  useEffect(() => {
-    if (!desktopMenuOpen) return;
-
-    // PC 메뉴 영역 밖 pointer 이벤트 감지
-    const handlePointerDown = (event: PointerEvent) => {
-      if (!desktopMenuRef.current) return;
-      if (!desktopMenuRef.current.contains(event.target as Node)) {
-        setDesktopMenuOpen(false);
-      }
-    };
-
-    document.addEventListener("pointerdown", handlePointerDown);
-    return () => document.removeEventListener("pointerdown", handlePointerDown);
-  }, [desktopMenuOpen]);
 
   // 모바일 헤더 드롭다운 바깥 클릭 시 닫기
   useEffect(() => {
@@ -102,51 +86,25 @@ function TopNav({ theme, onToggleTheme }: TopNavProps) {
   return (
     <nav className={styles.topNav}>
       <div className={styles.desktopHomeWrap}>
-        <Link to="/home" className={styles.homeButton} aria-label="홈" title="홈">
-          <img src={homeIcon} alt="" className={styles.navIconImage} aria-hidden="true" />
+        <Link to="/home" className={styles.homeButton} aria-label="캘린더" title="캘린더">
+          <img src={calendarNavIcon} alt="" className={styles.navIconImage} aria-hidden="true" />
         </Link>
-
-        <div className={styles.desktopMenuWrap} ref={desktopMenuRef}>
-          <button
-            type="button"
-            className={styles.desktopMenuButton}
-            onClick={() => setDesktopMenuOpen((prev) => !prev)}
-            aria-label="메뉴"
-            aria-expanded={desktopMenuOpen}
-            title="메뉴"
-          >
-            <span className={styles.desktopMenuIcon} aria-hidden="true">
-              <span />
-              <span />
-              <span />
-              <span />
-            </span>
-          </button>
-
-          {desktopMenuOpen && (
-            <div className={styles.desktopMenuDropdown} role="menu">
-              <Link
-                to="/household-accounts"
-                className={styles.desktopMenuItem}
-                role="menuitem"
-                onClick={() => setDesktopMenuOpen(false)}
-              >
-                <span className={`${styles.desktopMenuItemIcon} ${styles.accountBookIcon}`} aria-hidden="true" />
-                <span>가계부</span>
-              </Link>
-
-              <Link
-                to="/conference-report"
-                className={styles.desktopMenuItem}
-                role="menuitem"
-                onClick={() => setDesktopMenuOpen(false)}
-              >
-                <span className={`${styles.desktopMenuItemIcon} ${styles.minutesIcon}`} aria-hidden="true" />
-                <span>회의록</span>
-              </Link>
-            </div>
-          )}
-        </div>
+        <Link
+          to="/conference-report"
+          className={styles.desktopUtilityButton}
+          aria-label="회의록"
+          title="회의록"
+        >
+          <img src={meetingNotesIcon} alt="" className={styles.navIconImage} aria-hidden="true" />
+        </Link>
+        <Link
+          to="/household-accounts"
+          className={styles.desktopUtilityButton}
+          aria-label="가계부"
+          title="가계부"
+        >
+          <img src={moneyIcon} alt="" className={styles.navIconImage} aria-hidden="true" />
+        </Link>
       </div>
 
       <div className={styles.mobileHeaderPicker} ref={mobileHeaderRef}>
@@ -321,7 +279,7 @@ function BottomNav() {
             className={styles.menuSheetItem}
             onClick={() => setMenuOpen(false)}
           >
-            <span className={`${styles.menuSheetIcon} ${styles.accountBookIcon}`} aria-hidden="true" />
+            <img src={moneyIcon} alt="" className={styles.menuSheetIconImage} aria-hidden="true" />
             <span>가계부</span>
             <span className={styles.menuSheetChevron} aria-hidden="true" />
           </Link>
@@ -331,7 +289,12 @@ function BottomNav() {
             className={styles.menuSheetItem}
             onClick={() => setMenuOpen(false)}
           >
-            <span className={`${styles.menuSheetIcon} ${styles.minutesIcon}`} aria-hidden="true" />
+            <img
+              src={meetingNotesIcon}
+              alt=""
+              className={styles.menuSheetIconImage}
+              aria-hidden="true"
+            />
             <span>회의록</span>
             <span className={styles.menuSheetChevron} aria-hidden="true" />
           </Link>
@@ -346,7 +309,7 @@ function BottomNav() {
           aria-label="홈"
           title="홈"
         >
-          <img src={homeIcon} alt="" className={styles.bottomNavIcon} aria-hidden="true" />
+          <img src={calendarNavIcon} alt="" className={styles.bottomNavIcon} aria-hidden="true" />
         </Link>
 
         <button

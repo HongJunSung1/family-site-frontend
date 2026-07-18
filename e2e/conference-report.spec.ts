@@ -270,3 +270,31 @@ test("첨부파일 삭제 확인 후 목록에서 제거하고 완료 안내 표
   await expect(page.getByText("첨부파일이 삭제되었습니다.")).toBeVisible();
   await expect(fileButton).toHaveCount(0);
 });
+
+test("회의록 상세 화면을 주요 화면 폭별 기준 이미지로 보호", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop-chromium", "기준 이미지는 데스크톱 Chromium에서 생성");
+  await prepareAuthenticatedPage(page);
+  await page.goto("/conference-report");
+  await page.getByRole("button", { name: /가족 정기회의/ }).click();
+  await page.getByRole("button", { name: "여름 여행 계획" }).click();
+  await expect(page.getByText("여행 후보지를 비교한다.")).toBeVisible();
+
+  for (const width of [360, 640, 768, 900, 1024, 1440] as const) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.waitForTimeout(150);
+
+    const horizontalOverflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(horizontalOverflow, `${width}px 회의록 가로 넘침`).toBeLessThanOrEqual(1);
+
+    if ([360, 768, 900, 1440].includes(width)) {
+      await expect(page).toHaveScreenshot(`conference-report-${width}.png`, {
+        animations: "disabled",
+        caret: "hide",
+        scale: "css",
+        fullPage: false,
+      });
+    }
+  }
+});
