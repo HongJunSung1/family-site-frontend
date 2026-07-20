@@ -21,6 +21,7 @@ type UseCalendarEventFormParams = {
   calendarId: number | null;
   loadEvents: () => Promise<void>;
   setFormError: (message: string) => void;
+  showAlert?: (message: string) => void;
 };
 
 // 일정 폼 기본값 생성
@@ -56,6 +57,7 @@ export function useCalendarEventForm({
   calendarId,
   loadEvents,
   setFormError,
+  showAlert,
 }: UseCalendarEventFormParams) {
   const [mode, setMode] = useState<ModalMode>("none");
   const [picker, setPicker] = useState<PickerTarget>("none");
@@ -423,6 +425,10 @@ export function useCalendarEventForm({
       await loadEvents();
     } catch (error) {
       if (error instanceof ApiError && error.status === 403) setFormError("삭제 권한이 없습니다. (calendar_members role 확인)");
+      else if (error instanceof ApiError && error.status === 409) {
+        setFormError("");
+        showAlert?.(error.data?.message ?? "회의 일정은 회의록에서 삭제해주세요.");
+      }
       else setFormError(error instanceof ApiError ? error.data?.message ?? "삭제 중 오류가 발생했습니다." : "삭제 요청 중 네트워크 오류가 발생했습니다.");
     }
   };

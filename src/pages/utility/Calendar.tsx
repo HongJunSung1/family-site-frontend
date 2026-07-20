@@ -7,7 +7,7 @@ import "dayjs/locale/ko";
 import { useCalendarData } from "./calendar/hooks/useCalendarData";
 import { useCalendarEventForm } from "./calendar/hooks/useCalendarEventForm";
 import { useHolidays } from "./calendar/hooks/useHolidays";
-import { ConfirmDialog } from "../../common/dialog";
+import { AlertDialog, ConfirmDialog } from "../../common/dialog";
 import { LoadingOverlay } from "../../common/loading";
 import { useMobileHeader } from "../../common/mobile-header";
 import { CalendarView } from "./calendar/components/CalendarView";
@@ -131,6 +131,7 @@ const Calendar: React.FC = () => {
   const { setConfig: setMobileHeaderConfig, resetConfig: resetMobileHeaderConfig } = useMobileHeader();
 
   const [formError, setFormError] = useState<string>("");
+  const [alertMessage, setAlertMessage] = useState("");
   const [holidayYear, setHolidayYear] = useState<number>(dayjs().year());
   const [selectedDate, setSelectedDate] = useState<string>(() => dayjs().format("YYYY-MM-DD"));
   const [modalOpenVersion, setModalOpenVersion] = useState(0);
@@ -227,6 +228,7 @@ const Calendar: React.FC = () => {
     calendarId,
     loadEvents,
     setFormError,
+    showAlert: setAlertMessage,
   });
 
   // 최신 일정 폼을 모달 최초 스냅샷 생성에 사용
@@ -970,6 +972,12 @@ const Calendar: React.FC = () => {
           setDiscardConfirm(null);
           action?.();
         }}
+      />
+      <AlertDialog
+        open={!!alertMessage}
+        title="안내"
+        message={alertMessage}
+        onClose={() => setAlertMessage("")}
       />
       {backDebugEnabled && (
         <div

@@ -457,6 +457,8 @@ export function useMeetingReport() {
         await reloadDetail();
         await reloadMeetings();
         notifyCalendarEventsChanged();
+        setAlertMessage("저장되었습니다.");
+        setAlertOpen(true);
         return;
       }
       const result = await createMeeting({ ...form, participantIds: members.map((member) => member.id) });
@@ -465,6 +467,8 @@ export function useMeetingReport() {
       setMeetingFormBaseline(null);
       setSelectedMeetingId(result.meetingId ?? rows[0]?.id ?? null);
       notifyCalendarEventsChanged();
+      setAlertMessage("저장되었습니다.");
+      setAlertOpen(true);
     } catch (error) {
       showRequestError(error, "회의 정보를 저장하지 못했습니다.");
     } finally {
