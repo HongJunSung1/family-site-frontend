@@ -72,14 +72,31 @@
 }
 
 .treeArrow {
+  position: relative;
   margin-left: auto;
-  min-width: 14px;
-  font-size: 8px;
-  font-weight: 800;
-  line-height: 1;
+  width: 14px;
+  height: 14px;
+  font-size: 0;
+  line-height: 0;
   color: #64748b;
-  text-align: center;
-  transition: transform 0.2s ease;
+}
+
+.treeArrow::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translate(-58%, -50%) rotate(-45deg);
+  transform-origin: center;
+  transition: transform 0.18s ease;
+}
+
+.treeArrowOpen::before {
+  transform: translate(-50%, -62%) rotate(45deg);
 }
 
 .treeSubMenu {

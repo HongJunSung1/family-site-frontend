@@ -128,7 +128,12 @@ export default function PersonalInfoPage({ onLogout }: Props) {
               onClick={onClickCalendarGroup}
             >
               <span>2) 캘린더 정보</span>
-              <span className={styles.treeArrow}>{isCalendarOpen ? "∧" : "∨"}</span>
+              <span
+                className={`${styles.treeArrow} ${isCalendarOpen ? styles.treeArrowOpen : ""}`}
+                aria-hidden="true"
+              >
+                ›
+              </span>
             </button>
 
             <div className={`${styles.treeSubMenu} ${isCalendarOpen ? styles.treeSubMenuOpen : ""}`}>
