@@ -4,6 +4,7 @@ import { verifyStoredSession } from "./api/authApi";
 import Login from "./pages/home/Login";
 import Signup from "./pages/home/Signup";
 import calendarNavIcon from "./assets/icons/calendar-nav.svg";
+import assetManagementIcon from "./assets/icons/asset-management.svg";
 import moneyIcon from "./assets/icons/money.svg";
 import meetingNotesIcon from "./assets/icons/meeting-notes.svg";
 import profilePrivacyIcon from "./assets/icons/profile-privacy.svg";
@@ -22,6 +23,9 @@ const HouseholdAccounts = lazy(
 );
 const ConferenceReport = lazy(
   () => import("./pages/utility/conference-report/ConferenceReport"),
+);
+const AssetManagement = lazy(
+  () => import("./pages/utility/asset-management/AssetManagement"),
 );
 
 type ThemeMode = "light" | "dark";
@@ -47,6 +51,8 @@ function TopNav({ theme, onToggleTheme }: TopNavProps) {
     ? "가계부"
     : location.pathname.startsWith("/conference-report")
     ? "회의록"
+    : location.pathname.startsWith("/asset-management")
+    ? "자산관리"
     : "캘린더";
   const mobileTitle = config.title || fallbackTitle;
 
@@ -104,6 +110,14 @@ function TopNav({ theme, onToggleTheme }: TopNavProps) {
           title="가계부"
         >
           <img src={moneyIcon} alt="" className={styles.navIconImage} aria-hidden="true" />
+        </Link>
+        <Link
+          to="/asset-management"
+          className={styles.desktopUtilityButton}
+          aria-label="자산관리"
+          title="자산관리"
+        >
+          <img src={assetManagementIcon} alt="" className={styles.navIconImage} aria-hidden="true" />
         </Link>
       </div>
 
@@ -281,6 +295,21 @@ function BottomNav() {
           >
             <img src={moneyIcon} alt="" className={styles.menuSheetIconImage} aria-hidden="true" />
             <span>가계부</span>
+            <span className={styles.menuSheetChevron} aria-hidden="true" />
+          </Link>
+
+          <Link
+            to="/asset-management"
+            className={styles.menuSheetItem}
+            onClick={() => setMenuOpen(false)}
+          >
+            <img
+              src={assetManagementIcon}
+              alt=""
+              className={styles.menuSheetIconImage}
+              aria-hidden="true"
+            />
+            <span>자산관리</span>
             <span className={styles.menuSheetChevron} aria-hidden="true" />
           </Link>
 
@@ -520,6 +549,15 @@ export default function App() {
             element={
               <ProtectedRoute isLoggedIn={isLoggedIn}>
                 <ConferenceReport />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/asset-management/*"
+            element={
+              <ProtectedRoute isLoggedIn={isLoggedIn}>
+                <AssetManagement />
               </ProtectedRoute>
             }
           />

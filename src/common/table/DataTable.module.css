@@ -1,0 +1,181 @@
+/* 목록형 업무 화면에서 공통으로 사용하는 테이블 골격 */
+.tableFrame {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+}
+
+.scrollArea {
+  width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  color: var(--color-text);
+  font-size: 13px;
+}
+
+.table th,
+.table td {
+  height: 42px;
+  padding: 7px 12px;
+  box-sizing: border-box;
+  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
+}
+
+.table th:last-child,
+.table td:last-child {
+  border-right: 0;
+}
+
+.table tbody tr:last-child:not(.expandedRow) td,
+.expandedRow:last-child td {
+  border-bottom: 0;
+}
+
+.table th {
+  height: 38px;
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.table td {
+  font-weight: 650;
+}
+
+.alignLeft {
+  text-align: left;
+}
+
+.alignCenter {
+  text-align: center;
+}
+
+.alignRight {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.interactiveRow {
+  cursor: pointer;
+  transition: background 0.16s ease;
+}
+
+.interactiveRow:hover,
+.interactiveRow:focus-visible {
+  outline: none;
+  background: var(--color-surface-muted);
+}
+
+.expandedRow td {
+  height: auto;
+  padding: 14px;
+  background: color-mix(in srgb, var(--color-surface-muted) 58%, transparent);
+}
+
+.expandedTableRow td {
+  height: auto;
+}
+
+/* 부모 합계와 상세 내용을 하나의 확장 행처럼 연결하는 선택형 스타일 */
+.integratedParentRow td {
+  border-bottom: 0;
+}
+
+.integratedExpandedRow td {
+  padding: 0;
+  background: var(--color-surface);
+}
+
+.integratedExpandedRow:last-child td > * {
+  border-bottom: 0;
+}
+
+.emptyCell {
+  height: 78px !important;
+  color: var(--color-text-muted);
+  text-align: center;
+  font-weight: 700 !important;
+}
+
+/* 테이블 아래에서 사용하는 공통 페이지 번호 이동 */
+.pagination {
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.pageArrow,
+.pageNumber {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-muted);
+  box-shadow: none;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.pageArrow:hover:not(:disabled),
+.pageNumber:hover,
+.pageNumberActive {
+  border-color: var(--color-border);
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+}
+
+.pageArrow:focus,
+.pageArrow:focus-visible,
+.pageNumber:focus,
+.pageNumber:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.pageArrow:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+.chevron {
+  width: 7px;
+  height: 7px;
+  border-top: 2px solid currentColor;
+  border-right: 2px solid currentColor;
+}
+
+.chevronLeft {
+  transform: rotate(-135deg);
+}
+
+.chevronRight {
+  transform: rotate(45deg);
+}
+
+@media (max-width: 768px) {
+  .table th,
+  .table td {
+    padding-inline: 9px;
+  }
+}

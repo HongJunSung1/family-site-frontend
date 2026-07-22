@@ -1,0 +1,375 @@
+/* 자산관리 공통 화면과 PC 내부 메뉴 */
+.page {
+  height: calc(var(--app-viewport-height, 100dvh) - var(--app-nav-height));
+  min-height: 0;
+  padding: 16px;
+  box-sizing: border-box;
+  overflow: hidden;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.layout {
+  height: 100%;
+  min-height: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  display: grid;
+  grid-template-columns: 176px minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.sideNav {
+  padding: 16px 10px;
+  border-right: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 3px;
+}
+
+.sideNavTitle {
+  padding: 2px 10px 13px;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.sideNavItem,
+.sideNavGroup {
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.sideNavItem {
+  transition:
+    color 0.16s ease,
+    background 0.16s ease;
+}
+
+.sideNavItem:hover,
+.sideNavItemActive {
+  background: var(--color-surface);
+  color: var(--color-primary);
+}
+
+.sideNavItem:focus,
+.sideNavItem:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.sideNavGroup {
+  margin-top: 8px;
+  color: var(--color-text);
+}
+
+.sideNavItemNested {
+  padding-left: 22px;
+  font-size: 12px;
+}
+
+.content {
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.calendarToolbar {
+  padding: 14px 20px 0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.calendarControl { display: flex; align-items: center; gap: 8px; color: var(--color-text-muted); font-size: 12px; font-weight: 800; }
+.calendarControl select, .formFields input, .formFields select, .formFields textarea {
+  min-height: 38px; padding: 8px 10px; box-sizing: border-box; border: 1px solid var(--color-border);
+  border-radius: 6px; background: var(--color-surface); color: var(--color-text); font: inherit;
+}
+.calendarControl select { width: 180px; min-width: 180px; }
+
+.screen {
+  position: relative;
+  min-width: 0;
+  padding: 20px;
+  display: grid;
+  align-content: start;
+  gap: 18px;
+}
+
+.screenHeader {
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.screenHeaderActions { display: flex; align-items: center; justify-content: flex-end; gap: 14px; }
+
+.screenHeader h1,
+.sectionHeader h2 {
+  margin: 0;
+  letter-spacing: 0;
+}
+
+.screenHeader h1 {
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.screenHeader p {
+  margin: 5px 0 0;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* 목록 화면의 공통 테이블·상태 표시 */
+.tableSection {
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.sectionHeader {
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sectionHeader h2 {
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.sectionHeader span {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.exampleDetail {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.accountNameColumn {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.primaryButton, .secondaryButton, .deleteButton { min-height: 36px; padding: 0 14px; border: 1px solid transparent; border-radius: 6px; font-weight: 800; cursor: pointer; }
+.primaryButton { background: var(--color-primary); color: white; }
+.secondaryButton { border-color: var(--color-border); background: var(--color-surface); color: var(--color-text); }
+.deleteButton { border-color: color-mix(in srgb, #d33 45%, var(--color-border)); background: var(--color-surface); color: #d44; }
+.primaryButton:disabled { opacity: .5; cursor: default; }
+/* 기준 정보 탭과 순서 이동 버튼 */
+.tabs { min-height: 48px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--color-border); }
+.tabButtons { align-self: stretch; display: flex; gap: 4px; }
+.tabButtons button {
+  padding: 10px 14px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0 !important;
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-weight: 800;
+  cursor: pointer;
+}
+.tabButtons button:focus,
+.tabButtons button:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+.tabButtons .tabActive { border-bottom-color: var(--color-primary); color: var(--color-primary); }
+/* 목록과 추가·수정 패널을 나누는 관리 화면 레이아웃 */
+.managementGrid { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.managementGridEditing { grid-template-columns: minmax(0, 1fr) minmax(280px, 360px); }
+.editorPanel { min-width: 0; max-height: calc(var(--app-viewport-height, 100dvh) - 230px); border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-surface-muted); display: grid; grid-template-rows: auto minmax(0, 1fr) auto; overflow: hidden; }
+.editorHeader { min-height: 50px; padding: 0 14px; border-bottom: 1px solid var(--color-border); display: flex; align-items: center; justify-content: space-between; }
+.editorHeader h2 { margin: 0; font-size: 16px; }
+.editorHeader button { border: 0; background: transparent; color: var(--color-text-muted); font-size: 24px; cursor: pointer; }
+.formFields { padding: 14px; overflow-y: auto; display: grid; align-content: start; gap: 13px; }
+.formFields label:not(.checkField) { display: grid; gap: 6px; font-size: 12px; font-weight: 800; }
+.formFields input, .formFields select, .formFields textarea { width: 100%; }
+.formFields textarea { resize: vertical; }
+.checkField { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 800; }
+.checkField input { width: 16px; min-height: 16px; }
+.editorActions { padding: 12px 14px; border-top: 1px solid var(--color-border); display: flex; justify-content: flex-end; gap: 8px; background: var(--color-surface); }
+.orderColumn { padding-left: 0 !important; padding-right: 0 !important; text-align: center !important; }
+.orderButtons { display: grid; justify-items: center; gap: 1px; }
+.orderButtons button { width: 28px; height: 17px; padding: 0; border: 0; background: transparent; color: var(--color-text-muted); font-size: 9px; line-height: 1; cursor: pointer; }
+.orderButtons button:hover:not(:disabled) { color: var(--color-primary); }
+.orderButtons button:disabled { opacity: .22; cursor: default; }
+.message { margin: 0; padding: 10px 12px; border-radius: 6px; background: color-mix(in srgb, #d33 10%, var(--color-surface)); color: #c33; font-size: 12px; font-weight: 750; }
+.emptyState { min-height: 140px; display: grid; place-items: center; color: var(--color-text-muted); font-size: 13px; }
+.accountDetail { display: flex; flex-wrap: wrap; gap: 8px 18px; color: var(--color-text-muted); font-size: 12px; }
+.fieldHint { margin: -4px 0 0; color: #c33; font-size: 11px; font-weight: 700; }
+.fieldInfo { margin: -4px 0 0; color: var(--color-text-muted); font-size: 11px; font-weight: 700; }
+
+/* 월별 잔액 입력 화면 */
+.monthPicker { display: flex; align-items: center; gap: 8px; color: var(--color-text-muted); font-size: 12px; font-weight: 800; }
+.monthPicker input { width: 180px; min-height: 38px; padding: 7px 10px; box-sizing: border-box; border: 1px solid var(--color-border); border-radius: 6px; background: var(--color-surface); color: var(--color-text); font: inherit; }
+.memberPicker { display: flex; align-items: center; gap: 8px; color: var(--color-text-muted); font-size: 12px; font-weight: 800; }
+.memberPicker select { width: 180px; min-height: 38px; padding: 7px 10px; box-sizing: border-box; border: 1px solid var(--color-border); border-radius: 6px; background: var(--color-surface); color: var(--color-text); font: inherit; }
+.monthlySummary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.monthlySummary > div { min-width: 0; padding: 14px; border: 1px solid var(--color-border); border-radius: 7px; background: var(--color-surface-muted); display: grid; gap: 6px; }
+.monthlySummary span { color: var(--color-text-muted); font-size: 11px; font-weight: 800; }
+.monthlySummary strong { overflow: hidden; text-overflow: ellipsis; font-size: 17px; white-space: nowrap; }
+.monthlySummary small { color: var(--color-text-muted); font-size: 11px; font-weight: 700; }
+.monthlyAccountName { font-weight: 850; }
+.currentBalanceColumn { white-space: nowrap; }
+:global(tbody) .currentBalanceColumn { background: color-mix(in srgb, var(--color-text-muted) 8%, var(--color-surface)); }
+.balanceCellControl { min-height: 42px; margin: -7px -12px; padding: 7px 12px; box-sizing: border-box; display: flex; align-items: center; cursor: text; }
+.monthlyTableInput { min-width: 150px; text-align: right; }
+.monthlyTableInput input { text-align: right; }
+.monthlyActions { min-height: 44px; display: flex; align-items: center; justify-content: flex-end; gap: 14px; }
+.monthlyActions > span { color: var(--color-text-muted); font-size: 11px; font-weight: 750; }
+.monthlyEmpty { min-height: 180px; display: grid; place-items: center; align-content: center; gap: 12px; color: var(--color-text-muted); }
+.monthlyEmpty p { margin: 0; }
+.successMessage { margin: 0; padding: 10px 12px; border-radius: 6px; background: color-mix(in srgb, #2f9e44 10%, var(--color-surface)); color: #2f9e44; font-size: 12px; font-weight: 750; }
+
+/* 자산현황 요약과 12개월 추이 */
+/* 자산현황 요약 카드·구성원 상세·추이 차트 */
+.overviewSummary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.overviewSummary > div { min-width: 0; padding: 14px; border: 1px solid var(--color-border); border-radius: 7px; background: var(--color-surface-muted); display: grid; gap: 6px; }
+.overviewSummary span { color: var(--color-text-muted); font-size: 11px; font-weight: 800; }
+.overviewSummary strong { overflow: hidden; text-overflow: ellipsis; font-size: 17px; white-space: nowrap; }
+.overviewSummary small { color: var(--color-text-muted); font-size: 11px; font-weight: 700; }
+.summaryCardHeader { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.summaryHelp { position: relative; display: inline-flex; }
+.summaryHelp button { width: 18px; height: 18px; padding: 0; border: 1px solid var(--color-border); border-radius: 50%; background: var(--color-surface); color: var(--color-text-muted); display: grid; place-items: center; font-size: 11px; font-weight: 900; line-height: 1; cursor: help; }
+.summaryHelp button:focus, .summaryHelp button:focus-visible { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 16%, transparent); }
+.summaryTooltip { position: absolute; z-index: 20; top: 24px; right: 0; width: 220px; padding: 9px 10px; border: 1px solid var(--color-border); border-radius: 6px; background: var(--color-surface); color: var(--color-text) !important; box-shadow: 0 8px 24px color-mix(in srgb, #000 22%, transparent); font-size: 11px !important; font-weight: 700 !important; line-height: 1.45; opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(-3px); transition: opacity .14s ease, transform .14s ease, visibility .14s ease; }
+.summaryHelp:hover .summaryTooltip, .summaryHelp:focus-within .summaryTooltip { opacity: 1; visibility: visible; transform: translateY(0); }
+.overviewNotice { margin: 0; padding: 10px 12px; border: 1px solid color-mix(in srgb, #e7a11a 35%, var(--color-border)); border-radius: 6px; background: color-mix(in srgb, #e7a11a 9%, var(--color-surface)); color: var(--color-text); font-size: 12px; font-weight: 750; }
+.chartSection { min-width: 0; display: grid; gap: 10px; }
+.assetChart { min-width: 0; height: 320px; padding: 4px 8px; border: 1px solid var(--color-border); border-radius: 8px; overflow: hidden; background: var(--color-surface); color: var(--color-text); }
+.assetChart :global(text), .assetChart :global(.MuiChartsLegend-label) { font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", "Apple SD Gothic Neo", sans-serif !important; letter-spacing: -0.01em; }
+.assetChart :global(.MuiChartsAxis-tickLabel), .assetChart :global(.MuiChartsLegend-label) { fill: var(--color-text-muted) !important; color: var(--color-text-muted) !important; }
+.assetChart :global(.MuiChartsAxis-line), .assetChart :global(.MuiChartsAxis-tick) { stroke: var(--color-border) !important; }
+.assetChartTooltip {
+  border: 1px solid var(--color-border) !important;
+  border-radius: 8px !important;
+  background: var(--color-surface-raised) !important;
+  color: var(--color-text) !important;
+  box-shadow: var(--shadow-floating);
+  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Noto Sans KR", "Apple SD Gothic Neo", sans-serif !important;
+  letter-spacing: -0.01em;
+}
+.assetChartTooltip :global(caption) { border-color: var(--color-border) !important; color: var(--color-text) !important; font-family: inherit !important; font-weight: 800; }
+.assetChartTooltip :global(.MuiChartsTooltip-cell) { color: var(--color-text-muted) !important; font-family: inherit !important; }
+.assetChartTooltip :global(.MuiChartsTooltip-valueCell), .assetChartTooltip :global(.MuiChartsTooltip-axisValueCell) { color: var(--color-text) !important; font-weight: 800; }
+.memberSummaryName, .memberSummaryValue { font-size: 13px; font-weight: 850; }
+.memberSummaryNote { font-size: 12px; font-weight: 800; }
+.memberAccountRow td { height: 36px; border-bottom: 1px solid color-mix(in srgb, var(--color-border) 72%, transparent); background: color-mix(in srgb, var(--color-surface-muted) 28%, var(--color-surface)); color: var(--color-text-muted); font-size: 11px; font-weight: 650; }
+.memberAccountRow td:first-child { padding: 0; }
+.memberAccountRowLast td { border-bottom: 2px solid var(--color-border); }
+.memberAccountIdentity { min-width: 0; padding: 6px 12px 6px 22px; display: flex; align-items: center; gap: 5px; }
+.memberAccountIdentity strong { overflow: hidden; color: var(--color-text-muted); text-overflow: ellipsis; white-space: nowrap; font-size: 11px; font-weight: 700; }
+.memberAccountInstitution { overflow: hidden; color: var(--color-text-muted); text-overflow: ellipsis; white-space: nowrap; font-size: 11px; font-weight: 700; }
+.memberAccountType { flex: 0 1 auto; overflow: hidden; color: var(--color-text-muted); text-overflow: ellipsis; white-space: nowrap; font-size: 11px; font-weight: 700; }
+.assetKindBadge { flex: 0 0 auto; padding: 2px 6px; border-radius: 999px; background: color-mix(in srgb, #6385ff 16%, transparent); color: #7f9aff; font-size: 10px; font-weight: 850; line-height: 1.4; }
+.liabilityBadge { background: color-mix(in srgb, #e56b6f 16%, transparent); color: #df777b; }
+.memberAccountRow span, .memberAccountRow small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.memberAccountRow small { color: var(--color-text-muted); font-size: 11px; font-weight: 700; }
+.memberAccountNote { width: 100%; display: flex; justify-content: flex-end; align-items: center; font-variant-numeric: tabular-nums; }
+.memberAccountNote.changeSummary { justify-content: space-between; }
+.memberAccountRow small .changeLabel { color: var(--color-text-muted); text-align: left; }
+.memberAccountRow .changeIncrease { color: #e05b5b; }
+.memberAccountRow .changeDecrease { color: #5f8fe8; }
+
+/* 모바일에서는 내부 메뉴를 상단 메뉴로 대체하고 편집 패널을 전체 화면으로 표시 */
+@media (max-width: 768px) {
+  .page {
+    height: calc(
+      var(--app-viewport-height, 100dvh) - var(--app-nav-height) - var(--app-bottom-nav-height) -
+        env(safe-area-inset-bottom)
+    );
+    min-height: 0;
+    padding: 8px 8px 12px;
+  }
+
+  .layout {
+    height: 100%;
+    min-height: 0;
+    display: block;
+  }
+
+  .sideNav {
+    display: none;
+  }
+
+  .screen {
+    padding: 14px 12px;
+    gap: 14px;
+  }
+
+  .calendarToolbar { padding: 10px 12px 0; justify-content: stretch; }
+  .calendarToolbar .calendarControl { width: 100%; }
+  .calendarControl select { min-width: 0; flex: 1; }
+  .managementGridEditing { display: block; }
+  .managementGridEditing > .tableSection { display: none; }
+  .editorPanel {
+    position: fixed; inset: var(--app-nav-height) 0 calc(var(--app-bottom-nav-height) + env(safe-area-inset-bottom)) 0;
+    z-index: 40; max-height: none; border: 0; border-radius: 0; background: var(--color-surface);
+  }
+  .editorActions { padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+
+  .screenHeader {
+    min-height: 40px;
+  }
+
+  .screenHeader h1 {
+    font-size: 18px;
+  }
+
+  .exampleDetail {
+    gap: 12px;
+  }
+
+  /* 모바일 자산 예시는 핵심 정보만 남겨 열 너비와 텍스트 줄바꿈 보호 */
+  .mobileOptionalColumn {
+    display: none;
+  }
+
+  .accountNameColumn {
+    width: 44%;
+  }
+  .screenHeader { align-items: flex-start; gap: 10px; }
+  .screenHeaderActions { flex-wrap: wrap; }
+  .monthPicker, .memberPicker { flex: 0 0 auto; }
+  .monthlySummary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .monthlySummary strong { font-size: 14px; }
+  .monthlyActions { position: sticky; bottom: calc(var(--app-bottom-nav-height) + env(safe-area-inset-bottom)); padding: 10px 0; background: var(--color-surface); }
+  .balanceCellControl { margin-inline: -9px; padding-inline: 9px; }
+  .overviewSummary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .overviewSummary strong { font-size: 14px; }
+  .memberAccountIdentity { min-height: 50px; padding-block: 7px; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; }
+  .memberAccountIdentity > span, .memberAccountIdentity > strong { width: 100%; flex: 0 0 auto; }
+  .memberAccountIdentity .assetKindBadge, .memberAccountIdentity .memberAccountType { display: none; }
+  .memberAccountIdentity .memberAccountSeparator { display: none; }
+  .assetChart { height: 280px; padding-inline: 0; }
+}
