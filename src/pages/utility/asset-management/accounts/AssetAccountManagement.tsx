@@ -402,7 +402,7 @@ export default function AssetAccountManagement({ calendarId, calendarName, calen
                 </label>
               )}
 
-              {selectedType?.requires_institution && !form.institutionId && (
+              {selectedType?.requires_institution === 1 && !form.institutionId && (
                 <p className={styles.fieldHint}>
                   이 계정 구분은 금융기관 선택이 필수입니다.
                 </p>
