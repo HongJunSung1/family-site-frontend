@@ -73,6 +73,71 @@
   color: var(--color-text);
 }
 
+.sideNavGroupButton {
+  width: 100%;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+
+.sideNavGroupButton:hover,
+.sideNavGroupActive {
+  background: var(--color-surface);
+  color: var(--color-primary);
+}
+
+.sideNavGroupButton:focus,
+.sideNavGroupButton:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.sideNavArrow {
+  position: relative;
+  margin-left: auto;
+  width: 14px;
+  height: 14px;
+  color: var(--color-text-muted);
+  font-size: 0;
+  line-height: 0;
+}
+
+.sideNavArrow::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translate(-58%, -50%) rotate(-45deg);
+  transform-origin: center;
+  transition: transform 0.18s ease;
+}
+
+.sideNavArrowOpen::before {
+  transform: translate(-50%, -62%) rotate(45deg);
+}
+
+.sideNavSubMenu {
+  display: flex;
+  flex-direction: column;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: max-height 0.25s ease, opacity 0.18s ease, transform 0.25s ease;
+}
+
+.sideNavSubMenuOpen {
+  max-height: 90px;
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .sideNavItemNested {
   padding-left: 22px;
   font-size: 12px;

@@ -32,6 +32,10 @@ export default function AssetManagement() {
   const currentTitle = getCurrentTitle(location.pathname);
   const [calendars, setCalendars] = useState<MyCalendar[]>([]);
   const [calendarId, setCalendarId] = useState(0);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(
+    location.pathname.startsWith(INTERNAL_ROUTES.accounts)
+      || location.pathname.startsWith(INTERNAL_ROUTES.reference),
+  );
 
   const mobileMenuItems = useMemo(
     () => [
@@ -58,13 +62,19 @@ export default function AssetManagement() {
             id: "asset-accounts",
             label: "자산 계정 관리",
             active: location.pathname.startsWith(INTERNAL_ROUTES.accounts),
-            onSelect: () => navigate(INTERNAL_ROUTES.accounts),
+            onSelect: () => {
+              setIsSettingsOpen(true);
+              navigate(INTERNAL_ROUTES.accounts);
+            },
           },
           {
             id: "asset-reference",
             label: "기준 정보 관리",
             active: location.pathname.startsWith(INTERNAL_ROUTES.reference),
-            onSelect: () => navigate(INTERNAL_ROUTES.reference),
+            onSelect: () => {
+              setIsSettingsOpen(true);
+              navigate(INTERNAL_ROUTES.reference);
+            },
           },
         ],
       },
@@ -108,13 +118,45 @@ export default function AssetManagement() {
           <strong className={styles.sideNavTitle}>자산관리</strong>
           <NavItem to={INTERNAL_ROUTES.overview}>자산현황</NavItem>
           <NavItem to={INTERNAL_ROUTES.monthly}>월별 재산 입력</NavItem>
-          <span className={styles.sideNavGroup}>환경설정</span>
-          <NavItem to={INTERNAL_ROUTES.accounts} nested>
-            자산 계정 관리
-          </NavItem>
-          <NavItem to={INTERNAL_ROUTES.reference} nested>
-            기준 정보 관리
-          </NavItem>
+          <button
+            type="button"
+            className={[
+              styles.sideNavGroup,
+              styles.sideNavGroupButton,
+              location.pathname.startsWith(INTERNAL_ROUTES.accounts)
+                || location.pathname.startsWith(INTERNAL_ROUTES.reference)
+                ? styles.sideNavGroupActive
+                : "",
+            ].filter(Boolean).join(" ")}
+            aria-expanded={isSettingsOpen}
+            aria-controls="asset-settings-menu"
+            onClick={() => setIsSettingsOpen((current) => !current)}
+          >
+            <span>환경설정</span>
+            <span
+              className={[
+                styles.sideNavArrow,
+                isSettingsOpen ? styles.sideNavArrowOpen : "",
+              ].filter(Boolean).join(" ")}
+              aria-hidden="true"
+            >
+              ›
+            </span>
+          </button>
+          <div
+            id="asset-settings-menu"
+            className={[
+              styles.sideNavSubMenu,
+              isSettingsOpen ? styles.sideNavSubMenuOpen : "",
+            ].filter(Boolean).join(" ")}
+          >
+            <NavItem to={INTERNAL_ROUTES.accounts} nested>
+              자산 계정 관리
+            </NavItem>
+            <NavItem to={INTERNAL_ROUTES.reference} nested>
+              기준 정보 관리
+            </NavItem>
+          </div>
         </nav>
 
         <div className={styles.content}>
