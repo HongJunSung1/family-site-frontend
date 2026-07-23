@@ -17,7 +17,7 @@ const ATTACHMENT_ACCEPT = [
   ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
   ".hwp", ".hwpx",
   ".jpg", ".jpeg", ".png", ".gif", ".webp", ".heic", ".heif",
-  ".zip", ".7z", ".rar",
+  ".zip", ".7z", ".rar", ".html"
 ].join(",");
 
 type AttachmentSectionProps = {
