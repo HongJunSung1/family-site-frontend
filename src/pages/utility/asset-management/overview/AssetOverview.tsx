@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import useMediaQuery from "@mui/material/useMediaQuery";
-import { LineChart } from "@mui/x-charts/LineChart";
+import { LineChart, type LineSeries } from "@mui/x-charts/LineChart";
 import {
   getAssetHistory,
   getAssetSummary,
@@ -30,6 +30,35 @@ const formatChange = (value: string) => (
   `${BigInt(value) > 0n ? "+" : ""}${BigInt(value).toLocaleString("ko-KR")}원`
 );
 const chartAmount = (value: string) => Number(value);
+
+// 입력된 두 지점 사이에 미입력 월이 있을 때만 별도 점선 구간 생성
+const createMissingBridgeSeries = (
+  data: Array<number | null>,
+  color: string,
+  idPrefix: string,
+): LineSeries[] => {
+  const enteredIndexes = data.flatMap((value, index) => value === null ? [] : [index]);
+
+  return enteredIndexes.slice(1).flatMap((currentIndex, bridgeIndex) => {
+    const previousIndex = enteredIndexes[bridgeIndex];
+    if (currentIndex - previousIndex <= 1) return [];
+
+    const bridgeData = data.map(() => null) as Array<number | null>;
+    bridgeData[previousIndex] = data[previousIndex];
+    bridgeData[currentIndex] = data[currentIndex];
+
+    return [{
+      id: `${idPrefix}-${previousIndex}-${currentIndex}`,
+      data: bridgeData,
+      color,
+      curve: "linear",
+      connectNulls: true,
+      showMark: false,
+      disableHighlight: true,
+      valueFormatter: () => null,
+    }];
+  });
+};
 
 export default function AssetOverview({ calendarId, calendarName, calendarControl }: AssetScreenProps) {
   const isMobile = useMediaQuery("(max-width: 768px)");
@@ -134,6 +163,17 @@ export default function AssetOverview({ calendarId, calendarName, calendarContro
   const missingAccounts = useMemo(() => accounts.filter(
     (account) => account.isActive === 1 && account.balance === null,
   ), [accounts]);
+
+  const netAssetChartData = useMemo(() => history.map((point) => (
+    point.entered ? chartAmount(point.netAssets) : null
+  )), [history]);
+  const availableChartData = useMemo(() => history.map((point) => (
+    point.entered ? chartAmount(point.available) : null
+  )), [history]);
+  const missingBridgeSeries = useMemo(() => [
+    ...createMissingBridgeSeries(netAssetChartData, "#6385ff", "missing-net-assets"),
+    ...createMissingBridgeSeries(availableChartData, "#42b883", "missing-available"),
+  ], [availableChartData, netAssetChartData]);
 
   // 자동 눈금이 실제 최댓값보다 과도하게 커지지 않도록 상단 여백만 소폭 추가
   const chartDomain = useMemo(() => {
@@ -353,10 +393,9 @@ export default function AssetOverview({ calendarId, calendarName, calendarContro
                 }]}
                 series={[
                   {
+                    id: "net-assets",
                     label: "순자산",
-                    data: history.map((point) => (
-                      point.entered ? chartAmount(point.netAssets) : null
-                    )),
+                    data: netAssetChartData,
                     color: "#6385ff",
                     connectNulls: false,
                     showMark: true,
@@ -365,10 +404,9 @@ export default function AssetOverview({ calendarId, calendarName, calendarContro
                     ),
                   },
                   {
+                    id: "available-assets",
                     label: "가용재산",
-                    data: history.map((point) => (
-                      point.entered ? chartAmount(point.available) : null
-                    )),
+                    data: availableChartData,
                     color: "#42b883",
                     connectNulls: false,
                     showMark: true,
@@ -376,8 +414,12 @@ export default function AssetOverview({ calendarId, calendarName, calendarContro
                       value === null ? "-" : `${value.toLocaleString("ko-KR")}원`
                     ),
                   },
+                  ...missingBridgeSeries,
                 ]}
                 slotProps={{
+                  line: ({ seriesId }) => String(seriesId).startsWith("missing-")
+                    ? { style: { strokeDasharray: "5 5", opacity: 0.72 } }
+                    : {},
                   tooltip: {
                     classes: { paper: styles.assetChartTooltip },
                   },

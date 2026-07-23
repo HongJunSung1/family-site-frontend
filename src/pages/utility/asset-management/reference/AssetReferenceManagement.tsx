@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
-import { DataTable, type DataTableColumn } from "../../../../common/table";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { DataTable, TablePagination, type DataTableColumn } from "../../../../common/table";
 import { ConfirmDialog } from "../../../../common/dialog";
 import { LoadingOverlay } from "../../../../common/loading";
 import { ApiError } from "../../../../api/client";
@@ -8,8 +8,6 @@ import {
   deleteAssetInstitution,
   getAssetAccountTypes,
   getAssetInstitutions,
-  reorderAssetAccountTypes,
-  reorderAssetInstitutions,
   saveAssetAccountType,
   saveAssetInstitution,
   type AssetAccountType,
@@ -31,6 +29,7 @@ type TypeForm = InstitutionForm & {
   allowsAvailable: boolean;
 };
 type DeleteTarget = { id: number; name: string; tab: Tab };
+const PAGE_SIZE = 15;
 const newInstitution = (): InstitutionForm => ({
   name: "",
   isActive: true,
@@ -48,6 +47,8 @@ export default function AssetReferenceManagement({ calendarId, calendarName, cal
   const [institutions, setInstitutions] = useState<AssetInstitution[]>([]);
   const [types, setTypes] = useState<AssetAccountType[]>([]);
   const [canManage, setCanManage] = useState(false);
+  const [activeOnly, setActiveOnly] = useState(false);
+  const [page, setPage] = useState(1);
   const [institutionForm, setInstitutionForm] = useState<InstitutionForm | null>(null);
   const [typeForm, setTypeForm] = useState<TypeForm | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
@@ -78,6 +79,8 @@ export default function AssetReferenceManagement({ calendarId, calendarName, cal
   useEffect(() => {
     setInstitutionForm(null);
     setTypeForm(null);
+    setActiveOnly(false);
+    setPage(1);
     void load();
   }, [load]);
 
@@ -85,71 +88,36 @@ export default function AssetReferenceManagement({ calendarId, calendarName, cal
     tab === "institution" ? setInstitutionForm(null) : setTypeForm(null)
   );
   const activeForm = tab === "institution" ? institutionForm : typeForm;
+  const visibleInstitutions = useMemo(() => (
+    activeOnly ? institutions.filter((item) => item.is_active === 1) : institutions
+  ), [activeOnly, institutions]);
+  const visibleTypes = useMemo(() => (
+    activeOnly ? types.filter((item) => item.is_active === 1) : types
+  ), [activeOnly, types]);
+  const visibleRowCount = tab === "institution" ? visibleInstitutions.length : visibleTypes.length;
+  const totalPages = Math.max(1, Math.ceil(visibleRowCount / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const pagedInstitutions = visibleInstitutions.slice(pageStart, pageStart + PAGE_SIZE);
+  const pagedTypes = visibleTypes.slice(pageStart, pageStart + PAGE_SIZE);
 
-  async function move(tabName: Tab, id: number, direction: -1 | 1) {
-    const rows = tabName === "institution" ? institutions : types;
-    const index = rows.findIndex((row) => row.id === id);
-    const next = index + direction;
-    if (index < 0 || next < 0 || next >= rows.length) return;
-
-    const ids = rows.map((row) => row.id);
-    [ids[index], ids[next]] = [ids[next], ids[index]];
-
-    try {
-      if (tabName === "institution") await reorderAssetInstitutions(calendarId, ids);
-      else await reorderAssetAccountTypes(calendarId, ids);
-      await load();
-    } catch (error) {
-      setMessage(error instanceof ApiError ? error.message : "순서를 변경하지 못했습니다.");
-    }
-  }
-
-  function orderColumn<T extends { id: number }>(rows: T[], tabName: Tab): DataTableColumn<T> {
+  function orderColumn<T extends { display_order: number }>(): DataTableColumn<T> {
     return {
       key: "order",
       header: "순서",
       width: 48,
       className: styles.orderColumn,
-      render: (row) => {
-        const index = rows.findIndex((item) => item.id === row.id);
-
-        return (
-          <span className={styles.orderButtons}>
-            <button
-              type="button"
-              disabled={!canManage || index === 0}
-              aria-label="위로 이동"
-              onClick={(event) => {
-                event.stopPropagation();
-                void move(tabName, row.id, -1);
-              }}
-            >
-              ▲
-            </button>
-            <button
-              type="button"
-              disabled={!canManage || index === rows.length - 1}
-              aria-label="아래로 이동"
-              onClick={(event) => {
-                event.stopPropagation();
-                void move(tabName, row.id, 1);
-              }}
-            >
-              ▼
-            </button>
-          </span>
-        );
-      },
+      render: (row) => row.display_order + 1,
     };
   }
 
   const institutionColumns: DataTableColumn<AssetInstitution>[] = [
-    orderColumn(institutions, "institution"),
+    orderColumn(),
     { key: "name", header: "금융기관명", render: (row) => row.institution_name },
     { key: "active", header: "상태", width: 100, render: (row) => row.is_active ? "사용" : "종료" },
   ];
   const typeColumns: DataTableColumn<AssetAccountType>[] = [
-    orderColumn(types, "type"),
+    orderColumn(),
     { key: "name", header: "구분명", render: (row) => row.type_name },
     { key: "kind", header: "종류", width: 60, render: (row) => row.asset_kind === "ASSET" ? "자산" : "부채" },
     {
@@ -173,7 +141,7 @@ export default function AssetReferenceManagement({ calendarId, calendarName, cal
           calendarId,
           name: institutionForm.name,
           isActive: institutionForm.isActive,
-          displayOrder: institutionForm.displayOrder,
+          displayOrder: institutionForm.displayOrder - 1,
         }, institutionForm.id);
         setInstitutionForm(null);
       } else if (tab === "type" && typeForm) {
@@ -181,7 +149,7 @@ export default function AssetReferenceManagement({ calendarId, calendarName, cal
           calendarId,
           name: typeForm.name,
           isActive: typeForm.isActive,
-          displayOrder: typeForm.displayOrder,
+          displayOrder: typeForm.displayOrder - 1,
           assetKind: typeForm.assetKind,
           requiresInstitution: typeForm.requiresInstitution,
           allowsAvailable: typeForm.assetKind === "ASSET" && typeForm.allowsAvailable,
@@ -218,7 +186,20 @@ export default function AssetReferenceManagement({ calendarId, calendarName, cal
           <h1>기준 정보 관리</h1>
           <p>{calendarName}의 금융기관과 계정 구분을 관리합니다.</p>
         </div>
-        {calendarControl}
+        <div className={styles.screenHeaderActions}>
+          {calendarControl}
+          <label className={styles.activeOnlyFilter}>
+            <input
+              type="checkbox"
+              checked={activeOnly}
+              onChange={(event) => {
+                setActiveOnly(event.target.checked);
+                setPage(1);
+              }}
+            />
+            <span>사용중인 것만 보기</span>
+          </label>
+        </div>
       </header>
 
     <div className={styles.tabs} role="tablist">
@@ -231,6 +212,7 @@ export default function AssetReferenceManagement({ calendarId, calendarName, cal
           onClick={() => {
             setTab("institution");
             setTypeForm(null);
+            setPage(1);
           }}
         >
           금융기관
@@ -243,6 +225,7 @@ export default function AssetReferenceManagement({ calendarId, calendarName, cal
           onClick={() => {
             setTab("type");
             setInstitutionForm(null);
+            setPage(1);
           }}
         >
           계정 구분
@@ -254,8 +237,8 @@ export default function AssetReferenceManagement({ calendarId, calendarName, cal
           className={styles.primaryButton}
           type="button"
           onClick={() => tab === "institution"
-            ? setInstitutionForm({ ...newInstitution(), displayOrder: institutions.length })
-            : setTypeForm({ ...newType(), displayOrder: types.length })}
+            ? setInstitutionForm({ ...newInstitution(), displayOrder: institutions.length + 1 })
+            : setTypeForm({ ...newType(), displayOrder: types.length + 1 })}
         >
           추가
         </button>
@@ -275,34 +258,42 @@ export default function AssetReferenceManagement({ calendarId, calendarName, cal
           <DataTable
             ariaLabel="금융기관 목록"
             columns={institutionColumns}
-            rows={institutions}
+            rows={pagedInstitutions}
             getRowKey={(row) => row.id}
             emptyMessage="등록된 금융기관이 없습니다."
             onRowClick={(row) => canManage && setInstitutionForm({
               id: row.id,
               name: row.institution_name,
               isActive: !!row.is_active,
-              displayOrder: row.display_order,
+              displayOrder: row.display_order + 1,
             })}
           />
         ) : (
           <DataTable
             ariaLabel="계정 구분 목록"
             columns={typeColumns}
-            rows={types}
+            rows={pagedTypes}
             getRowKey={(row) => row.id}
             emptyMessage="등록된 계정 구분이 없습니다."
             onRowClick={(row) => canManage && setTypeForm({
               id: row.id,
               name: row.type_name,
               isActive: !!row.is_active,
-              displayOrder: row.display_order,
+              displayOrder: row.display_order + 1,
               assetKind: row.asset_kind,
               requiresInstitution: !!row.requires_institution,
               allowsAvailable: !!row.allows_available,
             })}
           />
         ))}
+        {!loading && (
+          <TablePagination
+            page={currentPage}
+            totalPages={totalPages}
+            ariaLabel="기준 정보 페이지 이동"
+            onPageChange={setPage}
+          />
+        )}
       </div>
 
       {activeForm && (
@@ -327,6 +318,27 @@ export default function AssetReferenceManagement({ calendarId, calendarName, cal
                   : setTypeForm((form) => form && ({
                     ...form,
                     name: event.target.value,
+                  }))}
+              />
+            </label>
+
+            <label>
+              <span>순서</span>
+              <input
+                type="number"
+                min={1}
+                max={activeForm.id
+                  ? (tab === "institution" ? institutions.length : types.length)
+                  : (tab === "institution" ? institutions.length + 1 : types.length + 1)}
+                value={activeForm.displayOrder}
+                onChange={(event) => tab === "institution"
+                  ? setInstitutionForm((form) => form && ({
+                    ...form,
+                    displayOrder: Number(event.target.value),
+                  }))
+                  : setTypeForm((form) => form && ({
+                    ...form,
+                    displayOrder: Number(event.target.value),
                   }))}
               />
             </label>
@@ -420,7 +432,12 @@ export default function AssetReferenceManagement({ calendarId, calendarName, cal
             <button
               type="button"
               className={styles.primaryButton}
-              disabled={saving || !activeForm.name.trim()}
+              disabled={saving
+                || !activeForm.name.trim()
+                || activeForm.displayOrder < 1
+                || activeForm.displayOrder > (activeForm.id
+                  ? (tab === "institution" ? institutions.length : types.length)
+                  : (tab === "institution" ? institutions.length + 1 : types.length + 1))}
               onClick={() => void submit()}
             >
               {saving ? "저장 중" : "저장"}

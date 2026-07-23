@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { DataTable, type DataTableColumn } from "../../../../common/table";
+import { DataTable, TablePagination, type DataTableColumn } from "../../../../common/table";
 import { ConfirmDialog } from "../../../../common/dialog";
 import { LoadingOverlay } from "../../../../common/loading";
 import { ApiError } from "../../../../api/client";
@@ -8,7 +8,6 @@ import {
   getAssetAccounts,
   getAssetAccountTypes,
   getAssetInstitutions,
-  reorderAssetAccounts,
   saveAssetAccount,
   type AssetAccount,
   type AssetAccountType,
@@ -28,6 +27,7 @@ type Form = {
   displayOrder: number;
   memo: string;
 };
+const PAGE_SIZE = 15;
 
 export default function AssetAccountManagement({ calendarId, calendarName, calendarControl }: AssetScreenProps) {
   const [accounts, setAccounts] = useState<AssetAccount[]>([]);
@@ -37,6 +37,8 @@ export default function AssetAccountManagement({ calendarId, calendarName, calen
   const [currentUserId, setCurrentUserId] = useState(0);
   const [role, setRole] = useState<AssetMember["role"]>("viewer");
   const [ownerFilter, setOwnerFilter] = useState<"all" | number>("all");
+  const [activeOnly, setActiveOnly] = useState(false);
+  const [page, setPage] = useState(1);
   const [form, setForm] = useState<Form | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -71,32 +73,23 @@ export default function AssetAccountManagement({ calendarId, calendarName, calen
   useEffect(() => {
     setForm(null);
     setOwnerFilter("all");
+    setActiveOnly(false);
+    setPage(1);
     void load();
   }, [load]);
 
   const visibleAccounts = useMemo(() => (
-    ownerFilter === "all"
-      ? accounts
-      : accounts.filter((account) => account.owner_user_id === ownerFilter)
-  ), [accounts, ownerFilter]);
-
-  async function move(id: number, direction: -1 | 1) {
-    const index = visibleAccounts.findIndex((row) => row.id === id);
-    const next = index + direction;
-    if (index < 0 || next < 0 || next >= visibleAccounts.length) return;
-
-    const ids = accounts.map((row) => row.id);
-    const currentPosition = ids.indexOf(visibleAccounts[index].id);
-    const nextPosition = ids.indexOf(visibleAccounts[next].id);
-    [ids[currentPosition], ids[nextPosition]] = [ids[nextPosition], ids[currentPosition]];
-
-    try {
-      await reorderAssetAccounts(calendarId, ids);
-      await load();
-    } catch (error) {
-      setMessage(error instanceof ApiError ? error.message : "순서를 변경하지 못했습니다.");
-    }
-  }
+    accounts.filter((account) => (
+      (ownerFilter === "all" || account.owner_user_id === ownerFilter)
+      && (!activeOnly || account.is_active === 1)
+    ))
+  ), [accounts, activeOnly, ownerFilter]);
+  const totalPages = Math.max(1, Math.ceil(visibleAccounts.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pagedAccounts = visibleAccounts.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE,
+  );
 
   const columns: DataTableColumn<AssetAccount>[] = [
     {
@@ -104,36 +97,7 @@ export default function AssetAccountManagement({ calendarId, calendarName, calen
       header: "순서",
       width: 48,
       className: styles.orderColumn,
-      render: (row) => {
-        const index = visibleAccounts.findIndex((item) => item.id === row.id);
-
-        return (
-          <span className={styles.orderButtons}>
-            <button
-              type="button"
-              disabled={role !== "owner" || index === 0}
-              aria-label="위로 이동"
-              onClick={(event) => {
-                event.stopPropagation();
-                void move(row.id, -1);
-              }}
-            >
-              ▲
-            </button>
-            <button
-              type="button"
-              disabled={role !== "owner" || index === visibleAccounts.length - 1}
-              aria-label="아래로 이동"
-              onClick={(event) => {
-                event.stopPropagation();
-                void move(row.id, 1);
-              }}
-            >
-              ▼
-            </button>
-          </span>
-        );
-      },
+      render: (row) => row.display_order + 1,
     },
     { key: "owner", header: "소유자", width: 120, className: styles.mobileOptionalColumn, render: (row) => row.owner_name || "이름 없음" },
     { key: "institution", header: "금융기관", width: 150, className: styles.mobileOptionalColumn, render: (row) => row.institution_name || "금융기관 없음" },
@@ -160,7 +124,7 @@ export default function AssetAccountManagement({ calendarId, calendarName, calen
       accountTypeId: firstType?.id ?? 0,
       accountName: "",
       isActive: true,
-      displayOrder: accounts.length,
+      displayOrder: accounts.length + 1,
       memo: "",
     });
   }
@@ -175,7 +139,7 @@ export default function AssetAccountManagement({ calendarId, calendarName, calen
       accountTypeId: row.account_type_id,
       accountName: row.account_name,
       isActive: !!row.is_active,
-      displayOrder: row.display_order,
+      displayOrder: row.display_order + 1,
       memo: row.memo,
     });
   }
@@ -194,7 +158,7 @@ export default function AssetAccountManagement({ calendarId, calendarName, calen
         accountTypeId: form.accountTypeId,
         accountName: form.accountName,
         isActive: form.isActive,
-        displayOrder: form.displayOrder,
+        displayOrder: form.displayOrder - 1,
         memo: form.memo,
       }, form.id);
       setForm(null);
@@ -239,9 +203,10 @@ export default function AssetAccountManagement({ calendarId, calendarName, calen
             소유자
             <select
               value={ownerFilter}
-              onChange={(event) => setOwnerFilter(
-                event.target.value === "all" ? "all" : Number(event.target.value),
-              )}
+              onChange={(event) => {
+                setOwnerFilter(event.target.value === "all" ? "all" : Number(event.target.value));
+                setPage(1);
+              }}
             >
               <option value="all">전체</option>
               {members.map((member) => (
@@ -250,6 +215,17 @@ export default function AssetAccountManagement({ calendarId, calendarName, calen
                 </option>
               ))}
             </select>
+          </label>
+          <label className={styles.activeOnlyFilter}>
+            <input
+              type="checkbox"
+              checked={activeOnly}
+              onChange={(event) => {
+                setActiveOnly(event.target.checked);
+                setPage(1);
+              }}
+            />
+            <span>사용중인 것만 보기</span>
           </label>
           {canCreate && (
             <button
@@ -278,7 +254,7 @@ export default function AssetAccountManagement({ calendarId, calendarName, calen
             <DataTable
               ariaLabel="자산 계정 목록"
               columns={columns}
-              rows={visibleAccounts}
+              rows={pagedAccounts}
               getRowKey={(row) => row.id}
               emptyMessage={ownerFilter === "all"
                 ? "등록된 자산 계정이 없습니다."
@@ -291,6 +267,14 @@ export default function AssetAccountManagement({ calendarId, calendarName, calen
                   {row.memo && <span>{row.memo}</span>}
                 </div>
               )}
+            />
+          )}
+          {!loading && (
+            <TablePagination
+              page={currentPage}
+              totalPages={totalPages}
+              ariaLabel="자산 계정 페이지 이동"
+              onPageChange={setPage}
             />
           )}
         </div>
@@ -375,6 +359,21 @@ export default function AssetAccountManagement({ calendarId, calendarName, calen
                 </select>
               </label>
 
+              <label>
+                <span>순서</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={form.id ? accounts.length : accounts.length + 1}
+                  value={form.displayOrder}
+                  disabled={role !== "owner"}
+                  onChange={(event) => setForm({
+                    ...form,
+                    displayOrder: Number(event.target.value),
+                  })}
+                />
+              </label>
+
               {selectedType && (
                 <p className={styles.fieldInfo}>
                   가용재산 포함: {selectedType.asset_kind === "ASSET"
@@ -430,7 +429,11 @@ export default function AssetAccountManagement({ calendarId, calendarName, calen
               <button
                 type="button"
                 className={styles.primaryButton}
-                disabled={saving || !form.accountName.trim() || !form.accountTypeId}
+                disabled={saving
+                  || !form.accountName.trim()
+                  || !form.accountTypeId
+                  || form.displayOrder < 1
+                  || form.displayOrder > (form.id ? accounts.length : accounts.length + 1)}
                 onClick={() => void submit()}
               >
                 {saving ? "저장 중" : "저장"}
