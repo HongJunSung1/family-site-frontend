@@ -40,6 +40,7 @@ export default function AssetOverview({ calendarId, calendarName, calendarContro
   const [accounts, setAccounts] = useState<AssetSummaryAccount[]>([]);
   const [history, setHistory] = useState<AssetHistoryPoint[]>([]);
   const [missingCount, setMissingCount] = useState(0);
+  const [isMissingDetailsOpen, setIsMissingDetailsOpen] = useState(false);
   const [expandedMemberIds, setExpandedMemberIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
@@ -130,6 +131,30 @@ export default function AssetOverview({ calendarId, calendarName, calendarContro
     },
   ], []);
 
+  const missingAccounts = useMemo(() => accounts.filter(
+    (account) => account.isActive === 1 && account.balance === null,
+  ), [accounts]);
+
+  // 자동 눈금이 실제 최댓값보다 과도하게 커지지 않도록 상단 여백만 소폭 추가
+  const chartDomain = useMemo(() => {
+    const values = history.flatMap((point) => (
+      point.entered ? [chartAmount(point.netAssets), chartAmount(point.available)] : []
+    ));
+    if (values.length === 0) return { min: 0, max: 1 };
+
+    const minimum = Math.min(...values);
+    const maximum = Math.max(...values);
+    const upperPadding = Math.max(Math.abs(maximum) * 0.08, 1);
+
+    return {
+      min: Math.min(0, minimum),
+      max: maximum > 0 ? maximum + upperPadding : minimum < 0 ? 0 : 1,
+    };
+  }, [history]);
+
+  const [selectedYear, selectedMonth] = yearMonth.split("-");
+  const selectedMonthLabel = `${selectedYear}년 ${Number(selectedMonth)}월`;
+
   return (
     <section className={styles.screen}>
       <header className={styles.screenHeader}>
@@ -176,9 +201,36 @@ export default function AssetOverview({ calendarId, calendarName, calendarContro
       </div>
 
       {missingCount > 0 && (
-        <p className={styles.overviewNotice}>
-          기준 월 잔액이 입력되지 않은 계정이 {missingCount}개 있습니다.
-        </p>
+        <div className={styles.overviewNotice}>
+          <button
+            type="button"
+            className={styles.overviewNoticeToggle}
+            aria-expanded={isMissingDetailsOpen}
+            aria-controls="missing-asset-account-list"
+            onClick={() => setIsMissingDetailsOpen((current) => !current)}
+          >
+            <span>기준 월 잔액이 입력되지 않은 계정이 {missingCount}개 있습니다.</span>
+            <span
+              className={[
+                styles.overviewNoticeArrow,
+                isMissingDetailsOpen ? styles.overviewNoticeArrowOpen : "",
+              ].filter(Boolean).join(" ")}
+              aria-hidden="true"
+            />
+          </button>
+
+          {isMissingDetailsOpen && (
+            <ul id="missing-asset-account-list" className={styles.overviewNoticeList}>
+              {missingAccounts.map((account) => (
+                <li key={account.id}>
+                  <span>{selectedMonthLabel}</span>
+                  <span>{account.ownerName}</span>
+                  <strong>{account.accountName}</strong>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       )}
 
       {!loading && (
@@ -293,6 +345,10 @@ export default function AssetOverview({ calendarId, calendarName, calendarContro
                   data: history.map((point) => point.month.slice(2).replace("-", ".")),
                 }]}
                 yAxis={[{
+                  min: chartDomain.min,
+                  max: chartDomain.max,
+                  domainLimit: "strict",
+                  width: "auto",
                   valueFormatter: (value: number) => value.toLocaleString("ko-KR"),
                 }]}
                 series={[
@@ -303,6 +359,7 @@ export default function AssetOverview({ calendarId, calendarName, calendarContro
                     )),
                     color: "#6385ff",
                     connectNulls: false,
+                    showMark: true,
                     valueFormatter: (value) => (
                       value === null ? "-" : `${value.toLocaleString("ko-KR")}원`
                     ),
@@ -314,6 +371,7 @@ export default function AssetOverview({ calendarId, calendarName, calendarContro
                     )),
                     color: "#42b883",
                     connectNulls: false,
+                    showMark: true,
                     valueFormatter: (value) => (
                       value === null ? "-" : `${value.toLocaleString("ko-KR")}원`
                     ),
@@ -326,8 +384,8 @@ export default function AssetOverview({ calendarId, calendarName, calendarContro
                 }}
                 grid={{ horizontal: true }}
                 margin={isMobile
-                  ? { left: 8, right: 18, top: 16, bottom: 20 }
-                  : { left: 72, right: 24, top: 24, bottom: 24 }}
+                  ? { left: 6, right: 6, top: 16, bottom: 20 }
+                  : { left: 10, right: 8, top: 24, bottom: 24 }}
               />
             </div>
           </section>

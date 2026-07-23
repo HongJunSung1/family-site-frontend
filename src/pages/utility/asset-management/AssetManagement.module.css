@@ -328,7 +328,16 @@
 .summaryHelp button:focus, .summaryHelp button:focus-visible { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 16%, transparent); }
 .summaryTooltip { position: absolute; z-index: 20; top: 24px; right: 0; width: 220px; padding: 9px 10px; border: 1px solid var(--color-border); border-radius: 6px; background: var(--color-surface); color: var(--color-text) !important; box-shadow: 0 8px 24px color-mix(in srgb, #000 22%, transparent); font-size: 11px !important; font-weight: 700 !important; line-height: 1.45; opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(-3px); transition: opacity .14s ease, transform .14s ease, visibility .14s ease; }
 .summaryHelp:hover .summaryTooltip, .summaryHelp:focus-within .summaryTooltip { opacity: 1; visibility: visible; transform: translateY(0); }
-.overviewNotice { margin: 0; padding: 10px 12px; border: 1px solid color-mix(in srgb, #e7a11a 35%, var(--color-border)); border-radius: 6px; background: color-mix(in srgb, #e7a11a 9%, var(--color-surface)); color: var(--color-text); font-size: 12px; font-weight: 750; }
+.overviewNotice { margin: 0; border: 1px solid color-mix(in srgb, #e7a11a 35%, var(--color-border)); border-radius: 6px; background: color-mix(in srgb, #e7a11a 9%, var(--color-surface)); color: var(--color-text); font-size: 12px; font-weight: 750; overflow: hidden; }
+.overviewNoticeToggle { width: 100%; min-height: 38px; padding: 10px 12px; border: 0; background: transparent; color: inherit; display: flex; align-items: center; justify-content: space-between; gap: 12px; font: inherit; text-align: left; cursor: pointer; }
+.overviewNoticeToggle:focus, .overviewNoticeToggle:focus-visible { outline: none; box-shadow: none; }
+.overviewNoticeArrow { position: relative; flex: 0 0 14px; width: 14px; height: 14px; color: var(--color-text-muted); }
+.overviewNoticeArrow::before { content: ""; position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: translate(-58%, -50%) rotate(-45deg); transform-origin: center; transition: transform 0.18s ease; }
+.overviewNoticeArrowOpen::before { transform: translate(-50%, -62%) rotate(45deg); }
+.overviewNoticeList { margin: 0; padding: 2px 12px 10px 30px; border-top: 1px solid color-mix(in srgb, #e7a11a 22%, var(--color-border)); display: grid; gap: 6px; }
+.overviewNoticeList li { padding-top: 8px; color: var(--color-text-muted); line-height: 1.45; }
+.overviewNoticeList li span + span::before, .overviewNoticeList li strong::before { content: " · "; color: var(--color-text-muted); }
+.overviewNoticeList li strong { color: var(--color-text); font-weight: 800; }
 .chartSection { min-width: 0; display: grid; gap: 10px; }
 .assetChart { min-width: 0; height: 320px; padding: 4px 8px; border: 1px solid var(--color-border); border-radius: 8px; overflow: hidden; background: var(--color-surface); color: var(--color-text); }
 .assetChart :global(text), .assetChart :global(.MuiChartsLegend-label) { font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", "Apple SD Gothic Neo", sans-serif !important; letter-spacing: -0.01em; }
