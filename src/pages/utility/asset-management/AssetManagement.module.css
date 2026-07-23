@@ -435,7 +435,8 @@
   .monthPicker, .memberPicker { flex: 0 0 auto; }
   .monthlySummary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .monthlySummary strong { font-size: 14px; }
-  .monthlyActions { position: sticky; bottom: calc(var(--app-bottom-nav-height) + env(safe-area-inset-bottom)); padding: 10px 0; background: var(--color-surface); }
+  .monthlyActions { position: static; padding: 0; }
+
   .balanceCellControl { margin-inline: -9px; padding-inline: 9px; }
   .overviewSummary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .overviewSummary strong { font-size: 14px; }
