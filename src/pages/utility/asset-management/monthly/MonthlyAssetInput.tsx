@@ -166,7 +166,32 @@ export default function MonthlyAssetInput({ calendarId, calendarName, calendarCo
       key: "accountName",
       header: "계정명",
       className: styles.monthlyAccountName,
-      render: (account) => account.accountName,
+      render: (account) => (
+        <div className={styles.monthlyAccountNameContent}>
+          <span>{account.accountName}</span>
+          {account.memo && (
+            <span className={styles.summaryHelp}>
+              <button
+                type="button"
+                aria-label={`${account.accountName} 메모`}
+                aria-describedby={`asset-account-memo-${account.id}`}
+              >
+                ?
+              </button>
+              <span
+                id={`asset-account-memo-${account.id}`}
+                className={[
+                  styles.summaryTooltip,
+                  styles.monthlyMemoTooltip,
+                ].join(" ")}
+                role="tooltip"
+              >
+                {account.memo}
+              </span>
+            </span>
+          )}
+        </div>
+      ),
     },
     {
       key: "typeName",

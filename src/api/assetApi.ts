@@ -45,7 +45,7 @@ export async function reorderAssetAccounts(calendarId: number, ids: number[]) {
 
 export type MonthlyAssetAccount = {
   id: number; institutionName: string | null; typeName: string; assetKind: "ASSET" | "LIABILITY";
-  isAvailable: number | null; accountName: string; balance: string | null; previousBalance: string | null;
+  isAvailable: number | null; accountName: string; memo: string; balance: string | null; previousBalance: string | null;
   updatedAt: string | null;
 };
 export async function getMonthlyAssetInput(calendarId: number, ownerUserId: number, yearMonth: string) {

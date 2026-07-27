@@ -130,6 +130,7 @@ async function mockAssetApis(page: Page) {
             assetKind: "ASSET",
             isAvailable: 1,
             accountName: "급여통장",
+            memo: "생활비와 공과금 결제 계정",
             balance: "1500000",
             previousBalance: "1200000",
             updatedAt: "2026-07-20T19:30:00",
@@ -141,6 +142,7 @@ async function mockAssetApis(page: Page) {
             assetKind: "LIABILITY",
             isAvailable: null,
             accountName: "주택대출",
+            memo: "",
             balance: "500000",
             previousBalance: "600000",
             updatedAt: "2026-07-20T19:30:00",
@@ -264,6 +266,8 @@ test.describe("자산관리 현재 화면", () => {
     await openAssetManagement(page, "/asset-management/monthly");
     const balanceInput = page.getByRole("textbox", { name: "급여통장 잔액" });
     await expect(balanceInput).toHaveValue("1,500,000");
+    await page.getByRole("button", { name: "급여통장 메모" }).hover();
+    await expect(page.getByRole("tooltip")).toHaveText("생활비와 공과금 결제 계정");
     await balanceInput.fill("1800000");
 
     const saveRequest = page.waitForRequest((request) => (

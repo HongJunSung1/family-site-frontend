@@ -26,6 +26,7 @@ const accounts = [
     assetKind: "ASSET" as const,
     isAvailable: 1,
     accountName: "급여통장",
+    memo: "생활비와 공과금 결제 계정",
     balance: "1200000",
     previousBalance: "1000000",
     updatedAt: "2026-07-01T10:00:00",
@@ -37,6 +38,7 @@ const accounts = [
     assetKind: "LIABILITY" as const,
     isAvailable: null,
     accountName: "주택대출",
+    memo: "",
     balance: "300000",
     previousBalance: "400000",
     updatedAt: "2026-07-01T10:00:00",
@@ -84,6 +86,10 @@ describe("월별 자산 입력", () => {
     expect(screen.getAllByText("1,200,000원").length).toBeGreaterThan(0);
     expect(screen.getAllByText("300,000원").length).toBeGreaterThan(0);
     expect(screen.getByText("900,000원")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "급여통장 메모" })).toBeInTheDocument();
+    expect(screen.getByRole("tooltip", { hidden: true }))
+      .toHaveTextContent("생활비와 공과금 결제 계정");
+    expect(screen.queryByRole("button", { name: "주택대출 메모" })).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByRole("textbox", { name: "급여통장 잔액" }), {
       target: { value: "1,500,000" },
