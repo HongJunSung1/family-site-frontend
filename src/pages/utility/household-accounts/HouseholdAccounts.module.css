@@ -1,0 +1,877 @@
+/* 가계부 공통 화면과 PC 내부 메뉴 */
+.page {
+  height: calc(var(--app-viewport-height, 100dvh) - var(--app-nav-height));
+  min-height: 0;
+  padding: 16px;
+  box-sizing: border-box;
+  overflow: hidden;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.layout {
+  height: 100%;
+  min-height: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  display: grid;
+  grid-template-columns: 176px minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.sideNav {
+  padding: 16px 10px;
+  border-right: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 3px;
+}
+
+.sideNavTitle {
+  padding: 2px 10px 13px;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.sideNavItem,
+.sideNavGroup {
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  color: var(--color-text-muted);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: left;
+  text-decoration: none;
+}
+
+.sideNavItem {
+  transition:
+    color 0.16s ease,
+    background 0.16s ease;
+}
+
+.sideNavItem:hover,
+.sideNavItemActive,
+.sideNavGroupButton:hover,
+.sideNavGroupActive {
+  background: var(--color-surface);
+  color: var(--color-primary);
+}
+
+.sideNavItem:focus-visible,
+.sideNavGroupButton:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-primary) 48%, transparent);
+  outline-offset: -2px;
+}
+
+.sideNavGroup {
+  margin-top: 8px;
+  color: var(--color-text);
+}
+
+.sideNavGroupButton {
+  width: 100%;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.sideNavArrow {
+  position: relative;
+  flex: 0 0 14px;
+  width: 14px;
+  height: 14px;
+  color: var(--color-text-muted);
+}
+
+.sideNavArrow::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translate(-58%, -50%) rotate(-45deg);
+  transform-origin: center;
+  transition: transform 0.18s ease;
+}
+
+.sideNavArrowOpen::before {
+  transform: translate(-50%, -62%) rotate(45deg);
+}
+
+.sideNavSubMenu {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(-4px);
+  transition:
+    max-height 0.25s ease,
+    opacity 0.18s ease,
+    transform 0.25s ease;
+}
+
+.sideNavSubMenuOpen {
+  max-height: 160px;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.sideNavItemNested {
+  padding-left: 22px;
+  font-size: 12px;
+}
+
+.content {
+  position: relative;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.screen {
+  min-width: 0;
+  min-height: 100%;
+  padding: 20px;
+  box-sizing: border-box;
+  display: grid;
+  align-content: start;
+  gap: 18px;
+}
+
+.screenHeader {
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.screenHeader h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.screenHeader p {
+  margin: 5px 0 0;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.screenHeaderActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+}
+
+.calendarControl {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.calendarControl select {
+  width: 180px;
+  min-width: 180px;
+  min-height: 38px;
+  padding: 8px 10px;
+  box-sizing: border-box;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.calendarControl select:disabled {
+  opacity: 0.65;
+}
+
+.placeholder {
+  min-height: 220px;
+  padding: 28px;
+  border: 1px dashed var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-muted);
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.placeholder strong {
+  color: var(--color-text);
+  font-size: 15px;
+}
+
+.placeholder span {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.placeholder button {
+  min-height: 36px;
+  margin-top: 8px;
+  padding: 0 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-family: inherit;
+  font-weight: 800;
+}
+
+.placeholder button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.errorMessage {
+  margin: 14px 20px 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: color-mix(in srgb, #d33 10%, var(--color-surface));
+  color: #c33;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+/* 분류 관리 탭과 목록·편집 패널 */
+.categoryGuide {
+  margin-top: -4px;
+  padding: 11px 12px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 24%, var(--color-border));
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--color-primary) 7%, var(--color-surface));
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.tabs {
+  min-height: 48px;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.tabButtons {
+  align-self: stretch;
+  display: flex;
+  gap: 4px;
+}
+
+.tabButtons button {
+  padding: 10px 14px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-family: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.tabButtons button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-primary) 48%, transparent);
+  outline-offset: -3px;
+}
+
+.tabButtons .tabActive {
+  border-bottom-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.primaryButton,
+.secondaryButton,
+.deleteButton {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-family: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.primaryButton {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.secondaryButton {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.deleteButton {
+  border-color: color-mix(in srgb, #d33 45%, var(--color-border));
+  background: var(--color-surface);
+  color: #d44;
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.deleteButton:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.activeOnlyFilter,
+.checkField {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.activeOnlyFilter input,
+.checkField input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--color-primary);
+}
+
+.managementGrid {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+
+.managementGridEditing {
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+}
+
+.tableSection {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.orderColumn {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  text-align: center !important;
+}
+
+.categoryName {
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.categoryPathColumn {
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.editorPanel {
+  min-width: 0;
+  max-height: calc(var(--app-viewport-height, 100dvh) - 250px);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-muted);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+}
+
+.editorHeader {
+  min-height: 50px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.editorHeader h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.editorHeader button {
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.formFields {
+  padding: 14px;
+  overflow-y: auto;
+  display: grid;
+  align-content: start;
+  gap: 13px;
+}
+
+.formFields > label:not(.checkField) {
+  display: grid;
+  gap: 6px;
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.formFields select {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  box-sizing: border-box;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.readonlyField {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.readonlyField span {
+  font-weight: 800;
+}
+
+.readonlyField strong {
+  min-height: 38px;
+  padding: 8px 10px;
+  box-sizing: border-box;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+}
+
+.editorActions {
+  padding: 12px 14px;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.message {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: color-mix(in srgb, #d33 10%, var(--color-surface));
+  color: #c33;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.fieldInfo {
+  margin: -4px 0 0;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.categorySheet {
+  min-width: 0;
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+}
+
+.categoryTripleSheet {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface-muted);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(300px, 1fr));
+  gap: 0;
+  align-items: stretch;
+}
+
+.categorySheetPanel {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: auto auto;
+  align-content: start;
+  gap: 8px;
+}
+
+.categorySheetPanel:not(:last-child) {
+  margin-right: 12px;
+  padding-right: 12px;
+  border-right: 2px solid color-mix(in srgb, var(--color-border) 75%, var(--color-text-muted));
+}
+
+.categorySheetHeader {
+  min-height: 48px;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sheetHeaderAddButton {
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.sheetHeaderAddButton:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.categorySheetHeader h2 {
+  margin: 0 0 3px;
+  font-size: 14px;
+}
+
+.categorySheet table {
+  width: 100%;
+  min-width: 440px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.categorySheet th,
+.categorySheet td {
+  height: 44px;
+  padding: 5px 7px;
+  box-sizing: border-box;
+  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+}
+
+.categorySheet th:last-child,
+.categorySheet td:last-child {
+  border-right: 0;
+}
+
+.categorySheet tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.categorySheet th {
+  height: 38px;
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.categorySheet input:not([type="checkbox"]),
+.categorySheet select {
+  width: 100%;
+  height: 32px;
+  padding: 4px 7px;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+}
+
+.categorySheet input:not([type="checkbox"]):hover,
+.categorySheet input:not([type="checkbox"]):focus,
+.categorySheet select:hover,
+.categorySheet select:focus {
+  border-color: var(--color-border);
+  background: var(--color-surface-muted);
+  outline: none;
+}
+
+.categorySheet input:disabled,
+.categorySheet select:disabled {
+  color: var(--color-text-muted);
+  cursor: default;
+  opacity: 1;
+}
+
+.sheetOrderColumn {
+  width: 72px;
+}
+
+.sheetCodeColumn {
+  width: 62px;
+}
+
+.sheetCodeCell {
+  color: var(--color-text);
+  font: inherit;
+  text-align: center !important;
+}
+
+.sheetCheckColumn {
+  width: 54px;
+  text-align: center !important;
+}
+
+.sheetStatusColumn {
+  width: 58px;
+  text-align: center !important;
+}
+
+.sheetActionColumn {
+  width: 66px;
+  text-align: center !important;
+}
+
+.sheetCheckboxCell {
+  text-align: center !important;
+}
+
+.sheetCheckboxCell input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+}
+
+.sheetDirtyRow {
+  background: color-mix(in srgb, var(--color-primary) 7%, var(--color-surface));
+}
+
+.sheetSelectedRow {
+  background: color-mix(in srgb, var(--color-primary) 30%, var(--color-surface));
+}
+
+.sheetDeleteButton {
+  width: 100%;
+  min-height: 28px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #d33;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.sheetDeleteButton:hover {
+  background: color-mix(in srgb, #d33 10%, transparent);
+}
+
+.sheetEmptyCell {
+  height: 80px !important;
+  color: var(--color-text-muted);
+  text-align: center !important;
+  font-size: 12px;
+}
+
+.sheetAddButton {
+  width: 100%;
+  min-height: 40px;
+  margin-top: -8px;
+  border: 1px dashed var(--color-border);
+  border-radius: 7px;
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.sheetAddButton:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.categorySaveActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 모바일에서는 PC 사이드 메뉴를 상단 드롭다운으로 대체 */
+@media (max-width: 768px) {
+  .page {
+    height: calc(
+      var(--app-viewport-height, 100dvh) - var(--app-nav-height) -
+        var(--app-bottom-nav-height) - env(safe-area-inset-bottom)
+    );
+    padding: 8px 8px 12px;
+  }
+
+  .layout {
+    display: block;
+  }
+
+  .sideNav {
+    display: none;
+  }
+
+  .screen {
+    padding: 14px 12px 88px;
+    gap: 14px;
+  }
+
+  .categoryTripleSheet {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+
+  .categorySheetPanel:not(:last-child) {
+    margin-right: 0;
+    padding-right: 0;
+    padding-bottom: 18px;
+    border-right: 0;
+    border-bottom: 2px solid color-mix(in srgb, var(--color-border) 75%, var(--color-text-muted));
+  }
+
+  .categorySaveActions {
+    position: fixed;
+    z-index: 45;
+    right: 8px;
+    bottom: calc(var(--app-bottom-nav-height) + env(safe-area-inset-bottom) + 8px);
+    left: 8px;
+    padding: 10px;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 24%);
+    backdrop-filter: blur(10px);
+  }
+
+  .categorySaveActions > button {
+    flex: 1;
+  }
+
+  .categorySheet table {
+    min-width: 560px;
+  }
+
+  .categorySheetHeader {
+    min-height: 38px;
+  }
+
+  .screenHeader {
+    min-height: 40px;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .screenHeaderActions {
+    width: 100%;
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .screenHeader h1 {
+    font-size: 18px;
+  }
+
+  .calendarControl {
+    width: 100%;
+  }
+
+  .calendarControl select {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .placeholder {
+    min-height: 180px;
+    padding: 20px 14px;
+  }
+
+  .errorMessage {
+    margin: 12px 12px 0;
+  }
+
+  .categoryGuide {
+    margin-top: 0;
+  }
+
+  .tabs {
+    align-items: flex-end;
+  }
+
+  .tabButtons {
+    min-width: 0;
+  }
+
+  .tabButtons button {
+    padding-inline: 10px;
+  }
+
+  .managementGridEditing {
+    display: block;
+  }
+
+  .managementGridEditing > .tableSection {
+    display: none;
+  }
+
+  .editorPanel {
+    position: fixed;
+    inset:
+      var(--app-nav-height)
+      0
+      calc(var(--app-bottom-nav-height) + env(safe-area-inset-bottom))
+      0;
+    z-index: 40;
+    max-height: none;
+    border: 0;
+    border-radius: 0;
+    background: var(--color-surface);
+  }
+
+  .editorActions {
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+
+  .categoryPathColumn {
+    display: none;
+  }
+}

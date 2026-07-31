@@ -536,7 +536,7 @@ export default function App() {
           />
 
           <Route
-            path="/household-accounts"
+            path="/household-accounts/*"
             element={
               <ProtectedRoute isLoggedIn={isLoggedIn}>
                 <HouseholdAccounts />
