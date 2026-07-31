@@ -7,12 +7,12 @@ export type AssetAccount = {
   id: number; calendar_id: number; owner_user_id: number; owner_name: string; institution_id: number | null;
   institution_name: string | null; account_type_id: number; type_name: string; asset_kind: "ASSET" | "LIABILITY";
   requires_institution: number; allows_available: number; account_name: string; is_available: number | null;
-  is_active: number; display_order: number; memo: string;
+  is_ledger_enabled: number; is_active: number; display_order: number; memo: string;
 };
 
 export type ReferencePayload = { calendarId: number; name: string; isActive?: boolean; displayOrder: number };
 export type AccountTypePayload = ReferencePayload & { assetKind: "ASSET" | "LIABILITY"; requiresInstitution: boolean; allowsAvailable: boolean };
-export type AssetAccountPayload = { calendarId: number; ownerUserId: number; institutionId: number | null; accountTypeId: number; accountName: string; isActive: boolean; displayOrder: number; memo: string };
+export type AssetAccountPayload = { calendarId: number; ownerUserId: number; institutionId: number | null; accountTypeId: number; accountName: string; isLedgerEnabled: boolean; isActive: boolean; displayOrder: number; memo: string };
 
 export async function getAssetInstitutions(calendarId: number) {
   return apiFetch<{ ok: boolean; institutions: AssetInstitution[]; canManage: boolean }>(`/api/assets/institutions?calendarId=${calendarId}`);

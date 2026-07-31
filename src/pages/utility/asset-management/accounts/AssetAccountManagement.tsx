@@ -23,13 +23,26 @@ type Form = {
   institutionId: number | null;
   accountTypeId: number;
   accountName: string;
+  isLedgerEnabled: boolean;
   isActive: boolean;
   displayOrder: number;
   memo: string;
 };
+type AssetAccountManagementProps = AssetScreenProps & {
+  title?: string;
+  description?: string;
+  usageContext?: "asset" | "ledger";
+};
 const PAGE_SIZE = 15;
 
-export default function AssetAccountManagement({ calendarId, calendarName, calendarControl }: AssetScreenProps) {
+export default function AssetAccountManagement({
+  calendarId,
+  calendarName,
+  calendarControl,
+  title = "자산 계정 관리",
+  description,
+  usageContext = "asset",
+}: AssetAccountManagementProps) {
   const [accounts, setAccounts] = useState<AssetAccount[]>([]);
   const [members, setMembers] = useState<AssetMember[]>([]);
   const [institutions, setInstitutions] = useState<AssetInstitution[]>([]);
@@ -81,9 +94,11 @@ export default function AssetAccountManagement({ calendarId, calendarName, calen
   const visibleAccounts = useMemo(() => (
     accounts.filter((account) => (
       (ownerFilter === "all" || account.owner_user_id === ownerFilter)
-      && (!activeOnly || account.is_active === 1)
+      && (!activeOnly || (usageContext === "ledger"
+        ? account.is_ledger_enabled === 1
+        : account.is_active === 1))
     ))
-  ), [accounts, activeOnly, ownerFilter]);
+  ), [accounts, activeOnly, ownerFilter, usageContext]);
   const totalPages = Math.max(1, Math.ceil(visibleAccounts.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const pagedAccounts = visibleAccounts.slice(
@@ -110,6 +125,7 @@ export default function AssetAccountManagement({ calendarId, calendarName, calen
       className: styles.mobileOptionalColumn,
       render: (row) => row.asset_kind === "LIABILITY" ? "-" : row.is_available ? "예" : "아니오",
     },
+    { key: "ledger", header: "가계부", width: 75, render: (row) => row.is_ledger_enabled ? "사용" : "미사용" },
     { key: "active", header: "상태", width: 80, render: (row) => row.is_active ? "사용" : "미사용" },
   ];
 
@@ -123,6 +139,7 @@ export default function AssetAccountManagement({ calendarId, calendarName, calen
       institutionId: null,
       accountTypeId: firstType?.id ?? 0,
       accountName: "",
+      isLedgerEnabled: usageContext === "ledger",
       isActive: true,
       displayOrder: accounts.length + 1,
       memo: "",
@@ -138,6 +155,7 @@ export default function AssetAccountManagement({ calendarId, calendarName, calen
       institutionId: row.institution_id,
       accountTypeId: row.account_type_id,
       accountName: row.account_name,
+      isLedgerEnabled: !!row.is_ledger_enabled,
       isActive: !!row.is_active,
       displayOrder: row.display_order + 1,
       memo: row.memo,
@@ -157,6 +175,7 @@ export default function AssetAccountManagement({ calendarId, calendarName, calen
         institutionId: form.institutionId,
         accountTypeId: form.accountTypeId,
         accountName: form.accountName,
+        isLedgerEnabled: form.isLedgerEnabled,
         isActive: form.isActive,
         displayOrder: form.displayOrder - 1,
         memo: form.memo,
@@ -193,8 +212,8 @@ export default function AssetAccountManagement({ calendarId, calendarName, calen
     <section className={styles.screen}>
       <header className={styles.screenHeader}>
         <div>
-          <h1>자산 계정 관리</h1>
-          <p>{calendarName}의 자산과 부채 계정을 관리합니다.</p>
+          <h1>{title}</h1>
+          <p>{description ?? `${calendarName}의 자산과 부채 계정을 관리합니다.`}</p>
         </div>
 
         <div className={styles.screenHeaderActions}>
@@ -225,7 +244,7 @@ export default function AssetAccountManagement({ calendarId, calendarName, calen
                 setPage(1);
               }}
             />
-            <span>사용중인 것만 보기</span>
+            <span>사용 중인 것만 보기</span>
           </label>
           {canCreate && (
             <button
@@ -397,9 +416,21 @@ export default function AssetAccountManagement({ calendarId, calendarName, calen
                     checked={form.isActive}
                     onChange={(event) => setForm({ ...form, isActive: event.target.checked })}
                   />
-                  <span>사용 중</span>
+                  <span>자산관리 사용</span>
                 </label>
               )}
+
+              <label className={styles.checkField}>
+                <input
+                  type="checkbox"
+                  checked={form.isLedgerEnabled}
+                  onChange={(event) => setForm({
+                    ...form,
+                    isLedgerEnabled: event.target.checked,
+                  })}
+                />
+                <span>가계부 사용</span>
+              </label>
 
               {selectedType?.requires_institution === 1 && !form.institutionId && (
                 <p className={styles.fieldHint}>

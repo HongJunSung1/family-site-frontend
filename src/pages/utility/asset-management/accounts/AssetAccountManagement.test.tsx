@@ -42,6 +42,7 @@ beforeEach(() => {
       allows_available: 1,
       account_name: "급여통장",
       is_available: 1,
+      is_ledger_enabled: 0,
       is_active: 1,
       display_order: 1,
       memo: "",
@@ -92,6 +93,7 @@ describe("자산 계정 관리", () => {
     const orderInput = screen.getByRole("spinbutton", { name: "순서" });
     expect(orderInput).toHaveValue(2);
     fireEvent.change(orderInput, { target: { value: "1" } });
+    fireEvent.click(screen.getByRole("checkbox", { name: "가계부 사용" }));
     fireEvent.click(screen.getByRole("button", { name: "저장" }));
 
     await waitFor(() => expect(mockedSaveAccount).toHaveBeenCalled());
@@ -99,9 +101,28 @@ describe("자산 계정 관리", () => {
       expect.objectContaining({
         calendarId: 10,
         accountName: "급여통장",
+        isLedgerEnabled: true,
         displayOrder: 0,
       }),
       21,
     );
+  });
+
+  it("가계부 문맥에서는 가계부 사용 계정만 필터링하고 신규 계정을 기본 선택한다", async () => {
+    render(
+      <AssetAccountManagement
+        calendarId={10}
+        calendarName="우리 가족"
+        calendarControl={<span>캘린더</span>}
+        usageContext="ledger"
+      />,
+    );
+
+    expect(await screen.findByText("급여통장")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("checkbox", { name: "사용 중인 것만 보기" }));
+    expect(screen.queryByText("급여통장")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "계정 추가" }));
+    expect(screen.getByRole("checkbox", { name: "가계부 사용" })).toBeChecked();
   });
 });
