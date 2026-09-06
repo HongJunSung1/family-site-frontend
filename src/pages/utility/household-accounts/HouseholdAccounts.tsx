@@ -7,7 +7,6 @@ import LedgerOverview from "./overview/LedgerOverview";
 import LedgerTransactions from "./transactions/LedgerTransactions";
 import LedgerAccounts from "./settings/LedgerAccounts";
 import LedgerCategories from "./settings/LedgerCategories";
-import LedgerRules from "./settings/LedgerRules";
 import LedgerImportProfiles from "./settings/LedgerImportProfiles";
 import styles from "./HouseholdAccounts.module.css";
 
@@ -16,14 +15,12 @@ const INTERNAL_ROUTES = {
   transactions: "/household-accounts/transactions",
   accounts: "/household-accounts/accounts",
   categories: "/household-accounts/categories",
-  rules: "/household-accounts/rules",
   importProfiles: "/household-accounts/import-profiles",
 } as const;
 
 const SETTINGS_ROUTES = [
   INTERNAL_ROUTES.accounts,
   INTERNAL_ROUTES.categories,
-  INTERNAL_ROUTES.rules,
   INTERNAL_ROUTES.importProfiles,
 ] as const;
 
@@ -36,9 +33,8 @@ function getCurrentTitle(pathname: string) {
   if (pathname.startsWith(INTERNAL_ROUTES.transactions)) return "거래내역";
   if (pathname.startsWith(INTERNAL_ROUTES.accounts)) return "계정 관리";
   if (pathname.startsWith(INTERNAL_ROUTES.categories)) return "분류 관리";
-  if (pathname.startsWith(INTERNAL_ROUTES.rules)) return "자동분류 규칙";
   if (pathname.startsWith(INTERNAL_ROUTES.importProfiles)) return "엑셀 가져오기 양식";
-  return "월별 현황";
+  return "가계부 현황";
 }
 
 // 가계부 내부 라우팅과 캘린더·PC·모바일 메뉴 구성
@@ -57,7 +53,7 @@ export default function HouseholdAccounts() {
     () => [
       {
         id: "ledger-overview",
-        label: "월별 현황",
+        label: "가계부 현황",
         active: location.pathname.startsWith(INTERNAL_ROUTES.overview),
         onSelect: () => navigate(INTERNAL_ROUTES.overview),
       },
@@ -88,15 +84,6 @@ export default function HouseholdAccounts() {
             onSelect: () => {
               setIsSettingsOpen(true);
               navigate(INTERNAL_ROUTES.categories);
-            },
-          },
-          {
-            id: "ledger-rules",
-            label: "자동분류 규칙",
-            active: location.pathname.startsWith(INTERNAL_ROUTES.rules),
-            onSelect: () => {
-              setIsSettingsOpen(true);
-              navigate(INTERNAL_ROUTES.rules);
             },
           },
           {
@@ -168,7 +155,7 @@ export default function HouseholdAccounts() {
       <div className={styles.layout}>
         <nav className={styles.sideNav} aria-label="가계부 메뉴">
           <strong className={styles.sideNavTitle}>가계부</strong>
-          <NavItem to={INTERNAL_ROUTES.overview}>월별 현황</NavItem>
+          <NavItem to={INTERNAL_ROUTES.overview}>가계부 현황</NavItem>
           <NavItem to={INTERNAL_ROUTES.transactions}>거래내역</NavItem>
           <button
             type="button"
@@ -205,7 +192,6 @@ export default function HouseholdAccounts() {
           >
             <NavItem to={INTERNAL_ROUTES.accounts} nested>계정 관리</NavItem>
             <NavItem to={INTERNAL_ROUTES.categories} nested>분류 관리</NavItem>
-            <NavItem to={INTERNAL_ROUTES.rules} nested>자동분류 규칙</NavItem>
             <NavItem to={INTERNAL_ROUTES.importProfiles} nested>
               엑셀 가져오기 양식
             </NavItem>
@@ -257,16 +243,7 @@ export default function HouseholdAccounts() {
                 />
               }
             />
-            <Route
-              path="rules"
-              element={
-                <LedgerRules
-                  calendarId={calendarId}
-                  calendarName={selectedCalendar?.name ?? ""}
-                  calendarControl={calendarControl}
-                />
-              }
-            />
+            <Route path="rules" element={<Navigate to="../categories" replace />} />
             <Route
               path="import-profiles"
               element={

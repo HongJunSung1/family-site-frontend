@@ -301,6 +301,9 @@
 .monthlySummary span { color: var(--color-text-muted); font-size: 11px; font-weight: 800; }
 .monthlySummary strong { overflow: hidden; text-overflow: ellipsis; font-size: 17px; white-space: nowrap; }
 .monthlySummary small { color: var(--color-text-muted); font-size: 11px; font-weight: 700; }
+.summaryChange { display: flex; align-items: center; gap: 4px; }
+.changeIncrease { color: #e05b5b !important; }
+.changeDecrease { color: #5f8fe8 !important; }
 .monthlyAccountName { font-weight: 850; }
 .monthlyAccountNameContent { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .monthlyAccountNameContent > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -310,6 +313,30 @@
 .balanceCellControl { min-height: 42px; margin: -7px -12px; padding: 7px 12px; box-sizing: border-box; display: flex; align-items: center; cursor: text; }
 .monthlyTableInput { min-width: 150px; text-align: right; }
 .monthlyTableInput input { text-align: right; }
+.calculatorButton { width: 24px; height: 24px; margin: -4px 0 -4px -5px; padding: 3px; border: 0; border-radius: 4px; background: transparent; color: var(--color-text-muted); display: grid; place-items: center; cursor: pointer; }
+.calculatorButton:hover, .calculatorButton:focus-visible { outline: none; background: color-mix(in srgb, var(--color-primary) 12%, transparent); color: var(--color-primary); }
+.calculatorButton svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.calculatorButton svg path:first-of-type { fill: color-mix(in srgb, currentColor 10%, transparent); }
+.calculatorDialog :global(.MuiDialog-paper) { max-width: 280px; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface); color: var(--color-text); box-shadow: var(--shadow-floating); }
+.calculator { display: grid; }
+.calculator > header { padding: 14px 16px; border-bottom: 1px solid var(--color-border); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.calculator > header h2 { margin: 0; font-size: 16px; font-weight: 900; }
+.calculator > header span { color: var(--color-text-muted); font-size: 11px; font-weight: 700; }
+.calculator > header button { width: 30px; height: 30px; padding: 0; border: 0; background: transparent; color: var(--color-text-muted); font-size: 22px; cursor: pointer; }
+.calculatorDisplay { margin: 14px 14px 10px; padding: 12px; border: 1px solid var(--color-border); border-radius: 7px; background: var(--color-bg); display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 4px 7px; text-align: right; }
+.calculatorDisplay small { grid-column: 1 / -1; min-height: 16px; color: var(--color-text-muted); font-size: 11px; }
+.calculatorDisplay strong { overflow: hidden; font-size: 24px; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
+.calculatorDisplay > span { padding-bottom: 3px; color: var(--color-text-muted); font-size: 12px; font-weight: 800; }
+.calculatorError { margin: 0 14px 8px; color: #e05b5b; font-size: 11px; font-weight: 750; }
+.calculatorKeys { padding: 4px 14px 14px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
+.calculatorKeys button { min-height: 42px; padding: 0; border: 1px solid var(--color-border); border-radius: 6px; background: var(--color-surface-muted); color: var(--color-text); font: inherit; font-size: 15px; font-weight: 800; cursor: pointer; }
+.calculatorKeys button:hover, .calculatorKeys button:focus-visible { outline: none; border-color: var(--color-primary); background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface)); }
+.calculatorKeys .calculatorUtilityKey { color: var(--color-text-muted); }
+.calculatorKeys .calculatorOperatorKey { color: var(--color-primary); font-size: 18px; }
+.calculatorKeys .calculatorZeroKey { grid-column: span 2; }
+.calculatorKeys .calculatorEqualsKey { background: var(--color-primary); color: #fff; }
+.calculatorKeyboardHint { margin: -4px 14px 10px; color: var(--color-text-muted); font-size: 10px; font-weight: 650; text-align: center; }
+.calculator > footer { padding: 11px 14px; border-top: 1px solid var(--color-border); display: flex; justify-content: flex-end; gap: 8px; }
 .monthlyActions { min-height: 44px; display: flex; align-items: center; justify-content: flex-end; gap: 14px; }
 .monthlyActions > span { color: var(--color-text-muted); font-size: 11px; font-weight: 750; }
 .monthlyEmpty { min-height: 180px; display: grid; place-items: center; align-content: center; gap: 12px; color: var(--color-text-muted); }
@@ -373,8 +400,6 @@
 .memberAccountNote { width: 100%; display: flex; justify-content: flex-end; align-items: center; font-variant-numeric: tabular-nums; }
 .memberAccountNote.changeSummary { justify-content: space-between; }
 .memberAccountRow small .changeLabel { color: var(--color-text-muted); text-align: left; }
-.memberAccountRow .changeIncrease { color: #e05b5b; }
-.memberAccountRow .changeDecrease { color: #5f8fe8; }
 
 /* 모바일에서는 내부 메뉴를 상단 메뉴로 대체하고 편집 패널을 전체 화면으로 표시 */
 @media (max-width: 768px) {

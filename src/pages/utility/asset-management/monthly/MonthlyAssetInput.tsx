@@ -11,6 +11,7 @@ import { TableInput } from "../../../../common/input";
 import { LoadingOverlay } from "../../../../common/loading";
 import { DataTable, type DataTableColumn } from "../../../../common/table";
 import type { AssetScreenProps } from "../types";
+import BalanceCalculator from "./BalanceCalculator";
 import styles from "../AssetManagement.module.css";
 
 const currentYearMonth = () => {
@@ -41,6 +42,7 @@ export default function MonthlyAssetInput({ calendarId, calendarName, calendarCo
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [calculatorAccount, setCalculatorAccount] = useState<MonthlyAssetAccount | null>(null);
 
   // 선택한 기준 월의 계정과 저장된 잔액 조회
   useEffect(() => {
@@ -227,6 +229,22 @@ export default function MonthlyAssetInput({ calendarId, calendarName, calendarCo
               disabled={!canEdit || saving}
               value={formatAmount(raw)}
               placeholder="0"
+              leftSlot={canEdit && !saving ? (
+                <button
+                  type="button"
+                  className={styles.calculatorButton}
+                  aria-label={`${account.accountName} 계산기 열기`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setCalculatorAccount(account);
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="5" y="3" width="14" height="18" rx="2" />
+                    <path d="M8 6.5h8v3H8zM8 13h1m3 0h1m3 0h1M8 17h1m3 0h1m3 0h1" />
+                  </svg>
+                </button>
+              ) : undefined}
               rightSlot="원"
               className={styles.monthlyTableInput}
               onChange={(event) => setValues((current) => ({
@@ -251,9 +269,19 @@ export default function MonthlyAssetInput({ calendarId, calendarName, calendarCo
           ? BigInt(raw) - BigInt(account.previousBalance)
           : null;
 
-        return difference === null
-          ? "-"
-          : `${difference > 0n ? "+" : ""}${difference.toLocaleString("ko-KR")}원`;
+        if (difference === null) return "-";
+
+        return (
+          <span
+            className={difference === 0n
+              ? undefined
+              : difference > 0n
+                ? styles.changeIncrease
+                : styles.changeDecrease}
+          >
+            {formatChange(difference)}
+          </span>
+        );
       },
     },
   ], [canEdit, saving, values]);
@@ -330,22 +358,54 @@ export default function MonthlyAssetInput({ calendarId, calendarName, calendarCo
         <div>
           <span>총자산</span>
           <strong>{formatWon(totals.assets)}</strong>
-          <small>전월 대비 {formatChange(changes.assets)}</small>
+          <small className={styles.summaryChange}>
+            <span>전월 대비</span>
+            <span className={changes.assets === 0n
+              ? undefined
+              : changes.assets > 0n ? styles.changeIncrease : styles.changeDecrease}
+            >
+              {formatChange(changes.assets)}
+            </span>
+          </small>
         </div>
         <div>
           <span>총부채</span>
           <strong>{formatWon(totals.liabilities)}</strong>
-          <small>전월 대비 {formatChange(changes.liabilities)}</small>
+          <small className={styles.summaryChange}>
+            <span>전월 대비</span>
+            <span className={changes.liabilities === 0n
+              ? undefined
+              : changes.liabilities > 0n ? styles.changeIncrease : styles.changeDecrease}
+            >
+              {formatChange(changes.liabilities)}
+            </span>
+          </small>
         </div>
         <div>
           <span>순자산</span>
           <strong>{formatWon(totals.assets - totals.liabilities)}</strong>
-          <small>전월 대비 {formatChange(changes.netAssets)}</small>
+          <small className={styles.summaryChange}>
+            <span>전월 대비</span>
+            <span className={changes.netAssets === 0n
+              ? undefined
+              : changes.netAssets > 0n ? styles.changeIncrease : styles.changeDecrease}
+            >
+              {formatChange(changes.netAssets)}
+            </span>
+          </small>
         </div>
         <div>
           <span>가용재산</span>
           <strong>{formatWon(totals.available)}</strong>
-          <small>전월 대비 {formatChange(changes.available)}</small>
+          <small className={styles.summaryChange}>
+            <span>전월 대비</span>
+            <span className={changes.available === 0n
+              ? undefined
+              : changes.available > 0n ? styles.changeIncrease : styles.changeDecrease}
+            >
+              {formatChange(changes.available)}
+            </span>
+          </small>
         </div>
       </div>
 
@@ -392,6 +452,19 @@ export default function MonthlyAssetInput({ calendarId, calendarName, calendarCo
             </button>
           )}
         </footer>
+      )}
+
+      {calculatorAccount && (
+        <BalanceCalculator
+          accountName={calculatorAccount.accountName}
+          initialValue={values[calculatorAccount.id] ?? ""}
+          open
+          onClose={() => setCalculatorAccount(null)}
+          onApply={(value) => setValues((current) => ({
+            ...current,
+            [calculatorAccount.id]: value,
+          }))}
+        />
       )}
 
       <LoadingOverlay active={loading} label="월별 자산 로딩 중" />

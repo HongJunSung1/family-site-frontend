@@ -176,11 +176,1522 @@
   font-weight: 700;
 }
 
+.screen select {
+  appearance: none;
+  padding-right: 30px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1.5 1.5 6 6l4.5-4.5' fill='none' stroke='%238b95a7' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 11px center;
+  background-size: 10px 7px;
+}
+
 .screenHeaderActions {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 14px;
+}
+
+.monthRangeControl {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.monthRangeControl .filterControl {
+  width: 145px;
+}
+
+.ledgerSummaryCards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.ledgerSummaryCards article {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-muted);
+  display: grid;
+  gap: 7px;
+}
+
+.ledgerSummaryCards span {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ledgerSummaryCards strong {
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: 21px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.overviewTopGrid {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(250px, 0.38fr) minmax(520px, 1fr);
+  gap: 12px;
+}
+
+.ledgerSummaryCard {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-muted);
+  display: grid;
+  grid-template-rows: auto repeat(5, minmax(0, 1fr));
+  align-content: stretch;
+  gap: 0;
+}
+
+.ledgerSummaryCard h2,
+.ledgerHistoryPanel h2 {
+  margin: 0 0 12px;
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.ledgerSummaryCard > div {
+  min-width: 0;
+  min-height: 50px;
+  padding: 6px 2px;
+  box-sizing: border-box;
+  border-top: 1px solid var(--color-border);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.ledgerSummaryCard span {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ledgerSummaryCard strong {
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: 17px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ledgerSummaryCard .summaryBalanceRow {
+  width: calc(100% + 32px);
+  margin-left: -16px;
+  padding-right: 18px;
+  padding-left: 18px;
+  border-top-color: transparent;
+  border-radius: 0;
+  background: color-mix(in srgb, var(--color-primary) 9%, var(--color-surface-muted));
+}
+
+.transferSummary {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 5px;
+  font-size: 13px !important;
+}
+
+.transferSummary small {
+  color: var(--color-text-muted);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.transferSummary i {
+  margin: 0 2px;
+  color: var(--color-border);
+  font-style: normal;
+}
+
+.ledgerHistoryPanel { padding-bottom: 6px; }
+.ledgerHistoryChart { min-width: 0; height: 280px; color: var(--color-text); }
+.ledgerHistoryChart :global(text),
+.ledgerHistoryChart :global(.MuiChartsLegend-label) { font-family: inherit !important; }
+.ledgerHistoryChart :global(.MuiChartsAxis-tickLabel),
+.ledgerHistoryChart :global(.MuiChartsLegend-label) { fill: var(--color-text-muted) !important; color: var(--color-text-muted) !important; }
+.ledgerHistoryChart :global(.MuiChartsAxis-line),
+.ledgerHistoryChart :global(.MuiChartsAxis-tick),
+.ledgerHistoryChart :global(.MuiChartsGrid-line) { stroke: var(--color-border) !important; }
+
+.categoryStatusHeader {
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.categoryStatusHeader select {
+  min-width: 118px;
+  height: 34px;
+  padding: 6px 30px 6px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.aggregateHeader {
+  margin-bottom: 12px;
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.aggregateHeader h2 { margin: 0; }
+
+.aggregateToolbar {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.aggregateTotals {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  color: var(--color-text-muted);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.aggregateTotals span { white-space: nowrap; }
+.aggregateTotals strong { margin-left: 4px; color: var(--color-text); font-size: 11px; }
+
+.categoryStatusTabs {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.categoryStatusTabs button {
+  min-height: 34px;
+  padding: 0 2px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.categoryStatusTabs button[aria-selected="true"] {
+  border-bottom-color: var(--color-primary);
+  background: transparent;
+  color: var(--color-primary);
+}
+
+.overviewGrid {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.overviewAggregateGrid {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.overviewPanel {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-muted);
+}
+
+.overviewPanel h2 {
+  margin: 0 0 13px;
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.categoryBars {
+  max-height: 280px;
+  padding-right: 4px;
+  overflow-y: auto;
+  display: grid;
+  gap: 12px;
+}
+
+.categoryBarRow {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(180px, 1.2fr) minmax(100px, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.categoryStatusRow {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(180px, 1.2fr) minmax(100px, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.categoryStatusColumnHeader {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.categoryStatusColumnHeader > span:last-child { text-align: right; }
+
+.categoryStatusNames {
+  min-width: 0;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px !important;
+}
+
+.categoryStatusNames[data-level="middle"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.categoryStatusNames[data-level="leaf"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+.categoryStatusNames strong,
+.categoryStatusNames span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.categoryBarRow > div:first-child { min-width: 0; display: grid; gap: 2px; }
+.categoryBarRow strong,
+.categoryBarRow span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.categoryBarRow strong { font-size: 12px; }
+.categoryBarRow span { color: var(--color-text-muted); font-size: 10px; font-weight: 700; }
+.categoryBarRow b { font-size: 11px; white-space: nowrap; }
+
+.categoryBarTrack {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-border) 70%, transparent);
+}
+
+.categoryBarTrack i {
+  display: block;
+  min-width: 2px;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-primary);
+}
+
+.overviewEmpty {
+  min-height: 130px;
+  margin: 0;
+  display: grid;
+  place-items: center;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.overviewEllipsis {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.overviewRecentHeader {
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.overviewRecentHeader h2 { margin: 0; }
+
+.overviewSearch {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 86px 112px minmax(180px, 280px) 36px;
+}
+
+.overviewSearch select,
+.overviewSearch input,
+.overviewSearch button {
+  min-width: 0;
+  height: 36px;
+  padding: 7px 10px;
+  box-sizing: border-box;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.overviewSearch select {
+  border-radius: 6px 0 0 6px;
+}
+
+.overviewSearch input {
+  margin-left: -1px;
+  border-radius: 0;
+}
+
+.overviewSearch select:focus,
+.overviewSearch input:focus,
+.overviewSearch button:focus-visible {
+  position: relative;
+  z-index: 1;
+  border-color: var(--color-primary);
+  outline: none;
+}
+
+.overviewSearch button {
+  position: relative;
+  margin-left: -1px;
+  padding: 0;
+  border-radius: 0 6px 6px 0;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.overviewSearch button:hover {
+  z-index: 1;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.overviewSearch button span {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 10px;
+  height: 10px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+}
+
+.overviewSearch button span::after {
+  content: "";
+  position: absolute;
+  right: -5px;
+  bottom: -3px;
+  width: 6px;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  transform: rotate(45deg);
+}
+
+.overviewRecentTable > div {
+  max-height: 330px;
+  overflow: auto;
+}
+
+.recentTotalsRow {
+  min-height: 38px;
+  padding: 7px 12px;
+  box-sizing: border-box;
+  border: 1px solid var(--color-border);
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  background: color-mix(in srgb, var(--color-primary) 7%, var(--color-surface-muted));
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  color: var(--color-text-muted);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.recentTotalsRow > strong {
+  margin-right: auto;
+  color: var(--color-text);
+  font-size: 11px;
+}
+
+.recentTotalsRow span { white-space: nowrap; }
+.recentTotalsRow b { margin-left: 4px; color: var(--color-text); font-size: 11px; }
+.recentTotalsRow + .overviewRecentTable { border-radius: 0 0 8px 8px; }
+
+.overviewAggregateTable > div {
+  max-height: 260px;
+  overflow: auto;
+}
+
+.overviewAggregateTable th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.overviewAggregateRoot,
+.overviewDateCell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.overviewAggregateRoot {
+  display: block;
+  color: var(--color-text);
+  font-size: 13px;
+}
+
+.overviewRecentTable th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.filterControl {
+  position: relative;
+  min-height: 38px;
+  padding: 7px 34px 7px 11px;
+  box-sizing: border-box;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 750;
+  color-scheme: light dark;
+}
+
+.filterControl:hover,
+.filterControl:focus {
+  border-color: var(--color-primary);
+  outline: none;
+}
+
+input.filterControl[type="month"]::-webkit-calendar-picker-indicator {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  margin: 0;
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+
+.transactionSheetToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.transactionSheetActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.transactionSheetFilters {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.transactionDateRange {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.transactionDateRange label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.transactionDateRange input {
+  width: 126px;
+  height: 36px;
+  padding: 6px 8px;
+  box-sizing: border-box;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 11px;
+  outline: none;
+}
+
+.transactionDateRange input:focus {
+  border-color: var(--color-primary);
+}
+
+.transactionDateRange i {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-style: normal;
+}
+
+.transactionSheetSearch {
+  position: relative;
+  width: min(280px, 32vw);
+}
+
+.transactionSheetSearch input {
+  width: 100%;
+  height: 36px;
+  padding: 7px 34px 7px 10px;
+  box-sizing: border-box;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 11px;
+  outline: none;
+}
+
+.transactionSheetSearch input:focus {
+  border-color: var(--color-primary);
+}
+
+.transactionSheetSearch > span {
+  position: absolute;
+  top: 11px;
+  right: 12px;
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--color-text-muted);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.transactionSheetSearch > span::after {
+  content: "";
+  position: absolute;
+  right: -5px;
+  bottom: -3px;
+  width: 6px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--color-text-muted);
+  transform: rotate(45deg);
+}
+
+.transactionSheet {
+  min-width: 0;
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+}
+
+.transactionSheet table {
+  width: 100%;
+  min-width: 1180px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.transactionSheet th,
+.transactionSheet td {
+  height: 42px;
+  padding: 5px 7px;
+  box-sizing: border-box;
+  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+}
+
+.transactionSheet th {
+  height: 38px;
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  font-weight: 850;
+}
+
+.transactionSheet th:last-child,
+.transactionSheet td:last-child {
+  border-right: 0;
+}
+
+.transactionSheet input,
+.transactionSheet select,
+.transactionSheet button {
+  font-size: 11px;
+}
+
+.transactionSheet input,
+.transactionSheet select {
+  width: 100%;
+  height: 31px;
+  padding: 3px 6px;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+}
+
+.transactionSheet input:focus,
+.transactionSheet select:focus {
+  border-color: var(--color-primary);
+  background: var(--color-surface-muted);
+  outline: none;
+}
+
+.transactionSheet tbody > tr:not(.transactionDetailRow) > td:nth-child(7) input,
+.transactionSheet tbody > tr:not(.transactionDetailRow) > td:nth-child(8) input,
+.transactionSheet tbody > tr:not(.transactionDetailRow) > td:nth-child(9) input {
+  text-align: right;
+}
+
+.transactionCheckColumn {
+  width: 54px;
+  text-align: center !important;
+}
+
+.transactionCheckColumn input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  accent-color: var(--color-primary);
+  vertical-align: middle;
+}
+
+.transactionTimeColumn {
+  width: 58px;
+}
+
+.transactionDateColumn {
+  width: 115px;
+}
+
+.transactionStatusColumn {
+  width: 48px;
+  text-align: center !important;
+}
+
+.transactionAmountColumn {
+  width: 94px;
+}
+
+.transactionDescriptionColumn {
+  width: 210px;
+}
+
+.transactionCancelColumn {
+  width: 46px;
+  text-align: center !important;
+}
+
+.transactionDetailColumn {
+  width: 52px;
+  text-align: center !important;
+}
+
+.transactionDetailButton,
+.transactionIssueButton {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-primary);
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.transactionDetailButton:focus,
+.transactionDetailButton:focus-visible {
+  border: 0;
+  outline: none;
+  box-shadow: none;
+}
+
+.transactionIssueButton {
+  width: 17px;
+  height: 17px;
+  border: 1px solid color-mix(in srgb, var(--color-danger) 60%, var(--color-border));
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+  color: var(--color-danger);
+  line-height: 17px;
+}
+
+.transactionDetailRow > td {
+  height: 0;
+  padding: 0;
+  overflow: visible;
+  white-space: normal;
+  border-bottom-color: transparent;
+  background: transparent;
+  transition: background-color 180ms ease, border-color 180ms ease;
+}
+
+.transactionDetailCollapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  visibility: hidden;
+  transition: grid-template-rows 220ms ease, opacity 160ms ease, visibility 220ms;
+}
+
+.transactionDetailContent {
+  min-height: 0;
+  overflow: hidden;
+  padding: 0 12px;
+  transition: padding 220ms ease;
+}
+
+.transactionDetailRowOpen > td {
+  border-bottom-color: var(--color-border);
+  background: color-mix(in srgb, var(--color-primary) 5%, var(--color-surface-muted));
+}
+
+.transactionDetailRowOpen .transactionDetailCollapse {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  visibility: visible;
+}
+
+.transactionDetailRowOpen .transactionDetailContent {
+  padding-block: 10px;
+}
+
+.transactionDetailGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px 18px;
+}
+
+.transactionDetailGrid > div,
+.transactionDetailGrid > label {
+  min-width: 0;
+  min-height: 31px;
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+}
+
+.transactionDetailGrid span {
+  color: var(--color-text-muted);
+  font-weight: 750;
+}
+
+.transactionDetailGrid strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.transactionDetailGrid .transactionDetailIssue {
+  color: var(--color-danger);
+}
+
+.transactionDetailGrid .transactionDetailCheck input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--color-primary);
+}
+
+.transactionDetailGrid select {
+  padding-left: 0 !important;
+}
+
+.transactionDetailGrid .transferLinkCell {
+  min-width: 0;
+  text-align: left;
+}
+
+.transactionDetailGrid .transferLinkCell button {
+  justify-self: start;
+  padding: 0;
+  text-align: left;
+}
+
+.readonlySheetCell {
+  background: color-mix(in srgb, var(--color-surface-muted) 65%, transparent);
+  color: var(--color-text-muted);
+}
+
+.categoryComboCell {
+  overflow: visible !important;
+}
+
+.categoryCombo {
+  position: relative;
+  width: 100%;
+  height: 31px;
+}
+
+.transactionSheet .categoryCombo > input {
+  height: 31px;
+  padding-right: 6px;
+}
+
+.transactionSheet .transactionDropdownControl {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 6px !important;
+  border: 1px solid transparent;
+  background-color: transparent;
+  background-image: none !important;
+  box-shadow: none;
+  outline: none;
+}
+
+.transactionSheet .transactionDropdownControl:focus {
+  border-color: var(--color-primary);
+  background-color: var(--color-surface-muted);
+  box-shadow: none;
+}
+
+.transactionSheet .categoryCombo > button {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  right: 0;
+  width: 30px;
+  height: 31px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.transactionSheet .categoryCombo > button span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translate(-50%, -68%) rotate(45deg);
+}
+
+.transactionSheet .categoryCombo > button:hover {
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  color: var(--color-primary);
+}
+
+.categoryComboMenu {
+  position: static;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-surface);
+  box-shadow: 0 12px 28px rgb(0 0 0 / 28%);
+  font-size: 11px;
+}
+
+.categoryComboMenu > button {
+  position: static;
+  width: 100%;
+  min-height: 31px;
+  padding: 3px 6px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.categoryComboMenu > button:hover {
+  background: color-mix(in srgb, var(--color-primary) 13%, var(--color-surface));
+  color: var(--color-primary);
+}
+
+.categoryComboMenu > span {
+  display: block;
+  padding: 9px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.categoryChoiceSheet {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+}
+
+.categoryChoiceSheet table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.categoryChoiceSheet th,
+.categoryChoiceSheet td {
+  padding: 10px;
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+}
+
+.categoryChoiceSheet th {
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.categoryChoiceSheet td {
+  color: var(--color-text);
+  font-size: 13px;
+}
+
+.categoryChoiceSheet tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.categoryChoiceSheet tbody tr {
+  cursor: pointer;
+}
+
+.categoryChoiceSheet tbody tr:hover {
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
+}
+
+.transferLinkCell {
+  min-width: 90px;
+  text-align: center;
+}
+
+.transferLinkCell button {
+  padding: 5px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.transferLinkCell button:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.transferLinkSummary,
+.transferLinkEmpty {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 22px;
+  color: var(--color-text);
+}
+
+.transferLinkSummary span,
+.transferLinkEmpty {
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.importProfileLayout {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+.importProfileLayout.importProfileEditing {
+  grid-template-columns: minmax(420px, 1fr) minmax(420px, 0.9fr);
+}
+
+.importProfileList,
+.importProfileEditor,
+.importPreview {
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-muted);
+}
+
+.importProfileList table,
+.importPreview table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.importProfileList th,
+.importProfileList td,
+.importPreview th,
+.importPreview td {
+  padding: 10px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-size: 12px;
+  text-align: left;
+}
+
+.importProfileList th,
+.importPreview th {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-weight: 850;
+}
+
+.importProfileList tbody tr:not(:last-child) {
+  cursor: pointer;
+}
+
+.importProfileList tbody tr:hover {
+  background: color-mix(in srgb, var(--color-primary) 9%, transparent);
+}
+
+.importProfileEditor {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.importProfileEditor > header,
+.importProfileEditor > footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.importProfileEditor > footer {
+  justify-content: flex-end;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 0;
+}
+
+.importProfileEditor h2,
+.importProfileEditor h3 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 15px;
+}
+
+.importProfileEditor h3 {
+  padding-top: 6px;
+  font-size: 13px;
+}
+
+.importProfileEditor > header button {
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.importProfileFields {
+  overflow-y: auto;
+  padding: 14px;
+  display: grid;
+  align-content: start;
+  gap: 11px;
+}
+
+.importProfileFields label {
+  display: grid;
+  gap: 5px;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.importProfileFields label em {
+  color: var(--color-danger);
+  font-style: normal;
+}
+
+.importProfileFields input,
+.importProfileFields select {
+  min-width: 0;
+  height: 36px;
+  min-height: 36px;
+  box-sizing: border-box;
+  padding: 0 32px 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  line-height: 1.2;
+  outline: none;
+  box-shadow: none;
+}
+
+.importProfileFields input:focus,
+.importProfileFields select:focus {
+  border-color: var(--color-primary);
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 18%, transparent);
+}
+
+.importMappingGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.importFileField {
+  display: grid;
+  gap: 5px;
+}
+
+.importFileField strong {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.importFileField > button {
+  justify-self: start;
+}
+
+.importFileField span {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.importRecommendation {
+  padding: 9px 10px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 55%, var(--color-border));
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
+  color: var(--color-primary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 850;
+  text-align: left;
+  cursor: pointer;
+}
+
+.importSectionHelp {
+  margin: -3px 0 0;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.importAdvancedToggle {
+  padding: 9px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 850;
+  text-align: left;
+  cursor: pointer;
+}
+
+.importAdvancedToggle:hover {
+  border-color: var(--color-primary);
+}
+
+.importAdvancedPanel {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  background: var(--color-surface);
+}
+
+.importPasswordDialog {
+  display: grid;
+  gap: 12px;
+  padding-top: 14px !important;
+}
+
+.importPasswordDialog p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.importPasswordDialog input {
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.importActiveField {
+  display: flex !important;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+}
+
+.importActiveField input {
+  min-height: auto;
+}
+
+.transactionMobileAction {
+  display: none;
+}
+
+.transactionWorkspace {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.transactionWorkspaceHidden {
+  display: none;
+}
+
+.categoryWorkspace {
+  min-width: 0;
+}
+
+.embeddedCategoryScreen {
+  min-height: 0;
+  padding: 0;
+}
+
+.transactionWorkTabs {
+  min-height: 42px;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+}
+
+.transactionWorkTabs button {
+  appearance: none;
+  padding: 8px 14px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.transactionWorkTabs button:hover,
+.transactionWorkTabs button:active {
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.transactionWorkTabs button:focus,
+.transactionWorkTabs button:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.transactionWorkTabs .transactionWorkTabActive {
+  border: 0;
+  border-bottom: 2px solid var(--color-primary);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--color-primary);
+}
+
+.amountCell {
+  text-align: right;
+}
+
+.sheetRowActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sheetRowActions button,
+.sheetEditButton {
+  min-height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.managementGrid.transactionMobile {
+  display: none;
+}
+
+.mobileTransactionDetail,
+.mobileTransactionAmount {
+  min-width: 0;
+}
+
+.mobileTransactionDetail {
+  display: grid;
+  gap: 3px;
+}
+
+.mobileTransactionDetail strong,
+.mobileTransactionDetail span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobileTransferLink {
+  justify-self: start;
+  padding: 2px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-surface-muted);
+  color: var(--color-primary);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.mobileTransferCandidateOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
+  display: grid;
+  align-items: end;
+  background: rgb(0 0 0 / 45%);
+}
+
+.mobileTransferCandidateOverlay > div {
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: 12px;
+  border-radius: 14px 14px 0 0;
+  background: var(--color-surface);
+}
+
+.mobileTransferCandidateOverlay header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 4px 14px;
+}
+
+.mobileTransferCandidateOverlay header button {
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 22px;
+}
+
+.mobileTransferCandidateOverlay > div > button {
+  display: grid;
+  width: 100%;
+  gap: 5px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  text-align: left;
+}
+
+.mobileTransferCandidateOverlay > div > button + button {
+  margin-top: 8px;
+}
+
+.mobileTransferCandidateOverlay span,
+.mobileTransferCandidateOverlay p {
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.mobileTransactionDetail strong {
+  color: var(--color-text);
+  font-size: 13px;
+}
+
+.mobileTransactionDetail span {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.mobileTransactionAmount {
+  display: grid;
+  gap: 3px;
+  justify-items: end;
+  white-space: nowrap;
+}
+
+.mobileTransactionAmount span {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.mobileTransactionAmount strong {
+  color: var(--color-text);
+  font-size: 13px;
 }
 
 .calendarControl {
@@ -509,11 +2020,31 @@
 }
 
 .categorySheet {
+  width: 100%;
   min-width: 0;
-  overflow-x: auto;
+  max-height: clamp(240px, calc(var(--app-viewport-height, 100dvh) - 300px), 620px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  box-sizing: border-box;
   border: 1px solid var(--color-border);
   border-radius: 8px;
   background: var(--color-surface);
+  font-size:11px;
+}
+
+.categoryManagementToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.categoryManagementActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
 }
 
 .categoryTripleSheet {
@@ -523,7 +2054,7 @@
   border-radius: 10px;
   background: var(--color-surface-muted);
   display: grid;
-  grid-template-columns: repeat(3, minmax(300px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0;
   align-items: stretch;
 }
@@ -539,7 +2070,7 @@
 .categorySheetPanel:not(:last-child) {
   margin-right: 12px;
   padding-right: 12px;
-  border-right: 2px solid color-mix(in srgb, var(--color-border) 75%, var(--color-text-muted));
+  border-right: 1px solid color-mix(in srgb, var(--color-border) 75%, var(--color-text-muted));
 }
 
 .categorySheetHeader {
@@ -576,7 +2107,8 @@
 
 .categorySheet table {
   width: 100%;
-  min-width: 440px;
+  min-width: 0;
+  max-width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
 }
@@ -602,15 +2134,21 @@
 
 .categorySheet th {
   height: 38px;
+  position: sticky;
+  z-index: 2;
+  top: 0;
   background: var(--color-surface-muted);
   color: var(--color-text-muted);
   font-size: 11px;
   font-weight: 850;
+  text-align: center;
 }
 
 .categorySheet input:not([type="checkbox"]),
 .categorySheet select {
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   height: 32px;
   padding: 4px 7px;
   box-sizing: border-box;
@@ -637,32 +2175,13 @@
   opacity: 1;
 }
 
-.sheetOrderColumn {
-  width: 72px;
-}
-
-.sheetCodeColumn {
-  width: 62px;
-}
-
-.sheetCodeCell {
-  color: var(--color-text);
-  font: inherit;
-  text-align: center !important;
-}
-
 .sheetCheckColumn {
-  width: 54px;
+  width: 37px;
   text-align: center !important;
 }
 
 .sheetStatusColumn {
   width: 58px;
-  text-align: center !important;
-}
-
-.sheetActionColumn {
-  width: 66px;
   text-align: center !important;
 }
 
@@ -680,24 +2199,38 @@
   background: color-mix(in srgb, var(--color-primary) 7%, var(--color-surface));
 }
 
+.sheetExactDuplicateRow {
+  background: color-mix(in srgb, var(--color-danger) 8%, var(--color-surface));
+}
+
+.duplicateStatusCell {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.duplicateExactBadge,
+.duplicateSuspectedBadge {
+  display: inline-flex;
+  min-height: 22px;
+  align-items: center;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.duplicateExactBadge {
+  background: color-mix(in srgb, var(--color-danger) 16%, transparent);
+  color: var(--color-danger);
+}
+
+.duplicateSuspectedBadge {
+  background: color-mix(in srgb, var(--color-warning) 18%, transparent);
+  color: var(--color-warning);
+}
+
 .sheetSelectedRow {
   background: color-mix(in srgb, var(--color-primary) 30%, var(--color-surface));
-}
-
-.sheetDeleteButton {
-  width: 100%;
-  min-height: 28px;
-  border: 0;
-  border-radius: 4px;
-  background: transparent;
-  color: #d33;
-  font-size: 11px;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.sheetDeleteButton:hover {
-  background: color-mix(in srgb, #d33 10%, transparent);
 }
 
 .sheetEmptyCell {
@@ -731,8 +2264,130 @@
   gap: 8px;
 }
 
+.screen select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1.5 1.5 6 6l4.5-4.5' fill='none' stroke='%238b95a7' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 11px center;
+  background-size: 10px 7px;
+}
+
 /* 모바일에서는 PC 사이드 메뉴를 상단 드롭다운으로 대체 */
 @media (max-width: 768px) {
+  .importProfileLayout.importProfileEditing {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .importProfileEditor {
+    position: fixed;
+    inset: 56px 0 0;
+    z-index: 18000;
+    border-radius: 0;
+    background: var(--color-surface);
+  }
+
+  .importMappingGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ledgerSummaryCards {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .ledgerSummaryCards article {
+    padding: 12px;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+  }
+
+  .ledgerSummaryCards strong { font-size: 16px; }
+
+  .overviewTopGrid { grid-template-columns: minmax(0, 1fr); }
+
+  .ledgerSummaryCard { padding: 12px; }
+
+  .ledgerSummaryCard > div { min-height: 48px; }
+
+  .ledgerSummaryCard .summaryBalanceRow {
+    width: calc(100% + 24px);
+    margin-left: -12px;
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  .ledgerSummaryCard strong { font-size: 15px; }
+
+  .ledgerHistoryChart { height: 280px; }
+
+  .categoryStatusHeader {
+    align-items: center;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .categoryStatusHeader select {
+    min-width: 112px;
+    margin-left: auto;
+  }
+
+  .aggregateHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .aggregateToolbar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .aggregateTotals {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .categoryStatusTabs { gap: 8px; }
+
+  .categoryStatusTabs button { font-size: 12px; }
+
+  .overviewGrid { grid-template-columns: minmax(0, 1fr); }
+
+  .overviewAggregateGrid { grid-template-columns: minmax(0, 1fr); }
+
+  .overviewPanel { padding: 12px; }
+
+  .categoryBarRow {
+    grid-template-columns: minmax(150px, 1.2fr) minmax(60px, 1fr) auto;
+    gap: 7px;
+  }
+
+  .categoryStatusRow {
+    grid-template-columns: minmax(150px, 1.2fr) minmax(60px, 1fr) auto;
+    gap: 7px;
+  }
+
+  .overviewRecentHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .overviewSearch {
+    width: 100%;
+    grid-template-columns: 76px 94px minmax(0, 1fr) 36px;
+  }
+
+  .recentTotalsRow {
+    overflow-x: auto;
+    justify-content: flex-start;
+    gap: 12px;
+  }
+
+  .recentTotalsRow > strong { margin-right: 4px; }
+
+  .overviewRecentTable table { min-width: 850px; }
+
+  .overviewAggregateTable table { min-width: 380px; }
+
   .page {
     height: calc(
       var(--app-viewport-height, 100dvh) - var(--app-nav-height) -
@@ -757,6 +2412,19 @@
   .categoryTripleSheet {
     grid-template-columns: minmax(0, 1fr);
     gap: 18px;
+  }
+
+  .categoryManagementToolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .categoryManagementToolbar .transactionSheetSearch {
+    width: 100%;
+  }
+
+  .categoryManagementActions {
+    justify-content: flex-start;
   }
 
   .categorySheetPanel:not(:last-child) {
@@ -785,14 +2453,11 @@
     flex: 1;
   }
 
-  .categorySheet table {
-    min-width: 560px;
-  }
-
   .categorySheetHeader {
     min-height: 38px;
   }
-
+  
+ 
   .screenHeader {
     min-height: 40px;
     align-items: flex-start;
@@ -805,6 +2470,53 @@
     align-items: stretch;
     flex-direction: column;
     gap: 8px;
+  }
+
+  .monthRangeControl {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .monthRangeControl .filterControl {
+    width: auto;
+    flex: 1;
+  }
+
+  .filterControl {
+    width: 100%;
+  }
+
+  .transactionDesktop {
+    display: none;
+  }
+
+  .managementGrid.transactionMobile {
+    display: grid;
+  }
+
+  .mobileTransactionTable table {
+    min-width: 0;
+    table-layout: fixed;
+  }
+
+  .mobileTransactionTable th,
+  .mobileTransactionTable td {
+    height: 54px;
+    padding: 6px 8px;
+    vertical-align: middle;
+  }
+
+  .mobileTransactionTable th:last-child {
+    text-align: right;
+  }
+
+  .transactionSheetToolbar,
+  .sheetAddButton.transactionDesktop {
+    display: none;
+  }
+
+  .transactionMobileAction {
+    display: block;
   }
 
   .screenHeader h1 {
@@ -874,4 +2586,203 @@
   .categoryPathColumn {
     display: none;
   }
+}
+.ledgerImportOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--overlay-bg);
+  color: var(--color-text);
+}
+
+.ledgerImportSection {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.ledgerImportToggle {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 42px;
+  margin-bottom: 8px;
+  padding: 0 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.ledgerImportToggle[aria-expanded="true"] {
+  margin-bottom: 0;
+  border-bottom-color: transparent;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.ledgerImportToggle:hover {
+  border-color: var(--color-border-strong);
+  background: color-mix(in srgb, var(--color-primary) 6%, var(--color-surface-muted));
+}
+
+.ledgerImportToggle:focus-visible {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 18%, transparent);
+}
+
+.ledgerImportToggle i {
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--color-text-muted);
+  border-bottom: 2px solid var(--color-text-muted);
+  transform: rotate(45deg) translate(-2px, -2px);
+  transition: transform .16s ease;
+}
+
+.ledgerImportToggle i.ledgerImportToggleOpen {
+  transform: rotate(225deg) translate(-1px, -1px);
+}
+
+.ledgerImportDialog {
+  display: flex;
+  flex-direction: column;
+  width: min(1500px, 96vw);
+  max-height: 92vh;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-floating);
+}
+
+.ledgerImportInline.ledgerImportDialog {
+  width: 100%;
+  box-sizing: border-box;
+  max-height: none;
+  margin-bottom: 14px;
+  border-top: 0;
+  border-radius: 0 0 8px 8px;
+  background: var(--color-surface-muted);
+  font-size: 13px;
+  box-shadow: none;
+}
+
+.ledgerImportInline .ledgerImportTableWrap {
+  max-height: min(52vh, 560px);
+}
+
+.ledgerImportDialog > header,
+.ledgerImportDialog > footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.ledgerImportDialog > header h2 { margin: 0; font-size: 1.15rem; }
+.ledgerImportDialog > header button { border: 0; background: transparent; color: inherit; font-size: 1.7rem; cursor: pointer; }
+.ledgerImportDialog > footer { justify-content: flex-end; border-top: 1px solid var(--color-border); border-bottom: 0; }
+
+.ledgerImportControls {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(180px, .8fr) minmax(280px, 1.2fr);
+  gap: 12px;
+  padding: 16px 20px;
+}
+
+.ledgerImportControls label { display: grid; gap: 6px; color: var(--color-text); font-size: 13px; font-weight: 850; }
+.ledgerImportControls > div { display: flex; align-self: end; align-items: center; gap: 10px; min-width: 0; min-height: 40px; }
+.ledgerImportControls > div button { flex: none; }
+.ledgerImportControls > div span { display: flex; min-width: 0; min-height: 40px; flex: 1; align-items: center; overflow: hidden; color: var(--color-text-muted); text-overflow: ellipsis; white-space: nowrap; }
+.ledgerImportControls select,
+.ledgerImportPassword input {
+  width: 100%;
+  min-height: 40px;
+  box-sizing: border-box;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background-color: var(--color-surface-muted);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 13px;
+  padding: 0 32px 0 12px;
+  outline: none;
+  box-shadow: none;
+}
+
+.ledgerImportControls select:focus,
+.ledgerImportPassword input:focus {
+  border-color: var(--color-primary);
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 18%, transparent);
+}
+
+.ledgerImportPassword { display: flex; align-items: end; gap: 10px; padding: 0 20px 16px; }
+.ledgerImportPassword label { display: grid; flex: 1; gap: 6px; }
+.ledgerImportSummary { display: flex; gap: 18px; padding: 10px 20px; border-block: 1px solid var(--color-border); background: var(--color-surface-muted); color: var(--color-text); font-weight: 700; }
+.ledgerImportTableWrap { flex: 1; overflow: auto; min-height: 240px; }
+.ledgerImportTableWrap table { width: 100%; min-width: 1180px; border-collapse: collapse; background: var(--color-surface); color: var(--color-text); }
+.ledgerImportTableWrap th,
+.ledgerImportTableWrap td { padding: 8px; border-right: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); text-align: left; }
+.ledgerImportTableWrap th { padding: 8px; border-right: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); position: sticky; top: 0; z-index: 1; background: var(--color-surface-muted); color: var(--color-text-muted); text-align: left; }
+.ledgerImportTableWrap tbody tr:hover { background: color-mix(in srgb, var(--color-primary) 7%, var(--color-surface)); }
+.importDirection { color: var(--color-text-muted); font-size: 12px; font-weight: 800; white-space: nowrap; }
+.ledgerImportTableWrap th:first-child,
+.ledgerImportTableWrap td:first-child { width: 54px; text-align: center; }
+.ledgerImportTableWrap tr[data-invalid="true"] { background: var(--color-danger-soft); }
+.ledgerImportTableWrap tr[data-invalid="true"] td:last-child { color: var(--color-danger); font-weight: 700; }
+.ledgerImportTableWrap input:not([type="checkbox"]),
+.ledgerImportTableWrap select {
+  width: 100%;
+  min-width: 110px;
+  min-height: 36px;
+  box-sizing: border-box;
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  padding: 0 32px 0 10px;
+  outline: none;
+  box-shadow: none;
+}
+
+.ledgerImportTableWrap input:not([type="checkbox"]):focus,
+.ledgerImportTableWrap select:focus {
+  border-color: var(--color-primary);
+  outline: none;
+  box-shadow: none;
+}
+
+@media (min-width: 769px) {
+  .categorySheetPanel:nth-child(-n + 3) .categorySheet input:not([type="checkbox"]) {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 768px) {
+  .ledgerImportOverlay { align-items: stretch; padding: 0; }
+  .ledgerImportDialog { width: 100%; max-height: 100dvh; border: 0; border-radius: 0; }
+  .ledgerImportInline.ledgerImportDialog { max-height: none; margin-bottom: 10px; border: 1px solid var(--color-border); border-top: 0; border-radius: 0 0 8px 8px; }
+  .ledgerImportControls { grid-template-columns: 1fr; padding: 12px; }
+  .ledgerImportControls > div { align-items: center; }
+  .ledgerImportPassword { padding: 0 12px 12px; }
+  .ledgerImportSummary { padding-inline: 12px; }
+  .ledgerImportDialog > footer { position: sticky; bottom: 0; padding: 12px; }
 }

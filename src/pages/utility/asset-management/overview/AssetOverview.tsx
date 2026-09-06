@@ -235,7 +235,18 @@ export default function AssetOverview({ calendarId, calendarName, calendarContro
               </span>
             </div>
             <strong>{formatWon(value)}</strong>
-            <small>전월 대비 {formatChange(changed)}</small>
+            <small className={styles.summaryChange}>
+              <span>전월 대비</span>
+              <span
+                className={BigInt(changed) === 0n
+                  ? undefined
+                  : BigInt(changed) > 0n
+                    ? styles.changeIncrease
+                    : styles.changeDecrease}
+              >
+                {formatChange(changed)}
+              </span>
+            </small>
           </div>
         ))}
       </div>

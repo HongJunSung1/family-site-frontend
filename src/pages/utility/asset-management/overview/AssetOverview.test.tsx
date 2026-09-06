@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getAssetHistory, getAssetSummary } from "../../../../api/assetApi";
 import AssetOverview from "./AssetOverview";
+import styles from "../AssetManagement.module.css";
 
 vi.mock("@mui/material/useMediaQuery", () => ({
   default: () => false,
@@ -72,8 +73,14 @@ describe("자산현황", () => {
       />,
     );
 
+    fireEvent.change(screen.getByLabelText("기준 월"), { target: { value: "2026-07" } });
+
     expect((await screen.findAllByText("1,500,000원")).length).toBeGreaterThan(0);
     expect(screen.getAllByText("1,000,000원").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("+300,000원")[0]).toHaveClass(styles.changeIncrease);
+    expect(screen.getByText("-100,000원")).toHaveClass(styles.changeDecrease);
+    expect(screen.getAllByText("전월 대비")[0]).not.toHaveClass(styles.changeIncrease);
+    expect(screen.getAllByText("전월 대비")[0]).not.toHaveClass(styles.changeDecrease);
     expect(screen.getByRole("img", { name: "최근 12개월 자산 추이 그래프" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByText(/입력되지 않은 계정이 1개/));

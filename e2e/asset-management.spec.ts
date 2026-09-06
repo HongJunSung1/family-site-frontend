@@ -268,6 +268,15 @@ test.describe("자산관리 현재 화면", () => {
     await expect(balanceInput).toHaveValue("1,500,000");
     await page.getByRole("button", { name: "급여통장 메모" }).hover();
     await expect(page.getByRole("tooltip")).toHaveText("생활비와 공과금 결제 계정");
+    await page.getByRole("button", { name: "급여통장 계산기 열기" }).click();
+    await page.getByRole("button", { name: "C", exact: true }).click();
+    await page.getByRole("button", { name: "1", exact: true }).click();
+    await page.getByRole("button", { name: "0", exact: true }).click();
+    await page.getByRole("button", { name: "+", exact: true }).click();
+    await page.getByRole("button", { name: "2", exact: true }).click();
+    await page.getByRole("button", { name: "=", exact: true }).click();
+    await page.getByRole("button", { name: "적용", exact: true }).click();
+    await expect(balanceInput).toHaveValue("12");
     await balanceInput.fill("1800000");
 
     const saveRequest = page.waitForRequest((request) => (

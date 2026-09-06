@@ -4,13 +4,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import LedgerCategories from "./LedgerCategories";
 
 const getLedgerCategories = vi.fn();
+const getLedgerClassificationRules = vi.fn();
 const deleteLedgerCategory = vi.fn();
 const saveLedgerCategory = vi.fn();
+const syncLedgerCategoryClassificationRules = vi.fn();
 
 vi.mock("../../../../api/ledgerApi", () => ({
   getLedgerCategories: (...args: unknown[]) => getLedgerCategories(...args),
+  getLedgerClassificationRules: (...args: unknown[]) => getLedgerClassificationRules(...args),
   saveLedgerCategory: (...args: unknown[]) => saveLedgerCategory(...args),
   deleteLedgerCategories: (...args: unknown[]) => deleteLedgerCategory(...args),
+  syncLedgerCategoryClassificationRules: (...args: unknown[]) => syncLedgerCategoryClassificationRules(...args),
 }));
 
 describe("가계부 분류 관리", () => {
@@ -22,6 +26,8 @@ describe("가계부 분류 관리", () => {
       canManage: true,
     });
     saveLedgerCategory.mockResolvedValue({ ok: true, categoryId: 1 });
+    getLedgerClassificationRules.mockResolvedValue({ ok: true, rules: [], canManage: true });
+    syncLedgerCategoryClassificationRules.mockResolvedValue({ ok: true });
   });
 
   it("시트에 여러 행을 추가한 뒤 한 번에 저장한다", async () => {
@@ -67,7 +73,25 @@ describe("가계부 분류 관리", () => {
     await user.click(within(screen.getByRole("region", { name: "대분류 시트" })).getByRole("button", { name: /행 추가/ }));
 
     expect(screen.getByRole("textbox", { name: "대분류명" })).toHaveValue("");
-    expect(within(screen.getByRole("region", { name: "대분류 시트" })).getByText("A")).toBeInTheDocument();
+    expect(within(screen.getByRole("region", { name: "대분류 시트" })).queryByText("코드")).not.toBeInTheDocument();
+    expect(within(screen.getByRole("region", { name: "대분류 시트" })).queryByText("순서")).not.toBeInTheDocument();
+  });
+
+  it("분류를 코드나 저장 순서와 관계없이 가나다순으로 표시한다", async () => {
+    getLedgerCategories.mockResolvedValue({
+      ok: true,
+      canManage: true,
+      categories: [
+        { id: 1, calendar_id: 10, parent_id: null, category_name: "지출", depth: 1, is_active: 1, display_order: 0, created_at: "", updated_at: "" },
+        { id: 2, calendar_id: 10, parent_id: null, category_name: "금융", depth: 1, is_active: 1, display_order: 1, created_at: "", updated_at: "" },
+        { id: 3, calendar_id: 10, parent_id: null, category_name: "수입", depth: 1, is_active: 1, display_order: 2, created_at: "", updated_at: "" },
+      ],
+    });
+    render(<LedgerCategories calendarId={10} calendarName="우리 가족" calendarControl={<div>캘린더 선택</div>} />);
+
+    const table = await screen.findByRole("table", { name: "1단계 분류 편집 시트" });
+    expect(within(table).getAllByRole("textbox").map((input) => (input as HTMLInputElement).value))
+      .toEqual(["금융", "수입", "지출"]);
   });
 
   it("저장 전 대·중·소분류를 연결하고 실제 상위 코드로 치환해 저장한다", async () => {
@@ -126,6 +150,32 @@ describe("가계부 분류 관리", () => {
 
     await user.dblClick(screen.getByRole("textbox", { name: "중분류명" }));
     expect(screen.getByRole("textbox", { name: "소분류명" })).toHaveValue("외식");
+  });
+
+  it("소분류에서 자동분류 문구를 저장하고 다른 소분류 이동 시 미저장 문구 폐기를 확인한다", async () => {
+    const user = userEvent.setup();
+    getLedgerCategories.mockResolvedValue({ ok: true, canManage: true, categories: [
+      { id: 1, calendar_id: 10, parent_id: null, category_name: "생활", depth: 1, is_active: 1, display_order: 0, created_at: "", updated_at: "" },
+      { id: 2, calendar_id: 10, parent_id: 1, category_name: "식비", depth: 2, is_active: 1, display_order: 0, created_at: "", updated_at: "" },
+      { id: 3, calendar_id: 10, parent_id: 2, category_name: "편의점", depth: 3, is_active: 1, display_order: 0, created_at: "", updated_at: "" },
+      { id: 4, calendar_id: 10, parent_id: 2, category_name: "외식", depth: 3, is_active: 1, display_order: 1, created_at: "", updated_at: "" },
+    ] });
+    getLedgerClassificationRules.mockResolvedValue({ ok: true, canManage: true, rules: [
+      { id: 10, calendar_id: 10, match_field: "DESCRIPTION", match_value: "GS25", category_id: 3, is_active: 1, created_at: "", updated_at: "" },
+    ] });
+    render(<LedgerCategories calendarId={10} calendarName="우리 가족" calendarControl={<div>캘린더 선택</div>} />);
+
+    await user.dblClick(await screen.findByDisplayValue("생활"));
+    await user.dblClick(screen.getByDisplayValue("식비"));
+    await user.dblClick(screen.getByDisplayValue("편의점"));
+    const ruleSheet = screen.getByRole("region", { name: "자동분류 문구 시트" });
+    expect(within(ruleSheet).getByRole("textbox", { name: "자동분류 문구 입력" })).toHaveValue("GS25");
+    await user.click(within(ruleSheet).getByRole("button", { name: /행 추가/ }));
+    await user.type(within(ruleSheet).getAllByRole("textbox", { name: "자동분류 문구 입력" })[1], "CU");
+    await user.dblClick(screen.getByDisplayValue("외식"));
+    expect(screen.getByRole("dialog")).toHaveTextContent("작성하고 저장하지 않은 자동분류 문구가 삭제됩니다.");
+    await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "계속" }));
+    expect(within(ruleSheet).queryByDisplayValue("CU")).not.toBeInTheDocument();
   });
 
   it("다른 상위 분류를 조회하면 숨겨지는 미저장 입력과 삭제 선택을 초기화한다", async () => {
