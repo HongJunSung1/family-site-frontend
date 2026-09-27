@@ -616,7 +616,11 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
           <Paper
             className={styles.categoryComboMenu}
             elevation={0}
-            sx={{ width: categoryAnchor?.getBoundingClientRect().width ?? 180 }}
+            sx={{
+              width: categoryAnchor?.getBoundingClientRect().width ?? 180,
+              backgroundColor: "var(--color-surface)",
+              color: "var(--color-text)",
+            }}
           >
             {(() => {
               const current = drafts.find((row) => row.key === openCategoryKey);
