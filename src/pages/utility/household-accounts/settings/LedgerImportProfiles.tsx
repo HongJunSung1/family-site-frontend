@@ -11,7 +11,7 @@ import {
 } from "../../../../api/ledgerApi";
 import { AlertDialog } from "../../../../common/dialog";
 import { LoadingOverlay } from "../../../../common/loading";
-import { worksheetToRows } from "../ledgerExcel";
+import { workbookToSheets } from "../ledgerExcel";
 import type { LedgerScreenProps } from "../types";
 import styles from "../HouseholdAccounts.module.css";
 
@@ -136,9 +136,7 @@ export default function LedgerImportProfiles({ calendarId, calendarControl }: Le
     if (!form) return;
     const XLSX = await import("xlsx");
     const workbook = XLSX.read(data, { type: "array", cellDates: false });
-    const nextSheets = workbook.SheetNames.map((name) => ({
-      name, rows: worksheetToRows(XLSX, workbook.Sheets[name]),
-    }));
+    const nextSheets = workbookToSheets(XLSX, workbook, data);
     setSheets(nextSheets); setSampleName(fileName);
     setForm({ ...form, sheetName: nextSheets[0]?.name ?? "", headerRow: 1, mapping: {} });
   }
@@ -229,7 +227,7 @@ export default function LedgerImportProfiles({ calendarId, calendarControl }: Le
         <div className={styles.importProfileFields}>
           <label>양식명<em>*</em><input value={form.profileName} onChange={(e) => setForm({ ...form, profileName: e.target.value })} /></label>
           <label>은행·기관명<em>*</em><input value={form.institutionName} onChange={(e) => setForm({ ...form, institutionName: e.target.value })} /></label>
-          <div className={styles.importFileField}><strong>샘플 엑셀</strong><input ref={sampleInputRef} aria-label="샘플 엑셀 파일 선택" type="file" accept=".xls,.xlsx" hidden onChange={(event) => void readSample(event.target.files?.[0])} /><button type="button" className={styles.secondaryButton} onClick={() => sampleInputRef.current?.click()}>파일 선택</button><span>{sampleName || "파일은 브라우저에서만 읽고 저장하지 않습니다."}</span></div>
+          <div className={styles.importFileField}><strong>샘플 엑셀</strong><input ref={sampleInputRef} aria-label="샘플 엑셀 파일 선택" type="file" accept=".xls,.xlsx" hidden onChange={(event) => { const file = event.currentTarget.files?.[0]; event.currentTarget.value = ""; void readSample(file); }} /><button type="button" className={styles.secondaryButton} onClick={() => sampleInputRef.current?.click()}>파일 선택</button><span>{sampleName || "파일은 브라우저에서만 읽고 저장하지 않습니다."}</span></div>
           {recommendedProfile && <button type="button" className={styles.importRecommendation} onClick={() => setForm({
             id: recommendedProfile.id, profileName: recommendedProfile.profile_name,
             institutionName: recommendedProfile.institution_name, sheetName: selectedSheet?.name ?? recommendedProfile.sheet_name ?? "",

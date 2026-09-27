@@ -7,7 +7,7 @@ import {
 import { ApiError } from "../../../../api/client";
 import { AlertDialog } from "../../../../common/dialog";
 import { LoadingOverlay } from "../../../../common/loading";
-import { worksheetToRows } from "../ledgerExcel";
+import { workbookToSheets } from "../ledgerExcel";
 import styles from "../HouseholdAccounts.module.css";
 
 type Props = {
@@ -94,8 +94,12 @@ export default function LedgerImportDialog({ open, calendarId, accounts, onClose
   async function applyWorkbook(data: ArrayBuffer | Uint8Array, name: string) {
     if (!profile) return;
     const XLSX = await import("xlsx"); const workbook = XLSX.read(data, { type: "array", cellDates: false });
-    const sheetName = profile.sheet_name && workbook.Sheets[profile.sheet_name] ? profile.sheet_name : workbook.SheetNames[0];
-    const rawRows = worksheetToRows(XLSX, workbook.Sheets[sheetName]);
+    const sheets = workbookToSheets(XLSX, workbook, data);
+    const signatureMatchedSheet = profile.header_signature
+      ? sheets.find((sheet) => sheet.rows.slice(0, 100).some((row) => headerMatches(profile.header_signature, row.map(cell))))
+      : undefined;
+    const selectedSheet = signatureMatchedSheet ?? sheets.find((sheet) => sheet.name === profile.sheet_name) ?? sheets[0];
+    const rawRows = selectedSheet?.rows ?? [];
     const configuredHeaderIndex = profile.header_row - 1;
     const matchedHeaderIndex = profile.header_signature
       ? rawRows.slice(0, 100).findIndex((row) => headerMatches(profile.header_signature, row.map(cell)))
@@ -133,7 +137,9 @@ export default function LedgerImportDialog({ open, calendarId, accounts, onClose
     });
     if (parsed.length > 500) throw new Error("TOO_MANY");
     if (!parsed.length) throw new Error("NO_ROWS");
-    const candidates = parsed.map((row) => ({
+    const validRows = parsed.filter((row) => !row.error);
+    if (!validRows.length) throw new Error("INVALID_ROWS");
+    const candidates = validRows.map((row) => ({
       calendarId, accountId, transactionDate: row.transactionDate, transactionTime: row.transactionTime,
       transactionKind: row.classification === "INCOME" ? "INCOME" as const : "EXPENSE" as const,
       direction: row.direction, amount: row.amount, categoryId: 1,
@@ -144,7 +150,7 @@ export default function LedgerImportDialog({ open, calendarId, accounts, onClose
       checkLedgerTransactionDuplicates(calendarId, candidates),
       classifyLedgerTransactions(calendarId, candidates),
     ]);
-    setPendingRows(parsed.map((row, rowIndex) => ({ accountId, transactionDate: row.transactionDate, transactionTime: row.transactionTime,
+    setPendingRows(validRows.map((row, rowIndex) => ({ accountId, transactionDate: row.transactionDate, transactionTime: row.transactionTime,
       direction: row.direction, amount: row.amount, description: row.description, counterparty: row.counterparty,
       memo: row.memo, classification: row.classification,
       categoryId: classificationResult.results[rowIndex]?.categoryId ?? 0,
@@ -152,6 +158,9 @@ export default function LedgerImportDialog({ open, calendarId, accounts, onClose
       classificationConflict: classificationResult.results[rowIndex]?.status === "CONFLICT",
       duplicateStatus: duplicateResult.statuses[rowIndex] ?? "NONE" })));
     setFileName(name); setEncrypted(null); setPassword("");
+    if (validRows.length < parsed.length) {
+      setAlert({ title: "일부 행 제외", message: `날짜·금액·거래내용을 거래로 인식할 수 없는 ${parsed.length - validRows.length}개 행은 제외했습니다.` });
+    }
   }
   async function readFile(file?: File) {
     if (!file) return;
@@ -171,9 +180,11 @@ export default function LedgerImportDialog({ open, calendarId, accounts, onClose
         setEncrypted({ name: file.name, data }); setPassword("");
       }
     } catch (error) {
-      const message = error instanceof Error && error.message === "HEADER_MISMATCH" ? "선택한 양식과 파일의 헤더가 일치하지 않습니다."
+      const message = error instanceof ApiError ? error.message
+        : error instanceof Error && error.message === "HEADER_MISMATCH" ? "선택한 양식과 파일의 헤더가 일치하지 않습니다."
         : error instanceof Error && error.message === "TOO_MANY" ? "한 번에 가져올 수 있는 거래는 최대 500건입니다."
           : error instanceof Error && error.message === "NO_ROWS" ? "가져올 거래 행이 없습니다. 양식의 제외 규칙과 파일 내용을 확인해주세요."
+            : error instanceof Error && error.message === "INVALID_ROWS" ? "거래로 인식할 수 있는 행이 없습니다. 날짜·금액·거래내용 열 매핑을 확인해주세요."
           : "엑셀 파일을 읽을 수 없습니다.";
       setAlert({ title: "파일 읽기 실패", message });
     } finally { setLoading(false); if (inputRef.current) inputRef.current.value = ""; }
@@ -191,12 +202,15 @@ export default function LedgerImportDialog({ open, calendarId, accounts, onClose
     try {
       await applyWorkbook(decrypted, encrypted.name);
     } catch (error) {
-      const message = error instanceof Error && error.message === "HEADER_MISMATCH"
+      const message = error instanceof ApiError ? error.message
+        : error instanceof Error && error.message === "HEADER_MISMATCH"
         ? "비밀번호는 확인됐지만 저장된 가져오기 양식과 이 파일의 헤더가 일치하지 않습니다. 양식에 사용한 은행 파일과 같은 형식인지 확인해주세요."
         : error instanceof Error && error.message === "TOO_MANY"
           ? "비밀번호는 확인됐지만 거래가 500건을 초과해 한 번에 가져올 수 없습니다."
           : error instanceof Error && error.message === "NO_ROWS"
             ? "비밀번호는 확인됐지만 가져올 거래 행이 없습니다."
+            : error instanceof Error && error.message === "INVALID_ROWS"
+              ? "비밀번호는 확인됐지만 거래로 인식할 수 있는 행이 없습니다. 날짜·금액·거래내용 열 매핑을 확인해주세요."
           : "비밀번호는 확인됐지만 복호화된 엑셀 내용을 읽지 못했습니다.";
       setAlert({ title: "엑셀 내용 확인", message });
     } finally { setLoading(false); }
