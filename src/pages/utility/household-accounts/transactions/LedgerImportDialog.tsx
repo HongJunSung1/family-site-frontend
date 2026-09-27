@@ -7,6 +7,7 @@ import {
 import { ApiError } from "../../../../api/client";
 import { AlertDialog } from "../../../../common/dialog";
 import { LoadingOverlay } from "../../../../common/loading";
+import { worksheetToRows } from "../ledgerExcel";
 import styles from "../HouseholdAccounts.module.css";
 
 type Props = {
@@ -94,7 +95,7 @@ export default function LedgerImportDialog({ open, calendarId, accounts, onClose
     if (!profile) return;
     const XLSX = await import("xlsx"); const workbook = XLSX.read(data, { type: "array", cellDates: false });
     const sheetName = profile.sheet_name && workbook.Sheets[profile.sheet_name] ? profile.sheet_name : workbook.SheetNames[0];
-    const rawRows = XLSX.utils.sheet_to_json<unknown[]>(workbook.Sheets[sheetName], { header: 1, raw: true, defval: "", range: 0 });
+    const rawRows = worksheetToRows(XLSX, workbook.Sheets[sheetName]);
     const configuredHeaderIndex = profile.header_row - 1;
     const matchedHeaderIndex = profile.header_signature
       ? rawRows.slice(0, 100).findIndex((row) => headerMatches(profile.header_signature, row.map(cell)))

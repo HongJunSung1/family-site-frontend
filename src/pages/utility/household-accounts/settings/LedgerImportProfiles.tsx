@@ -11,6 +11,7 @@ import {
 } from "../../../../api/ledgerApi";
 import { AlertDialog } from "../../../../common/dialog";
 import { LoadingOverlay } from "../../../../common/loading";
+import { worksheetToRows } from "../ledgerExcel";
 import type { LedgerScreenProps } from "../types";
 import styles from "../HouseholdAccounts.module.css";
 
@@ -136,7 +137,7 @@ export default function LedgerImportProfiles({ calendarId, calendarControl }: Le
     const XLSX = await import("xlsx");
     const workbook = XLSX.read(data, { type: "array", cellDates: false });
     const nextSheets = workbook.SheetNames.map((name) => ({
-      name, rows: XLSX.utils.sheet_to_json<unknown[]>(workbook.Sheets[name], { header: 1, raw: true, defval: "", range: 0 }),
+      name, rows: worksheetToRows(XLSX, workbook.Sheets[name]),
     }));
     setSheets(nextSheets); setSampleName(fileName);
     setForm({ ...form, sheetName: nextSheets[0]?.name ?? "", headerRow: 1, mapping: {} });
