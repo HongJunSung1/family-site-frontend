@@ -2,6 +2,7 @@ import type { WorkBook, WorkSheet } from "xlsx";
 
 type SheetJs = typeof import("xlsx");
 export type LedgerWorkbookSheet = { name: string; rows: unknown[][] };
+export type LedgerExcelDateFormat = "AUTO" | "YMD" | "YMDHMS" | "EXCEL_SERIAL";
 
 const HEADER_NAMES = new Set([
   "no", "번호", "순번", "거래일", "거래일자", "거래일시", "거래시간", "일자", "날짜", "시간",
@@ -26,6 +27,28 @@ export function detectHeaderRow(rows: unknown[][]) {
     }
   });
   return bestScore >= 2 ? bestIndex + 1 : 1;
+}
+
+const ymd = (year: number, month: number, day: number) => {
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() + 1 !== month || date.getUTCDate() !== day) return "";
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+};
+
+export function excelDateText(value: unknown, format: LedgerExcelDateFormat) {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return ymd(value.getFullYear(), value.getMonth() + 1, value.getDate());
+  }
+  if (typeof value === "number" || format === "EXCEL_SERIAL") {
+    const serial = Number(value);
+    if (Number.isFinite(serial)) {
+      const parsed = new Date(Date.UTC(1899, 11, 30) + Math.floor(serial) * 86_400_000);
+      if (!Number.isNaN(parsed.getTime())) return ymd(parsed.getUTCFullYear(), parsed.getUTCMonth() + 1, parsed.getUTCDate());
+    }
+  }
+  const raw = String(value ?? "").trim();
+  const matched = raw.match(/(\d{4})\D?(\d{1,2})\D?(\d{1,2})/);
+  return matched ? ymd(Number(matched[1]), Number(matched[2]), Number(matched[3])) : raw;
 }
 
 /**

@@ -7,7 +7,7 @@ import {
 import { ApiError } from "../../../../api/client";
 import { AlertDialog } from "../../../../common/dialog";
 import { LoadingOverlay } from "../../../../common/loading";
-import { workbookToSheets } from "../ledgerExcel";
+import { excelDateText, workbookToSheets } from "../ledgerExcel";
 import styles from "../HouseholdAccounts.module.css";
 
 type Props = {
@@ -29,14 +29,6 @@ const cleanNumber = (value: unknown) => cell(value).replace(/[원,\s]/g, "");
 const nonzero = (value: unknown) => {
   const result = cleanNumber(value);
   return !result || /^-?0*(?:\.0*)?$/.test(result) ? "" : result;
-};
-const dateText = (value: unknown, format: LedgerImportProfile["rules"]["dateFormat"]) => {
-  if (typeof value === "number" || format === "EXCEL_SERIAL") {
-    const serial = Number(value);
-    if (Number.isFinite(serial)) return new Date(Date.UTC(1899, 11, 30) + Math.floor(serial) * 86_400_000).toISOString().slice(0, 10);
-  }
-  const raw = cell(value); const match = raw.match(/(\d{4})\D?(\d{1,2})\D?(\d{1,2})/);
-  return match ? `${match[1]}-${match[2].padStart(2, "0")}-${match[3].padStart(2, "0")}` : raw;
 };
 const timeText = (value: unknown) => {
   if (typeof value === "number" && value >= 0 && value < 1) {
@@ -129,7 +121,7 @@ export default function LedgerImportDialog({ open, calendarId, accounts, onClose
         || !!profile.rules.inflowValues?.some((value) => value === directionValue)
         || !!profile.rules.outflowValues?.some((value) => value === directionValue);
       const outgoing = signed.startsWith("-"); const amount = signed.replace(/[-+.]/g, "").replace(/^0+/, "");
-      const date = dateText(read(row, profile.mapping.date), profile.rules.dateFormat); const categoryId = 0;
+      const date = excelDateText(read(row, profile.mapping.date), profile.rules.dateFormat); const categoryId = 0;
       const error = !directionMatched ? "입출금 구분 확인" : !/^\d{4}-\d{2}-\d{2}$/.test(date) ? "거래일 확인" : !/^[1-9]\d*$/.test(amount) ? "금액 확인" : !description ? "거래내용 확인" : "";
       return [{ key: sourceIndex, included: true, error, transactionDate: date, transactionTime: timeText(read(row, profile.mapping.time)) || null,
         classification: outgoing ? "EXPENSE" : "INCOME", direction: outgoing ? "OUTFLOW" : "INFLOW", amount, categoryId,

@@ -1,6 +1,6 @@
 import * as XLSX from "xlsx";
 import { describe, expect, it } from "vitest";
-import { detectHeaderRow, workbookToSheets, worksheetToRows } from "./ledgerExcel";
+import { detectHeaderRow, excelDateText, workbookToSheets, worksheetToRows } from "./ledgerExcel";
 
 describe("가계부 엑셀 행 변환", () => {
   it("축소된 XLS 사용 범위보다 아래에 있는 셀과 빈 행을 실제 행 번호대로 유지한다", () => {
@@ -43,5 +43,13 @@ describe("가계부 엑셀 행 변환", () => {
     ];
 
     expect(detectHeaderRow(rows)).toBe(3);
+  });
+
+  it("XLS에서 Date 객체로 읽힌 거래일시를 유효한 거래일로 변환한다", () => {
+    const value = new Date(2026, 7, 25, 13, 58, 4);
+
+    expect(excelDateText(value, "AUTO")).toBe("2026-08-25");
+    expect(excelDateText(value, "EXCEL_SERIAL")).toBe("2026-08-25");
+    expect(excelDateText("2026-13-58 04:00", "AUTO")).toBe("");
   });
 });

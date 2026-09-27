@@ -11,7 +11,7 @@ import {
 } from "../../../../api/ledgerApi";
 import { AlertDialog } from "../../../../common/dialog";
 import { LoadingOverlay } from "../../../../common/loading";
-import { detectHeaderRow, workbookToSheets } from "../ledgerExcel";
+import { detectHeaderRow, excelDateText, workbookToSheets } from "../ledgerExcel";
 import type { LedgerScreenProps } from "../types";
 import styles from "../HouseholdAccounts.module.css";
 
@@ -45,19 +45,6 @@ const nonzeroNumberText = (value: unknown) => {
   const result = numberText(value);
   return /^-?0*(?:\.0*)?$/.test(result) ? "" : result;
 };
-
-function dateText(value: unknown, format: LedgerImportRules["dateFormat"]) {
-  if (typeof value === "number" || format === "EXCEL_SERIAL") {
-    const serial = Number(value);
-    if (Number.isFinite(serial)) {
-      const parsed = new Date(Date.UTC(1899, 11, 30) + Math.floor(serial) * 86_400_000);
-      return parsed.toISOString().slice(0, 10);
-    }
-  }
-  const raw = cell(value);
-  const matched = raw.match(/(\d{4})\D?(\d{1,2})\D?(\d{1,2})/);
-  return matched ? `${matched[1]}-${matched[2].padStart(2, "0")}-${matched[3].padStart(2, "0")}` : raw;
-}
 
 export default function LedgerImportProfiles({ calendarId, calendarControl }: LedgerScreenProps) {
   const [profiles, setProfiles] = useState<LedgerImportProfile[]>([]);
@@ -115,7 +102,7 @@ export default function LedgerImportProfiles({ calendarId, calendarControl }: Le
       const amount = mode === "DIRECTION" && form.rules.outflowValues?.includes(directionValue) && !rawAmount.startsWith("-")
         ? `-${rawAmount}` : rawAmount;
       return [{
-        key: rowIndex, date: dateText(read(row, form.mapping.date), form.rules.dateFormat),
+        key: rowIndex, date: excelDateText(read(row, form.mapping.date), form.rules.dateFormat),
         description, counterparty: cell(read(row, form.mapping.counterparty)), amount,
       }];
     }).slice(0, 5);
