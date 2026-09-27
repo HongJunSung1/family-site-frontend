@@ -449,7 +449,7 @@
 .categoryBarRow {
   min-width: 0;
   display: grid;
-  grid-template-columns: minmax(180px, 1.2fr) minmax(100px, 1fr) auto;
+  grid-template-columns: minmax(180px, 1.2fr) minmax(150px, 1fr) 88px;
   align-items: center;
   gap: 10px;
 }
@@ -457,7 +457,7 @@
 .categoryStatusRow {
   min-width: 0;
   display: grid;
-  grid-template-columns: minmax(180px, 1.2fr) minmax(100px, 1fr) auto;
+  grid-template-columns: minmax(180px, 1.2fr) minmax(150px, 1fr) 88px;
   align-items: center;
   gap: 10px;
 }
@@ -500,6 +500,23 @@
 .categoryBarRow strong { font-size: 12px; }
 .categoryBarRow span { color: var(--color-text-muted); font-size: 10px; font-weight: 700; }
 .categoryBarRow b { font-size: 11px; white-space: nowrap; }
+
+.categoryBarRow > b { text-align: right; }
+
+.categoryBarShare {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 38px;
+  align-items: center;
+  gap: 6px;
+}
+
+.categoryBarShare > span {
+  color: var(--color-text-muted);
+  font-size: 10px;
+  font-weight: 800;
+  text-align: right;
+}
 
 .categoryBarTrack {
   height: 8px;
@@ -2399,14 +2416,16 @@ input.filterControl[type="month"]::-webkit-calendar-picker-indicator {
   .overviewPanel { padding: 12px; }
 
   .categoryBarRow {
-    grid-template-columns: minmax(150px, 1.2fr) minmax(60px, 1fr) auto;
-    gap: 7px;
+    grid-template-columns: minmax(108px, 1.2fr) minmax(82px, 1fr) 72px;
+    gap: 5px;
   }
 
   .categoryStatusRow {
-    grid-template-columns: minmax(150px, 1.2fr) minmax(60px, 1fr) auto;
-    gap: 7px;
+    grid-template-columns: minmax(108px, 1.2fr) minmax(82px, 1fr) 72px;
+    gap: 5px;
   }
+
+  .categoryBarShare { grid-template-columns: minmax(0, 1fr) 34px; gap: 4px; }
 
   .overviewRecentHeader {
     align-items: stretch;

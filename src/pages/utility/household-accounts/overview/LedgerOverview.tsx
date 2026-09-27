@@ -110,17 +110,21 @@ export default function LedgerOverview({ calendarId, calendarControl }: LedgerSc
     return totals;
   }, { income: 0n, expense: 0n, transferInflow: 0n, transferOutflow: 0n }), [filteredRecent]);
   const submitSearch = () => setAppliedSearch({ field: searchField, query: searchQuery });
-  const barWidth = (item: CategoryAggregate, field: "income" | "expense", max: bigint) => {
+  const categoryShare = (item: CategoryAggregate, field: "income" | "expense", total: bigint) => {
     const value = BigInt(item[field]);
     const absolute = value < 0n ? -value : value;
-    return `${Number((absolute * 1000n) / max) / 10}%`;
+    const percentage = total > 0n ? Number((absolute * 1000n) / total) / 10 : 0;
+    return {
+      width: `${percentage}%`,
+      label: `${Number.isInteger(percentage) ? percentage.toFixed(0) : percentage.toFixed(1)}%`,
+    };
   };
   const categoryPanel = (items: CategoryAggregate[], field: "income" | "expense") => {
-    const max = items.reduce((value, item) => {
+    const total = items.reduce((value, item) => {
       const current = BigInt(item[field]);
       const absolute = current < 0n ? -current : current;
-      return absolute > value ? absolute : value;
-    }, 1n);
+      return value + absolute;
+    }, 0n);
     return <section className={styles.overviewPanel}>
       <div className={styles.categoryStatusHeader}>
         <div className={styles.categoryStatusTabs} role="tablist" aria-label="수입 지출 현황">
@@ -140,7 +144,7 @@ export default function LedgerOverview({ calendarId, calendarControl }: LedgerSc
             {categoryLevel !== "root" && <span>중분류</span>}
             {categoryLevel === "leaf" && <span>소분류</span>}
           </div>
-          <span>비율</span><span>금액</span>
+          <span>비중</span><span>금액</span>
         </div>
         {items.map((item) => (
         <div key={item.id} className={styles.categoryBarRow}>
@@ -149,7 +153,13 @@ export default function LedgerOverview({ calendarId, calendarControl }: LedgerSc
             {categoryLevel !== "root" && <strong title={item.middleName}>{item.middleName}</strong>}
             {categoryLevel === "leaf" && <strong title={item.leafName}>{item.leafName}</strong>}
           </div>
-          <div className={styles.categoryBarTrack}><i style={{ width: barWidth(item, field, max) }} /></div>
+          {(() => {
+            const share = categoryShare(item, field, total);
+            return <div className={styles.categoryBarShare} aria-label={`비중 ${share.label}`}>
+              <div className={styles.categoryBarTrack}><i style={{ width: share.width }} /></div>
+              <span>{share.label}</span>
+            </div>;
+          })()}
           <b>{money(item[field])}</b>
         </div>
       ))}</div> : <p className={styles.overviewEmpty}>조회된 {field === "income" ? "수입" : "지출"} 거래가 없습니다.</p>}

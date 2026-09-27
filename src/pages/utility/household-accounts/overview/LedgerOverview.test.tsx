@@ -18,16 +18,18 @@ beforeEach(() => {
     currentUserId: 1,
     members: [{ user_id: 1, name: "나" }, { user_id: 2, name: "가족" }],
     totals: {
-      income: "9007199254740993", expense: "15000", balance: "9007199254725993",
+      income: "9007199254740993", expense: "20000", balance: "9007199254720993",
       transferInflow: "50000", transferOutflow: "30000",
       netCashFlow: "9007199254745993",
     },
     categories: [
       { rootId: 10, rootName: "생활", middleId: 11, middleName: "식비", income: "0", expense: "15000" },
+      { rootId: 10, rootName: "생활", middleId: 13, middleName: "교통비", income: "0", expense: "5000" },
       { rootId: 20, rootName: "소득", middleId: 21, middleName: "근로", income: "9007199254740993", expense: "0" },
     ],
     leafCategories: [
       { rootId: 10, rootName: "생활", middleId: 11, middleName: "식비", leafId: 12, leafName: "외식", income: "0", expense: "15000" },
+      { rootId: 10, rootName: "생활", middleId: 13, middleName: "교통비", leafId: 14, leafName: "대중교통", income: "0", expense: "5000" },
       { rootId: 20, rootName: "소득", middleId: 21, middleName: "근로", leafId: 22, leafName: "급여", income: "9007199254740993", expense: "0" },
     ],
     history: [{ month: "2026-08", income: "9007199254740993", expense: "15000", balance: "9007199254725993" }],
@@ -48,6 +50,9 @@ describe("가계부 월별 현황", () => {
     expect(screen.getByRole("tab", { name: "수입 현황" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "지출 현황" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("combobox", { name: "분류 현황 단계" })).toHaveValue("middle");
+    expect(screen.getByText("비중")).toBeInTheDocument();
+    expect(screen.getByLabelText("비중 75%")).toBeInTheDocument();
+    expect(screen.getByLabelText("비중 25%")).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "대분류" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("table", { name: "대분류별 집계" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("tab", { name: "소분류" }));
