@@ -18,6 +18,8 @@ import {
   type LedgerTransactionPayload,
 } from "../../../../api/ledgerApi";
 import { AlertDialog, ConfirmDialog } from "../../../../common/dialog";
+import { LoadingOverlay } from "../../../../common/loading";
+import { TablePagination } from "../../../../common/table";
 import type { LedgerImportedRow } from "./LedgerImportDialog";
 import styles from "../HouseholdAccounts.module.css";
 
@@ -57,6 +59,11 @@ const time24 = (value: string) => {
   const valueDigits = value.replace(/\D/g, "").slice(0, 4);
   return valueDigits.length <= 2 ? valueDigits : `${valueDigits.slice(0, 2)}:${valueDigits.slice(2)}`;
 };
+const accountLabel = (account: AssetAccount) => `${account.institution_name || "금융기관 없음"} · ${account.account_name}`;
+const accountLabelWidth = (label: string) => Array.from(label).reduce(
+  (width, character) => width + (character.charCodeAt(0) <= 0x7f ? 6 : 11),
+  32,
+);
 
 function toDraft(row: LedgerTransaction, categoryName = row.category_name): Draft {
   return {
@@ -81,7 +88,10 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [nextKey, setNextKey] = useState(1);
   const [saving, setSaving] = useState(false);
+  const [processingLabel, setProcessingLabel] = useState("거래내역 저장 중");
   const [searchQuery, setSearchQuery] = useState("");
+  const [pageSize, setPageSize] = useState(50);
+  const [page, setPage] = useState(1);
   const [expandedKey, setExpandedKey] = useState("");
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [categoryCandidates, setCategoryCandidates] = useState<LedgerCategory[]>([]);
@@ -152,6 +162,11 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
   const middles = useMemo(() => new Map(categories.filter((item) => item.depth === 2).map((item) => [item.id, item])), [categories]);
   const leaves = useMemo(() => categories.filter((item) => item.depth === 3 && item.is_active), [categories]);
   const leafNames = useMemo(() => [...new Set(leaves.map((item) => item.category_name))].sort((a, b) => a.localeCompare(b, "ko")), [leaves]);
+  const accountColumnWidth = useMemo(() => Math.max(
+    150,
+    ...accounts.map((account) => accountLabelWidth(accountLabel(account))),
+  ), [accounts]);
+  const transactionTableMinWidth = 1180 + Math.max(0, accountColumnWidth - 110);
   const categoryPath = (categoryId: number) => {
     const leaf = categories.find((item) => item.id === categoryId);
     const middle = leaf ? middles.get(leaf.parent_id ?? 0) : undefined;
@@ -168,11 +183,25 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
     const query = searchQuery.trim().toLocaleLowerCase("ko");
     if (!query) return true;
     const path = categoryPath(row.categoryId);
-    const accountName = accounts.find((account) => account.id === row.accountId)?.account_name ?? "";
+    const account = accounts.find((item) => item.id === row.accountId);
+    const accountName = account ? accountLabel(account) : "";
     return [row.date, row.time ?? "", accountName, path.root, path.middle, path.leaf,
       row.description, row.counterparty, row.memo, row.income, row.expense, row.transfer]
       .some((value) => value.toLocaleLowerCase("ko").includes(query));
   });
+  const totalPages = Math.max(1, Math.ceil(filteredDrafts.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pagedDrafts = filteredDrafts.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  function clearCheckedRows() {
+    setDrafts((current) => current.map((row) => row.checked ? { ...row, checked: false } : row));
+  }
+
+  function changePage(nextPage: number) {
+    clearCheckedRows();
+    setExpandedKey("");
+    setPage(nextPage);
+  }
 
   function applyAmountChange(key: string, field: AmountField, value: string) {
     change(key, {
@@ -279,6 +308,7 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
       classificationConflict: false,
       classificationSource: "MANUAL",
     }, ...current]);
+    setPage(1);
     setNextKey((value) => value + 1);
   }
 
@@ -387,10 +417,32 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
     if (inputs.some((item) => !item.payload)) {
       setAlert({ title: "입력 확인", message: "각 행의 소분류·거래내용과 수입·지출·이체 중 하나의 0이 아닌 금액을 입력해주세요." }); return;
     }
+    setProcessingLabel("거래내역 저장 중");
     setSaving(true);
     try {
-      for (const item of inputs) await saveLedgerTransaction(item.payload!, item.row.id);
+      const savedIds = new Map<string, number>();
+      for (const item of inputs) {
+        const result = await saveLedgerTransaction(item.payload!, item.row.id);
+        const savedId = item.row.id ?? result.transactionId;
+        if (savedId) savedIds.set(item.row.key, savedId);
+      }
+      setDrafts((current) => current.flatMap((row) => {
+        const savedId = savedIds.get(row.key);
+        if (!row.id && !savedId) return [];
+        const id = savedId ?? row.id!;
+        return [{
+          ...row,
+          id,
+          key: `saved-${id}`,
+          checked: false,
+          dirty: false,
+          duplicateStatus: "NONE",
+        }];
+      }));
+      onUnsavedChangesChange?.(false);
       await onReload();
+      onUnsavedChangesChange?.(false);
+      setAlert({ title: "저장 완료", message: "거래내역 저장이 완료되었습니다." });
     } catch (error) {
       setAlert({ title: "저장 실패", message: error instanceof ApiError ? error.message : "거래를 저장하지 못했습니다." });
     } finally { setSaving(false); }
@@ -404,6 +456,7 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
       setDeleteOpen(false);
       return;
     }
+    setProcessingLabel("거래내역 삭제 중");
     setSaving(true);
     try {
       for (const row of saved) await deleteLedgerTransaction(row.id!);
@@ -470,11 +523,26 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
             value={searchQuery}
             onChange={(event) => {
               setSearchQuery(event.target.value);
-              setDrafts((current) => current.map((row) => row.checked ? { ...row, checked: false } : row));
+              clearCheckedRows();
+              setExpandedKey("");
+              setPage(1);
             }}
           />
           <span aria-hidden="true" />
         </div>
+        <select
+          className={styles.transactionPageSize}
+          aria-label="페이지당 거래 건수"
+          value={pageSize}
+          onChange={(event) => {
+            clearCheckedRows();
+            setExpandedKey("");
+            setPageSize(Number(event.target.value));
+            setPage(1);
+          }}
+        >
+          {[10, 20, 50, 100].map((size) => <option key={size} value={size}>{size}개</option>)}
+        </select>
         </div>
         <div className={styles.transactionSheetActions}>
         {canManage && <button type="button" className={styles.secondaryButton} onClick={addRow}>+ 행 추가</button>}
@@ -485,17 +553,17 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
         </div>
       </div>
       <div className={`${styles.transactionSheet} ${styles.transactionDesktop}`}>
-        <table>
+        <table style={{ minWidth: transactionTableMinWidth }}>
           <thead>
             <tr>
               <th className={styles.transactionCheckColumn}>
                 <input
                   type="checkbox"
                   aria-label="거래 전체 선택"
-                  disabled={!canManage || !filteredDrafts.length}
-                  checked={filteredDrafts.length > 0 && filteredDrafts.every((row) => row.checked)}
+                  disabled={!canManage || !pagedDrafts.length}
+                  checked={pagedDrafts.length > 0 && pagedDrafts.every((row) => row.checked)}
                   onChange={(event) => {
-                    const visibleKeys = new Set(filteredDrafts.map((row) => row.key));
+                    const visibleKeys = new Set(pagedDrafts.map((row) => row.key));
                     setDrafts((current) => current.map((row) => visibleKeys.has(row.key) ? { ...row, checked: event.target.checked } : row));
                   }}
                 />
@@ -503,7 +571,7 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
               <th className={styles.transactionStatusColumn}>상태</th>
               <th className={styles.transactionDateColumn}>일자</th>
               <th className={styles.transactionTimeColumn}>시간</th>
-              <th>계정</th>
+              <th className={styles.transactionAccountColumn} style={{ width: accountColumnWidth }}>계정</th>
               <th>소분류</th>
               <th className={styles.transactionAmountColumn}>수입</th>
               <th className={styles.transactionAmountColumn}>지출</th>
@@ -516,7 +584,7 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
             </tr>
           </thead>
           <tbody>
-            {filteredDrafts.map((row) => {
+            {pagedDrafts.map((row) => {
               const path = categoryPath(row.categoryId);
               const hasIssue = row.duplicateStatus !== "NONE" || row.classificationConflict;
               const issueText = row.duplicateStatus === "EXACT" ? "완전 중복 거래입니다."
@@ -528,7 +596,7 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
                 <td className={styles.duplicateStatusCell}>{hasIssue && <button type="button" className={styles.transactionIssueButton} aria-label={issueText} title={issueText} onClick={() => setExpandedKey((current) => current === row.key ? "" : row.key)}>!</button>}</td>
                 <td className={styles.transactionDateColumn}><input type="date" disabled={!canManage} value={row.date} onChange={(e) => change(row.key, { date: e.target.value })} /></td>
                 <td><input type="text" inputMode="numeric" maxLength={5} aria-label="거래 시간" placeholder="HH:mm" disabled={!canManage} value={row.time ?? ""} onChange={(e) => change(row.key, { time: time24(e.target.value) || null })} /></td>
-                <td><select className={styles.transactionDropdownControl} disabled={!canManage} value={row.accountId} onChange={(e) => change(row.key, { accountId: Number(e.target.value) })}>{accounts.map((a) => <option key={a.id} value={a.id}>{a.account_name}</option>)}</select></td>
+                <td className={styles.transactionAccountColumn} style={{ width: accountColumnWidth }}><select aria-label="계정" className={styles.transactionDropdownControl} disabled={!canManage} value={row.accountId} onChange={(e) => change(row.key, { accountId: Number(e.target.value) })}>{accounts.map((a) => <option key={a.id} value={a.id}>{accountLabel(a)}</option>)}</select></td>
                 <td className={styles.categoryComboCell}>
                   <div className={styles.categoryCombo}>
                     <input
@@ -599,6 +667,14 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
             {!filteredDrafts.length && <tr><td colSpan={14} className={styles.sheetEmptyCell}>{searchQuery.trim() ? "검색 결과가 없습니다." : "조회된 거래가 없습니다."}</td></tr>}
           </tbody>
         </table>
+      </div>
+      <div className={`${styles.transactionPagination} ${styles.transactionDesktop}`}>
+        <TablePagination
+          page={currentPage}
+          totalPages={totalPages}
+          onPageChange={changePage}
+          ariaLabel="거래내역 페이지 이동"
+        />
       </div>
       <Popper
         open={!!openCategoryKey && !!categoryAnchor}
@@ -740,6 +816,13 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
           <Button disabled={transferLoading} onClick={() => { setTransferTarget(null); setTransferCandidates([]); }}>닫기</Button>
         </DialogActions>
       </Dialog>
+      <LoadingOverlay
+        active={saving}
+        label={processingLabel}
+        delayMs={0}
+        minimumVisibleMs={0}
+        fixed
+      />
       <AlertDialog open={!!alert} title={alert?.title ?? ""} message={alert?.message ?? ""} onClose={() => setAlert(null)} />
     </>
   );

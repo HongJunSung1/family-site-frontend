@@ -42,6 +42,7 @@ const formattedAmount = (value: string) => {
   const digits = value.replace(/\D/g, "");
   return digits ? `${negative ? "-" : ""}${BigInt(digits).toLocaleString("ko-KR")}` : negative ? "-" : "";
 };
+const accountLabel = (account: AssetAccount) => `${account.institution_name || "금융기관 없음"} · ${account.account_name}`;
 
 export default function LedgerTransactions({ calendarId, calendarControl, onUnsavedChangesChange }: LedgerScreenProps & { onUnsavedChangesChange?: (hasChanges: boolean) => void }) {
   const [transactions, setTransactions] = useState<LedgerTransaction[]>([]);
@@ -227,7 +228,7 @@ export default function LedgerTransactions({ calendarId, calendarControl, onUnsa
         <div className={styles.tableSection}><DataTable className={styles.mobileTransactionTable} ariaLabel="가계부 거래내역" columns={mobileColumns} rows={transactions} getRowKey={(row) => row.id} emptyMessage="조회된 거래가 없습니다." onRowClick={(row) => canManage && start(row)} /></div>
         {form && <aside className={styles.editorPanel}><header className={styles.editorHeader}><h2>{form.id ? "거래 수정" : "거래 입력"}</h2><button type="button" onClick={() => setForm(null)}>×</button></header>
           <div className={styles.formFields}>
-            <label>계정<select value={form.accountId} onChange={(e) => setForm({ ...form, accountId: Number(e.target.value) })}>{ledgerAccounts.map((a) => <option key={a.id} value={a.id}>{a.account_name}</option>)}</select></label>
+            <label>계정<select value={form.accountId} onChange={(e) => setForm({ ...form, accountId: Number(e.target.value) })}>{ledgerAccounts.map((a) => <option key={a.id} value={a.id}>{accountLabel(a)}</option>)}</select></label>
             <InputField label="거래일" type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
             <InputField label="시간" type="time" value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} />
             <label>거래 성격<select value={form.kind} onChange={(e) => setForm({ ...form, kind: e.target.value as Form["kind"], isReversal: false, originalTransactionId: null })}><option value="INCOME">수입</option><option value="EXPENSE">지출</option><option value="TRANSFER">계좌이체</option></select></label>
