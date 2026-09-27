@@ -954,8 +954,12 @@ input.filterControl[type="month"]::-webkit-calendar-picker-indicator {
   width: 94px;
 }
 
+.transactionCategoryColumn {
+  width: 160px;
+}
+
 .transactionDescriptionColumn {
-  width: 210px;
+  width: 120px;
 }
 
 .transactionCancelColumn {

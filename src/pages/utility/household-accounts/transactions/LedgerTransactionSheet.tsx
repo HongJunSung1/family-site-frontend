@@ -572,7 +572,7 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
               <th className={styles.transactionDateColumn}>일자</th>
               <th className={styles.transactionTimeColumn}>시간</th>
               <th className={styles.transactionAccountColumn} style={{ width: accountColumnWidth }}>계정</th>
-              <th>소분류</th>
+              <th className={styles.transactionCategoryColumn}>소분류</th>
               <th className={styles.transactionAmountColumn}>수입</th>
               <th className={styles.transactionAmountColumn}>지출</th>
               <th className={styles.transactionAmountColumn}>이체</th>
@@ -597,7 +597,7 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
                 <td className={styles.transactionDateColumn}><input type="date" disabled={!canManage} value={row.date} onChange={(e) => change(row.key, { date: e.target.value })} /></td>
                 <td><input type="text" inputMode="numeric" maxLength={5} aria-label="거래 시간" placeholder="HH:mm" disabled={!canManage} value={row.time ?? ""} onChange={(e) => change(row.key, { time: time24(e.target.value) || null })} /></td>
                 <td className={styles.transactionAccountColumn} style={{ width: accountColumnWidth }}><select aria-label="계정" className={styles.transactionDropdownControl} disabled={!canManage} value={row.accountId} onChange={(e) => change(row.key, { accountId: Number(e.target.value) })}>{accounts.map((a) => <option key={a.id} value={a.id}>{accountLabel(a)}</option>)}</select></td>
-                <td className={styles.categoryComboCell}>
+                <td className={`${styles.categoryComboCell} ${styles.transactionCategoryColumn}`}>
                   <div className={styles.categoryCombo}>
                     <input
                       className={styles.transactionDropdownControl}
