@@ -43,7 +43,7 @@ const formattedAmount = (value: string) => {
   return digits ? `${negative ? "-" : ""}${BigInt(digits).toLocaleString("ko-KR")}` : negative ? "-" : "";
 };
 
-export default function LedgerTransactions({ calendarId, calendarControl }: LedgerScreenProps) {
+export default function LedgerTransactions({ calendarId, calendarControl, onUnsavedChangesChange }: LedgerScreenProps & { onUnsavedChangesChange?: (hasChanges: boolean) => void }) {
   const [transactions, setTransactions] = useState<LedgerTransaction[]>([]);
   const [accounts, setAccounts] = useState<AssetAccount[]>([]);
   const [members, setMembers] = useState<AssetMember[]>([]);
@@ -60,6 +60,8 @@ export default function LedgerTransactions({ calendarId, calendarControl }: Ledg
   const [importBatch, setImportBatch] = useState<{ id: number; rows: LedgerImportedRow[] } | null>(null);
   const [categoryWorkspaceLoaded, setCategoryWorkspaceLoaded] = useState(false);
   const [activeWorkspace, setActiveWorkspace] = useState<"transactions" | "categories">("transactions");
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [pendingWorkspace, setPendingWorkspace] = useState<"transactions" | "categories" | null>(null);
   const ledgerAccounts = useMemo(() => accounts.filter((item) => item.is_active && item.is_ledger_enabled), [accounts]);
   const leaves = useMemo(() => categories.filter((item) => item.depth === 3 && item.is_active), [categories]);
   const path = useCallback((leaf: LedgerCategory) => {
@@ -97,9 +99,23 @@ export default function LedgerTransactions({ calendarId, calendarControl }: Ledg
     }
   }, [calendarId]);
 
-  function openCategoryWorkspace() {
-    setCategoryWorkspaceLoaded(true);
-    setActiveWorkspace("categories");
+  const handleUnsavedChanges = useCallback((hasChanges: boolean) => {
+    setHasUnsavedChanges(hasChanges);
+    onUnsavedChangesChange?.(hasChanges);
+  }, [onUnsavedChangesChange]);
+
+  function switchWorkspace(workspace: "transactions" | "categories") {
+    if (workspace === "categories") setCategoryWorkspaceLoaded(true);
+    setActiveWorkspace(workspace);
+  }
+
+  function requestWorkspace(workspace: "transactions" | "categories") {
+    if (workspace === activeWorkspace) return;
+    if (hasUnsavedChanges) {
+      setPendingWorkspace(workspace);
+      return;
+    }
+    switchWorkspace(workspace);
   }
 
   function start(row?: LedgerTransaction) {
@@ -208,8 +224,8 @@ export default function LedgerTransactions({ calendarId, calendarControl }: Ledg
         {canManage && <button className={`${styles.primaryButton} ${styles.transactionMobileAction}`} type="button" onClick={() => start()}>직접 입력</button>}
       </div></header>
       <div className={styles.transactionWorkTabs} role="tablist" aria-label="거래내역 작업 탭">
-        <button type="button" role="tab" aria-selected={activeWorkspace === "transactions"} className={activeWorkspace === "transactions" ? styles.transactionWorkTabActive : ""} onClick={() => setActiveWorkspace("transactions")}>거래내역</button>
-        <button type="button" role="tab" aria-selected={activeWorkspace === "categories"} className={activeWorkspace === "categories" ? styles.transactionWorkTabActive : ""} onClick={openCategoryWorkspace}>분류관리</button>
+        <button type="button" role="tab" aria-selected={activeWorkspace === "transactions"} className={activeWorkspace === "transactions" ? styles.transactionWorkTabActive : ""} onClick={() => requestWorkspace("transactions")}>거래내역</button>
+        <button type="button" role="tab" aria-selected={activeWorkspace === "categories"} className={activeWorkspace === "categories" ? styles.transactionWorkTabActive : ""} onClick={() => requestWorkspace("categories")}>분류관리</button>
       </div>
       <div className={activeWorkspace === "transactions" ? styles.transactionWorkspace : styles.transactionWorkspaceHidden}>
       {canManage && <div className={styles.ledgerImportSection}>
@@ -218,7 +234,7 @@ export default function LedgerTransactions({ calendarId, calendarControl }: Ledg
         </button>
         <LedgerImportDialog open={importOpen} calendarId={calendarId} accounts={ledgerAccounts} onClose={() => setImportOpen(false)} onParsed={(importRows) => setImportBatch({ id: Date.now(), rows: importRows })} />
       </div>}
-      <LedgerTransactionSheet calendarId={calendarId} rows={transactions} accounts={ledgerAccounts} categories={categories} canManage={canManage} onReload={load} importBatch={importBatch} onImportApplied={() => setImportBatch(null)} startDate={dateRange.startDate} endDate={dateRange.endDate} onDateRangeChange={(startDate, endDate) => setDateRange({ startDate, endDate })} />
+      <LedgerTransactionSheet calendarId={calendarId} rows={transactions} accounts={ledgerAccounts} categories={categories} canManage={canManage} onReload={load} importBatch={importBatch} onImportApplied={() => setImportBatch(null)} startDate={dateRange.startDate} endDate={dateRange.endDate} onDateRangeChange={(startDate, endDate) => setDateRange({ startDate, endDate })} onUnsavedChangesChange={handleUnsavedChanges} />
       <div className={`${styles.managementGrid} ${styles.transactionMobile} ${form ? styles.managementGridEditing : ""}`}>
         <div className={styles.tableSection}><DataTable className={styles.mobileTransactionTable} ariaLabel="가계부 거래내역" columns={mobileColumns} rows={transactions} getRowKey={(row) => row.id} emptyMessage="조회된 거래가 없습니다." onRowClick={(row) => canManage && start(row)} /></div>
         {form && <aside className={styles.editorPanel}><header className={styles.editorHeader}><h2>{form.id ? "거래 수정" : "거래 입력"}</h2><button type="button" onClick={() => setForm(null)}>×</button></header>
@@ -241,6 +257,19 @@ export default function LedgerTransactions({ calendarId, calendarControl }: Ledg
         <LedgerCategories calendarId={calendarId} calendarName="" calendarControl={calendarControl} embedded onCategoriesChanged={refreshCategories} />
       </div>}
       <LoadingOverlay active={loading} label="거래내역 로딩 중" />
+      <ConfirmDialog
+        open={pendingWorkspace !== null}
+        title="작성 내용 확인"
+        message="저장하지 않은 입력 또는 수정 내용이 있습니다. 다른 화면으로 이동하시겠습니까?"
+        cancelLabel="아니오"
+        confirmLabel="예"
+        onClose={() => setPendingWorkspace(null)}
+        onConfirm={() => {
+          const workspace = pendingWorkspace;
+          setPendingWorkspace(null);
+          if (workspace) switchWorkspace(workspace);
+        }}
+      />
       <ConfirmDialog open={!!removeTarget} title="거래 삭제" message="이 거래를 삭제하시겠습니까?" cancelLabel="취소" confirmLabel="삭제" onClose={() => setRemoveTarget(null)} onConfirm={() => void remove()} />
       <ConfirmDialog
         open={!!transferTarget?.transfer_link_id}

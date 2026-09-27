@@ -83,4 +83,31 @@ describe("거래내역 자동분류 갱신", () => {
     expect(categoryInputs[0]).toHaveValue("카페");
     expect(categoryInputs[1]).toHaveValue("");
   });
+
+  it("완전 중복을 포함한 미저장 엑셀 행을 저장 전에 삭제한다", async () => {
+    render(
+      <LedgerTransactionSheet
+        calendarId={10}
+        rows={[]}
+        accounts={[account]}
+        categories={categories}
+        canManage
+        onReload={vi.fn()}
+        importBatch={{
+          id: 3,
+          rows: [{ ...importedRow("키오스크 오류 결제"), duplicateStatus: "EXACT" }],
+        }}
+        startDate="2026-09-01"
+        endDate="2026-09-30"
+        onDateRangeChange={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(await screen.findByRole("checkbox", { name: "거래 선택" }));
+    fireEvent.click(screen.getByRole("button", { name: "삭제" }));
+    expect(screen.getByRole("dialog")).toHaveTextContent("선택한 거래 1건을 삭제하시겠습니까?");
+    fireEvent.click(screen.getByRole("button", { name: "예" }));
+
+    await waitFor(() => expect(screen.queryByDisplayValue("키오스크 오류 결제")).not.toBeInTheDocument());
+  });
 });

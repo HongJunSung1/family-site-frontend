@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { getMyCalendars, type MyCalendar } from "../../../api/calendarApi";
 import { LoadingOverlay } from "../../../common/loading";
+import { ConfirmDialog } from "../../../common/dialog";
 import { useMobileHeader } from "../../../common/mobile-header";
 import LedgerOverview from "./overview/LedgerOverview";
 import LedgerTransactions from "./transactions/LedgerTransactions";
@@ -47,7 +48,17 @@ export default function HouseholdAccounts() {
   const [loadingCalendars, setLoadingCalendars] = useState(true);
   const [calendarError, setCalendarError] = useState("");
   const [isSettingsOpen, setIsSettingsOpen] = useState(isSettingsRoute(location.pathname));
+  const [hasUnsavedTransactionChanges, setHasUnsavedTransactionChanges] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<{ type: "route"; path: string } | { type: "calendar"; calendarId: number } | null>(null);
   const currentTitle = getCurrentTitle(location.pathname);
+
+  const requestRouteNavigation = useCallback((path: string) => {
+    if (hasUnsavedTransactionChanges) {
+      setPendingNavigation({ type: "route", path });
+      return;
+    }
+    navigate(path);
+  }, [hasUnsavedTransactionChanges, navigate]);
 
   const mobileMenuItems = useMemo(
     () => [
@@ -55,13 +66,13 @@ export default function HouseholdAccounts() {
         id: "ledger-overview",
         label: "가계부 현황",
         active: location.pathname.startsWith(INTERNAL_ROUTES.overview),
-        onSelect: () => navigate(INTERNAL_ROUTES.overview),
+        onSelect: () => requestRouteNavigation(INTERNAL_ROUTES.overview),
       },
       {
         id: "ledger-transactions",
         label: "거래내역",
         active: location.pathname.startsWith(INTERNAL_ROUTES.transactions),
-        onSelect: () => navigate(INTERNAL_ROUTES.transactions),
+        onSelect: () => requestRouteNavigation(INTERNAL_ROUTES.transactions),
       },
       {
         id: "ledger-settings",
@@ -74,7 +85,7 @@ export default function HouseholdAccounts() {
             active: location.pathname.startsWith(INTERNAL_ROUTES.accounts),
             onSelect: () => {
               setIsSettingsOpen(true);
-              navigate(INTERNAL_ROUTES.accounts);
+              requestRouteNavigation(INTERNAL_ROUTES.accounts);
             },
           },
           {
@@ -83,7 +94,7 @@ export default function HouseholdAccounts() {
             active: location.pathname.startsWith(INTERNAL_ROUTES.categories),
             onSelect: () => {
               setIsSettingsOpen(true);
-              navigate(INTERNAL_ROUTES.categories);
+              requestRouteNavigation(INTERNAL_ROUTES.categories);
             },
           },
           {
@@ -92,14 +103,42 @@ export default function HouseholdAccounts() {
             active: location.pathname.startsWith(INTERNAL_ROUTES.importProfiles),
             onSelect: () => {
               setIsSettingsOpen(true);
-              navigate(INTERNAL_ROUTES.importProfiles);
+              requestRouteNavigation(INTERNAL_ROUTES.importProfiles);
             },
           },
         ],
       },
     ],
-    [location.pathname, navigate],
+    [location.pathname, requestRouteNavigation],
   );
+
+  useEffect(() => {
+    if (!hasUnsavedTransactionChanges) return;
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    const handleNavigationClick = (event: MouseEvent) => {
+      if (event.defaultPrevented || event.button !== 0) return;
+      const target = event.target instanceof Element ? event.target : null;
+      const anchor = target?.closest<HTMLAnchorElement>("a[href]");
+      if (!anchor || anchor.target === "_blank" || anchor.hasAttribute("download")) return;
+      const nextUrl = new URL(anchor.href, window.location.href);
+      if (nextUrl.origin !== window.location.origin) return;
+      const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+      const nextPath = `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`;
+      if (nextPath === currentPath) return;
+      event.preventDefault();
+      event.stopPropagation();
+      setPendingNavigation({ type: "route", path: nextPath });
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    document.addEventListener("click", handleNavigationClick, true);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      document.removeEventListener("click", handleNavigationClick, true);
+    };
+  }, [hasUnsavedTransactionChanges]);
 
   useEffect(() => {
     setConfig({ title: currentTitle, menuItems: mobileMenuItems });
@@ -138,7 +177,14 @@ export default function HouseholdAccounts() {
       <select
         value={calendarId}
         disabled={calendars.length === 0}
-        onChange={(event) => setCalendarId(Number(event.target.value))}
+        onChange={(event) => {
+          const nextCalendarId = Number(event.target.value);
+          if (hasUnsavedTransactionChanges) {
+            setPendingNavigation({ type: "calendar", calendarId: nextCalendarId });
+            return;
+          }
+          setCalendarId(nextCalendarId);
+        }}
       >
         {calendars.length === 0 && <option value={0}>선택 가능한 캘린더 없음</option>}
         {calendars.map((calendar) => (
@@ -220,6 +266,7 @@ export default function HouseholdAccounts() {
                   calendarId={calendarId}
                   calendarName={selectedCalendar?.name ?? ""}
                   calendarControl={calendarControl}
+                  onUnsavedChangesChange={setHasUnsavedTransactionChanges}
                 />
               }
             />
@@ -258,6 +305,21 @@ export default function HouseholdAccounts() {
           </Routes>
         </div>
       </div>
+      <ConfirmDialog
+        open={pendingNavigation !== null}
+        title="작성 내용 확인"
+        message="저장하지 않은 입력 또는 수정 내용이 있습니다. 다른 화면으로 이동하시겠습니까?"
+        cancelLabel="아니오"
+        confirmLabel="예"
+        onClose={() => setPendingNavigation(null)}
+        onConfirm={() => {
+          const navigation = pendingNavigation;
+          setPendingNavigation(null);
+          setHasUnsavedTransactionChanges(false);
+          if (navigation?.type === "route") navigate(navigation.path);
+          if (navigation?.type === "calendar") setCalendarId(navigation.calendarId);
+        }}
+      />
     </main>
   );
 }

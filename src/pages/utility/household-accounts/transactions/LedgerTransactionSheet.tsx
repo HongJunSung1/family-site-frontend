@@ -37,6 +37,7 @@ type Props = {
   categories: LedgerCategory[]; canManage: boolean; onReload: () => Promise<void>;
   importBatch?: { id: number; rows: LedgerImportedRow[] } | null; onImportApplied?: () => void;
   startDate: string; endDate: string; onDateRangeChange: (startDate: string, endDate: string) => void;
+  onUnsavedChangesChange?: (hasChanges: boolean) => void;
 };
 type AmountField = "income" | "expense" | "transfer";
 const digits = (value: string) => value.replace(/[^\d]/g, "");
@@ -76,7 +77,7 @@ function toDraft(row: LedgerTransaction, categoryName = row.category_name): Draf
   };
 }
 
-export default function LedgerTransactionSheet({ calendarId, rows, accounts, categories, canManage, onReload, importBatch, onImportApplied, startDate, endDate, onDateRangeChange }: Props) {
+export default function LedgerTransactionSheet({ calendarId, rows, accounts, categories, canManage, onReload, importBatch, onImportApplied, startDate, endDate, onDateRangeChange, onUnsavedChangesChange }: Props) {
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [nextKey, setNextKey] = useState(1);
   const [saving, setSaving] = useState(false);
@@ -89,6 +90,7 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
   const [showAllCategoryKey, setShowAllCategoryKey] = useState("");
   const [categoryAnchor, setCategoryAnchor] = useState<HTMLElement | null>(null);
   const suppressCategoryFocus = useRef("");
+  const draftsToRestoreAfterReload = useRef<Draft[] | null>(null);
   const [alert, setAlert] = useState<{ title: string; message: string } | null>(null);
   const [pendingAmountChange, setPendingAmountChange] = useState<{
     key: string;
@@ -99,7 +101,25 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
   const [transferCandidates, setTransferCandidates] = useState<LedgerTransferCandidate[]>([]);
   const [transferLoading, setTransferLoading] = useState(false);
   const [classificationRefreshing, setClassificationRefreshing] = useState(false);
-  useEffect(() => setDrafts(rows.map((row) => toDraft(row))), [rows]);
+  useEffect(() => {
+    const preserved = draftsToRestoreAfterReload.current;
+    draftsToRestoreAfterReload.current = null;
+    if (!preserved) {
+      setDrafts(rows.map((row) => toDraft(row)));
+      return;
+    }
+    const preservedById = new Map(preserved.filter((row) => row.id).map((row) => [row.id!, row]));
+    const unsaved = preserved.filter((row) => !row.id);
+    setDrafts([
+      ...unsaved,
+      ...rows.map((row) => preservedById.get(row.id) ?? toDraft(row)),
+    ]);
+  }, [rows]);
+  const hasUnsavedChanges = drafts.some((row) => !row.id || row.dirty);
+  useEffect(() => {
+    onUnsavedChangesChange?.(hasUnsavedChanges);
+    return () => onUnsavedChangesChange?.(false);
+  }, [hasUnsavedChanges, onUnsavedChangesChange]);
   useEffect(() => {
     setDrafts((current) => current.map((row) => {
       const categoryName = categories.find((item) => item.id === row.categoryId)?.category_name;
@@ -378,9 +398,16 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
 
   async function removeChecked() {
     const saved = checked.filter((row) => row.id);
+    const remaining = drafts.filter((row) => !row.checked).map((row) => ({ ...row, checked: false }));
+    if (!saved.length) {
+      setDrafts(remaining);
+      setDeleteOpen(false);
+      return;
+    }
     setSaving(true);
     try {
       for (const row of saved) await deleteLedgerTransaction(row.id!);
+      draftsToRestoreAfterReload.current = remaining.filter((row) => !row.id || row.dirty);
       setDeleteOpen(false); await onReload();
     } catch (error) {
       setDeleteOpen(false);
@@ -453,7 +480,7 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
         {canManage && <button type="button" className={styles.secondaryButton} onClick={addRow}>+ 행 추가</button>}
         {canManage && <button type="button" className={styles.secondaryButton} disabled={classificationRefreshing || !drafts.some((row) => !row.id && row.entrySource === "EXCEL")} onClick={() => void refreshClassifications(drafts)}>전체 갱신</button>}
         <button type="button" className={styles.secondaryButton} disabled={!checked.length} onClick={cancelChecked}>취소</button>
-        <button type="button" className={styles.deleteButton} disabled={!checked.some((row) => row.id)} onClick={() => setDeleteOpen(true)}>삭제</button>
+        <button type="button" className={styles.deleteButton} disabled={!checked.length} onClick={() => setDeleteOpen(true)}>삭제</button>
         <button type="button" className={styles.primaryButton} disabled={saving || !drafts.some((row) => row.dirty && row.duplicateStatus !== "EXACT")} onClick={() => void saveAll()}>저장</button>
         </div>
       </div>
@@ -617,7 +644,7 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
           </Paper>
         </ClickAwayListener>
       </Popper>
-      <ConfirmDialog open={deleteOpen} title="거래 삭제" message={`선택한 저장 거래 ${checked.filter((row) => row.id).length}건을 삭제하시겠습니까?`} cancelLabel="취소" confirmLabel="삭제" onClose={() => setDeleteOpen(false)} onConfirm={() => void removeChecked()} />
+      <ConfirmDialog open={deleteOpen} title="거래 삭제" message={`선택한 거래 ${checked.length}건을 삭제하시겠습니까?`} cancelLabel="아니오" confirmLabel="예" onClose={() => setDeleteOpen(false)} onConfirm={() => void removeChecked()} />
       <ConfirmDialog
         open={!!pendingAmountChange}
         title="금액 항목 변경"
