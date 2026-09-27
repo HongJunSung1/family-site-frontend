@@ -112,7 +112,7 @@ export default function LedgerTransactions({ calendarId, calendarControl, onUnsa
   }
 
   function start(row?: LedgerTransaction) {
-    const firstAccount = ledgerAccounts[0]; const firstLeaf = leaves[0];
+    const firstAccount = ownerLedgerAccounts[0]; const firstLeaf = leaves[0];
     if (!row && (!firstAccount || !firstLeaf)) {
       setAlert({ title: "입력 준비 필요", message: "가계부 사용 계정과 활성 소분류를 먼저 등록해주세요." }); return;
     }
@@ -227,12 +227,12 @@ export default function LedgerTransactions({ calendarId, calendarControl, onUnsa
         </button>
         <LedgerImportDialog open={importOpen} calendarId={calendarId} accounts={ownerLedgerAccounts} onClose={() => setImportOpen(false)} onParsed={(importRows) => setImportBatch({ id: Date.now(), rows: importRows })} />
       </div>}
-      <LedgerTransactionSheet calendarId={calendarId} rows={transactions} accounts={ledgerAccounts} categories={categories} canManage={canManage} onReload={load} importBatch={importBatch} onImportApplied={() => setImportBatch(null)} startDate={dateRange.startDate} endDate={dateRange.endDate} onDateRangeChange={(startDate, endDate) => setDateRange({ startDate, endDate })} onUnsavedChangesChange={handleUnsavedChanges} />
+      <LedgerTransactionSheet calendarId={calendarId} rows={transactions} accounts={ownerLedgerAccounts} categories={categories} canManage={canManage} onReload={load} importBatch={importBatch} onImportApplied={() => setImportBatch(null)} startDate={dateRange.startDate} endDate={dateRange.endDate} onDateRangeChange={(startDate, endDate) => setDateRange({ startDate, endDate })} onUnsavedChangesChange={handleUnsavedChanges} />
       <div className={`${styles.managementGrid} ${styles.transactionMobile} ${form ? styles.managementGridEditing : ""}`}>
         <div className={styles.tableSection}><DataTable className={styles.mobileTransactionTable} ariaLabel="가계부 거래내역" columns={mobileColumns} rows={transactions} getRowKey={(row) => row.id} emptyMessage="조회된 거래가 없습니다." onRowClick={(row) => canManage && start(row)} /></div>
         {form && <aside className={styles.editorPanel}><header className={styles.editorHeader}><h2>{form.id ? "거래 수정" : "거래 입력"}</h2><button type="button" onClick={() => setForm(null)}>×</button></header>
           <div className={styles.formFields}>
-            <label>계정<select value={form.accountId} onChange={(e) => setForm({ ...form, accountId: Number(e.target.value) })}>{ledgerAccounts.map((a) => <option key={a.id} value={a.id}>{accountLabel(a)}</option>)}</select></label>
+            <label>계정<select value={form.accountId} onChange={(e) => setForm({ ...form, accountId: Number(e.target.value) })}>{ownerLedgerAccounts.map((a) => <option key={a.id} value={a.id}>{accountLabel(a)}</option>)}</select></label>
             <InputField label="거래일" type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
             <InputField label="시간" type="time" value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} />
             <label>거래 성격<select value={form.kind} onChange={(e) => setForm({ ...form, kind: e.target.value as Form["kind"], isReversal: false, originalTransactionId: null })}><option value="INCOME">수입</option><option value="EXPENSE">지출</option><option value="TRANSFER">계좌이체</option></select></label>
