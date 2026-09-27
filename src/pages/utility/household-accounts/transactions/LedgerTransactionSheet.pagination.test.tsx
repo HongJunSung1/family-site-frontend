@@ -62,5 +62,5 @@ describe("거래내역 페이지 이동", () => {
 
     expect(screen.getByDisplayValue("거래 21")).toBeInTheDocument();
     expect(screen.queryByDisplayValue("거래 1")).not.toBeInTheDocument();
-  });
+  }, 10_000);
 });

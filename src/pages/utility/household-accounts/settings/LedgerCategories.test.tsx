@@ -6,6 +6,7 @@ import LedgerCategories from "./LedgerCategories";
 const getLedgerCategories = vi.fn();
 const getLedgerClassificationRules = vi.fn();
 const deleteLedgerCategory = vi.fn();
+const deleteLedgerClassificationRules = vi.fn();
 const saveLedgerCategory = vi.fn();
 const syncLedgerCategoryClassificationRules = vi.fn();
 
@@ -14,6 +15,7 @@ vi.mock("../../../../api/ledgerApi", () => ({
   getLedgerClassificationRules: (...args: unknown[]) => getLedgerClassificationRules(...args),
   saveLedgerCategory: (...args: unknown[]) => saveLedgerCategory(...args),
   deleteLedgerCategories: (...args: unknown[]) => deleteLedgerCategory(...args),
+  deleteLedgerClassificationRules: (...args: unknown[]) => deleteLedgerClassificationRules(...args),
   syncLedgerCategoryClassificationRules: (...args: unknown[]) => syncLedgerCategoryClassificationRules(...args),
 }));
 
@@ -26,6 +28,7 @@ describe("가계부 분류 관리", () => {
       canManage: true,
     });
     saveLedgerCategory.mockResolvedValue({ ok: true, categoryId: 1 });
+    deleteLedgerClassificationRules.mockResolvedValue({ ok: true });
     getLedgerClassificationRules.mockResolvedValue({ ok: true, rules: [], canManage: true });
     syncLedgerCategoryClassificationRules.mockResolvedValue({ ok: true });
   });
@@ -278,6 +281,31 @@ describe("가계부 분류 관리", () => {
     await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "삭제" }));
 
     await waitFor(() => expect(deleteLedgerCategory).toHaveBeenCalledWith([31]));
+  });
+
+  it("자동분류 문구도 삭제 확인 즉시 서버에서 삭제한다", async () => {
+    const user = userEvent.setup();
+    getLedgerCategories.mockResolvedValue({ ok: true, canManage: true, categories: [
+      { id: 1, calendar_id: 10, parent_id: null, category_name: "생활", depth: 1, is_active: 1, display_order: 0, created_at: "", updated_at: "" },
+      { id: 2, calendar_id: 10, parent_id: 1, category_name: "식비", depth: 2, is_active: 1, display_order: 0, created_at: "", updated_at: "" },
+      { id: 3, calendar_id: 10, parent_id: 2, category_name: "편의점", depth: 3, is_active: 1, display_order: 0, created_at: "", updated_at: "" },
+    ] });
+    getLedgerClassificationRules.mockResolvedValue({ ok: true, canManage: true, rules: [
+      { id: 21, calendar_id: 10, match_value: "GS25", category_id: 3, is_active: 1, created_at: "", updated_at: "" },
+    ] });
+    render(<LedgerCategories calendarId={10} calendarName="우리 가족" calendarControl={<div>캘린더 선택</div>} />);
+
+    await user.dblClick(await screen.findByDisplayValue("생활"));
+    await user.dblClick(screen.getByDisplayValue("식비"));
+    await user.dblClick(screen.getByDisplayValue("편의점"));
+    await user.click(screen.getByRole("checkbox", { name: "GS25 삭제 선택" }));
+    await user.click(screen.getByRole("button", { name: "삭제" }));
+    await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "삭제" }));
+
+    await waitFor(() => expect(deleteLedgerClassificationRules).toHaveBeenCalledWith([21]));
+    expect(screen.queryByDisplayValue("GS25")).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(screen.getByRole("button", { name: "저장" })).toBeDisabled();
   });
 
   it("삭제가 차단되면 공통 안내 대화상자에 오류를 표시한다", async () => {

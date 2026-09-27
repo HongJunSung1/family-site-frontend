@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ApiError } from "../../../../api/client";
 import {
   deleteLedgerCategories,
+  deleteLedgerClassificationRules,
   getLedgerCategories,
   getLedgerClassificationRules,
   saveLedgerCategory,
@@ -444,14 +445,25 @@ export default function LedgerCategories({
       const persistedTargets = deleteTargets
         .filter((row) => !row.isNew)
         .sort((a, b) => b.depth - a.depth);
+      const plannedRemovedIds = new Set([...deleteDiscardIds, ...deleteTargets.map((row) => row.id)]);
+      const removesSelectedLeaf = selectedLeafId !== null && plannedRemovedIds.has(selectedLeafId);
+      const selectedPersistedRules = selectedLeafId === null ? [] : classificationRules
+        .filter((rule) => rule.category_id === selectedLeafId && rule.is_active);
+      const persistedRuleIds = [...deleteRuleIndexes]
+        .map((index) => selectedPersistedRules[index]?.id)
+        .filter((ruleId): ruleId is number => ruleId !== undefined);
       if (persistedTargets.length) {
         await deleteLedgerCategories(persistedTargets.map((row) => row.id));
         persistedTargets.forEach((row) => deletedIds.add(row.id));
+      }
+      if (!removesSelectedLeaf && persistedRuleIds.length) {
+        await deleteLedgerClassificationRules(persistedRuleIds);
       }
       const removedIds = new Set([...deletedIds, ...deleteDiscardIds]);
       deleteTargets.filter((row) => row.isNew).forEach((row) => removedIds.add(row.id));
       setRows((current) => current.filter((row) => !removedIds.has(row.id)));
       setCategories((current) => current.filter((row) => !deletedIds.has(row.id)));
+      setClassificationRules((current) => current.filter((rule) => !removedIds.has(rule.category_id)));
       if (selectedMiddleId !== null && removedIds.has(selectedMiddleId)) {
         setSelectedMiddleId(null);
         setSelectedLeafId(null);
@@ -471,8 +483,15 @@ export default function LedgerCategories({
         setRuleDirty(false);
       }
       if (deleteRuleIndexes.size && (selectedLeafId === null || !removedIds.has(selectedLeafId))) {
-        setRuleValues((current) => current.filter((_, index) => !deleteRuleIndexes.has(index)));
-        setRuleDirty(true);
+        const nextRuleValues = ruleValues.filter((_, index) => !deleteRuleIndexes.has(index));
+        const deletedRuleIdSet = new Set(persistedRuleIds);
+        const nextPersistedRules = selectedPersistedRules.filter((rule) => !deletedRuleIdSet.has(rule.id));
+        setClassificationRules((current) => current.filter((rule) => !deletedRuleIdSet.has(rule.id)));
+        setRuleValues(nextRuleValues);
+        setRuleDirty(
+          nextRuleValues.length !== nextPersistedRules.length
+          || nextRuleValues.some((value, index) => value !== nextPersistedRules[index]?.match_value),
+        );
       }
       setDeleteTargets([]);
       setDeleteDiscardIds(new Set());

@@ -207,6 +207,11 @@ export async function getLedgerClassificationRules(calendarId: number) {
     `/api/ledger/classification-rules?calendarId=${calendarId}`,
   );
 }
+export async function deleteLedgerClassificationRules(ids: number[]) {
+  return apiFetch<{ ok: boolean }>("/api/ledger/classification-rules/delete-batch", {
+    method: "POST", body: JSON.stringify({ ids }),
+  });
+}
 export async function syncLedgerCategoryClassificationRules(
   calendarId: number,
   categoryId: number,
