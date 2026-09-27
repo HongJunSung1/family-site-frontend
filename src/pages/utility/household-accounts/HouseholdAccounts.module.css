@@ -935,6 +935,11 @@ input.filterControl[type="month"]::-webkit-calendar-picker-indicator {
   text-align: center !important;
 }
 
+.transactionRefreshColumn {
+  width: 44px;
+  text-align: center !important;
+}
+
 .transactionDetailButton,
 .transactionIssueButton {
   padding: 0;

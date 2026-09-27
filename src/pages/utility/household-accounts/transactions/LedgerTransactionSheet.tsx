@@ -98,6 +98,7 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
   const [transferTarget, setTransferTarget] = useState<LedgerTransaction | null>(null);
   const [transferCandidates, setTransferCandidates] = useState<LedgerTransferCandidate[]>([]);
   const [transferLoading, setTransferLoading] = useState(false);
+  const [classificationRefreshing, setClassificationRefreshing] = useState(false);
   useEffect(() => setDrafts(rows.map((row) => toDraft(row))), [rows]);
   useEffect(() => {
     setDrafts((current) => current.map((row) => {
@@ -195,6 +196,51 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
       } : item));
     } catch {
       // 추천 실패는 직접 입력을 막지 않으며 저장 시 서버 검증은 그대로 수행한다.
+    }
+  }
+
+  async function refreshClassifications(targetRows: Draft[]) {
+    const targets = targetRows.filter((row) => !row.id && row.entrySource === "EXCEL");
+    if (!targets.length || classificationRefreshing) return;
+    setClassificationRefreshing(true);
+    try {
+      const result = await classifyLedgerTransactions(calendarId, targets.map((row) => ({
+        description: row.description,
+        memo: row.memo,
+      })));
+      const resultsByKey = new Map(targets.map((row, index) => [row.key, result.results[index]]));
+      const matchedCount = result.results.filter((classification) => classification.status === "MATCHED"
+        && categories.some((item) => item.id === classification.categoryId && item.depth === 3 && item.is_active)).length;
+      setDrafts((current) => current.map((row) => {
+        const classification = resultsByKey.get(row.key);
+        if (!classification) return row;
+        if (classification.status === "CONFLICT") {
+          return { ...row, classificationConflict: true };
+        }
+        if (classification.status !== "MATCHED" || !classification.categoryId) {
+          return { ...row, classificationConflict: false };
+        }
+        const category = categories.find((item) => item.id === classification.categoryId && item.depth === 3 && item.is_active);
+        if (!category) return row;
+        return {
+          ...row,
+          categoryId: category.id,
+          categoryQuery: category.category_name,
+          classificationSource: "RULE",
+          classificationConflict: false,
+          dirty: true,
+        };
+      }));
+      if (!matchedCount) {
+        setAlert({ title: "분류 갱신", message: "현재 자동분류 규칙과 일치하는 거래가 없습니다." });
+      }
+    } catch (error) {
+      setAlert({
+        title: "분류 갱신 실패",
+        message: error instanceof ApiError ? error.message : "자동분류 결과를 갱신하지 못했습니다.",
+      });
+    } finally {
+      setClassificationRefreshing(false);
     }
   }
 
@@ -405,6 +451,7 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
         </div>
         <div className={styles.transactionSheetActions}>
         {canManage && <button type="button" className={styles.secondaryButton} onClick={addRow}>+ 행 추가</button>}
+        {canManage && <button type="button" className={styles.secondaryButton} disabled={classificationRefreshing || !drafts.some((row) => !row.id && row.entrySource === "EXCEL")} onClick={() => void refreshClassifications(drafts)}>전체 갱신</button>}
         <button type="button" className={styles.secondaryButton} disabled={!checked.length} onClick={cancelChecked}>취소</button>
         <button type="button" className={styles.deleteButton} disabled={!checked.some((row) => row.id)} onClick={() => setDeleteOpen(true)}>삭제</button>
         <button type="button" className={styles.primaryButton} disabled={saving || !drafts.some((row) => row.dirty && row.duplicateStatus !== "EXACT")} onClick={() => void saveAll()}>저장</button>
@@ -438,6 +485,7 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
               <th>거래처명</th>
               <th>메모</th>
               <th className={styles.transactionDetailColumn}>상세</th>
+              <th className={styles.transactionRefreshColumn}>갱신</th>
             </tr>
           </thead>
           <tbody>
@@ -499,9 +547,10 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
                 <td><input disabled={!canManage} value={row.counterparty} onChange={(e) => change(row.key, { counterparty: e.target.value })} onBlur={() => void recommendCategory(row)} /></td>
                 <td><input disabled={!canManage} value={row.memo} onChange={(e) => change(row.key, { memo: e.target.value })} onBlur={() => void recommendCategory(row)} /></td>
                 <td className={styles.transactionDetailColumn}><button type="button" className={styles.transactionDetailButton} aria-expanded={expandedKey === row.key} onClick={() => setExpandedKey((current) => current === row.key ? "" : row.key)}>{expandedKey === row.key ? "접기" : "상세"}</button></td>
+                <td className={styles.transactionRefreshColumn}>{!row.id && row.entrySource === "EXCEL" && <button type="button" className={styles.transactionDetailButton} aria-label={`${row.description} 분류 갱신`} disabled={!canManage || classificationRefreshing} onClick={() => void refreshClassifications([row])}>갱신</button>}</td>
               </tr>
               <tr className={`${styles.transactionDetailRow} ${expandedKey === row.key ? styles.transactionDetailRowOpen : ""}`} aria-hidden={expandedKey !== row.key}>
-                <td colSpan={13}>
+                <td colSpan={14}>
                   <div className={styles.transactionDetailCollapse}>
                   <div className={styles.transactionDetailContent}>
                   <div className={styles.transactionDetailGrid}>
@@ -520,7 +569,7 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
               </tr>
               </Fragment>;
             })}
-            {!filteredDrafts.length && <tr><td colSpan={13} className={styles.sheetEmptyCell}>{searchQuery.trim() ? "검색 결과가 없습니다." : "조회된 거래가 없습니다."}</td></tr>}
+            {!filteredDrafts.length && <tr><td colSpan={14} className={styles.sheetEmptyCell}>{searchQuery.trim() ? "검색 결과가 없습니다." : "조회된 거래가 없습니다."}</td></tr>}
           </tbody>
         </table>
       </div>
