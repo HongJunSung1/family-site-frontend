@@ -180,6 +180,7 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
   } : row));
   const checked = drafts.filter((row) => row.checked);
   const filteredDrafts = drafts.filter((row) => {
+    if (row.key.startsWith("new-")) return true;
     const query = searchQuery.trim().toLocaleLowerCase("ko");
     if (!query) return true;
     const path = categoryPath(row.categoryId);

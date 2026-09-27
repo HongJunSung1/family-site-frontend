@@ -38,4 +38,28 @@ describe("가계부 거래 PC 시트", () => {
     fireEvent.change(transferInput, { target: { value: "-1234" } });
     expect(transferInput).toHaveValue("-1,234");
   });
+
+  it("검색 결과가 없는 상태에서 추가한 신규 행을 첫 페이지에 표시한다", () => {
+    render(
+      <LedgerTransactionSheet
+        calendarId={10}
+        rows={[]}
+        accounts={[account]}
+        categories={categories}
+        canManage
+        onReload={vi.fn()}
+        startDate="2026-08-01"
+        endDate="2026-08-31"
+        onDateRangeChange={vi.fn()}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("거래내역 검색"), { target: { value: "검색되지 않는 값" } });
+    expect(screen.getByText("검색 결과가 없습니다.")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "+ 행 추가" }));
+
+    expect(screen.queryByText("검색 결과가 없습니다.")).not.toBeInTheDocument();
+    expect(screen.getByPlaceholderText("소분류 입력")).toBeInTheDocument();
+  });
 });

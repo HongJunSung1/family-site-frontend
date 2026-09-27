@@ -25,17 +25,29 @@ const SETTINGS_ROUTES = [
   INTERNAL_ROUTES.importProfiles,
 ] as const;
 
+type LedgerScreen = "overview" | "transactions" | "accounts" | "categories" | "importProfiles";
+
+function getCurrentScreen(pathname: string): LedgerScreen {
+  if (pathname.startsWith(INTERNAL_ROUTES.transactions)) return "transactions";
+  if (pathname.startsWith(INTERNAL_ROUTES.accounts)) return "accounts";
+  if (pathname.startsWith(INTERNAL_ROUTES.categories)) return "categories";
+  if (pathname.startsWith(INTERNAL_ROUTES.importProfiles)) return "importProfiles";
+  return "overview";
+}
+
 function isSettingsRoute(pathname: string) {
   return SETTINGS_ROUTES.some((route) => pathname.startsWith(route));
 }
 
 // 현재 가계부 하위 경로에 해당하는 모바일 화면 제목 반환
 function getCurrentTitle(pathname: string) {
-  if (pathname.startsWith(INTERNAL_ROUTES.transactions)) return "거래내역";
-  if (pathname.startsWith(INTERNAL_ROUTES.accounts)) return "계정 관리";
-  if (pathname.startsWith(INTERNAL_ROUTES.categories)) return "분류 관리";
-  if (pathname.startsWith(INTERNAL_ROUTES.importProfiles)) return "엑셀 가져오기 양식";
-  return "가계부 현황";
+  return ({
+    overview: "가계부 현황",
+    transactions: "거래내역",
+    accounts: "계정 관리",
+    categories: "분류 관리",
+    importProfiles: "엑셀 가져오기 양식",
+  } satisfies Record<LedgerScreen, string>)[getCurrentScreen(pathname)];
 }
 
 // 가계부 내부 라우팅과 캘린더·PC·모바일 메뉴 구성
@@ -50,7 +62,12 @@ export default function HouseholdAccounts() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(isSettingsRoute(location.pathname));
   const [hasUnsavedTransactionChanges, setHasUnsavedTransactionChanges] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<{ type: "route"; path: string } | { type: "calendar"; calendarId: number } | null>(null);
+  const activeScreen = getCurrentScreen(location.pathname);
+  const [mountedScreens, setMountedScreens] = useState<Set<LedgerScreen>>(() => new Set([activeScreen]));
   const currentTitle = getCurrentTitle(location.pathname);
+  if (!mountedScreens.has(activeScreen)) {
+    setMountedScreens(new Set([...mountedScreens, activeScreen]));
+  }
 
   const requestRouteNavigation = useCallback((path: string) => {
     if (hasUnsavedTransactionChanges) {
@@ -249,60 +266,34 @@ export default function HouseholdAccounts() {
           {calendarError && <p className={styles.errorMessage}>{calendarError}</p>}
           <Routes>
             <Route index element={<Navigate to="overview" replace />} />
-            <Route
-              path="overview"
-              element={
-                <LedgerOverview
-                  calendarId={calendarId}
-                  calendarName={selectedCalendar?.name ?? ""}
-                  calendarControl={calendarControl}
-                />
-              }
-            />
-            <Route
-              path="transactions"
-              element={
-                <LedgerTransactions
-                  calendarId={calendarId}
-                  calendarName={selectedCalendar?.name ?? ""}
-                  calendarControl={calendarControl}
-                  onUnsavedChangesChange={setHasUnsavedTransactionChanges}
-                />
-              }
-            />
-            <Route
-              path="accounts"
-              element={
-                <LedgerAccounts
-                  calendarId={calendarId}
-                  calendarName={selectedCalendar?.name ?? ""}
-                  calendarControl={calendarControl}
-                />
-              }
-            />
-            <Route
-              path="categories"
-              element={
-                <LedgerCategories
-                  calendarId={calendarId}
-                  calendarName={selectedCalendar?.name ?? ""}
-                  calendarControl={calendarControl}
-                />
-              }
-            />
+            <Route path="overview" element={null} />
+            <Route path="transactions" element={null} />
+            <Route path="accounts" element={null} />
+            <Route path="categories" element={null} />
             <Route path="rules" element={<Navigate to="../categories" replace />} />
-            <Route
-              path="import-profiles"
-              element={
-                <LedgerImportProfiles
-                  calendarId={calendarId}
-                  calendarName={selectedCalendar?.name ?? ""}
-                  calendarControl={calendarControl}
-                />
-              }
-            />
+            <Route path="import-profiles" element={null} />
             <Route path="*" element={<Navigate to="overview" replace />} />
           </Routes>
+          {(mountedScreens.has("overview") || activeScreen === "overview") && <div hidden={activeScreen !== "overview"}>
+            <LedgerOverview calendarId={calendarId} calendarName={selectedCalendar?.name ?? ""} calendarControl={calendarControl} />
+          </div>}
+          {(mountedScreens.has("transactions") || activeScreen === "transactions") && <div hidden={activeScreen !== "transactions"}>
+            <LedgerTransactions
+              calendarId={calendarId}
+              calendarName={selectedCalendar?.name ?? ""}
+              calendarControl={calendarControl}
+              onUnsavedChangesChange={setHasUnsavedTransactionChanges}
+            />
+          </div>}
+          {(mountedScreens.has("accounts") || activeScreen === "accounts") && <div hidden={activeScreen !== "accounts"}>
+            <LedgerAccounts calendarId={calendarId} calendarName={selectedCalendar?.name ?? ""} calendarControl={calendarControl} />
+          </div>}
+          {(mountedScreens.has("categories") || activeScreen === "categories") && <div hidden={activeScreen !== "categories"}>
+            <LedgerCategories calendarId={calendarId} calendarName={selectedCalendar?.name ?? ""} calendarControl={calendarControl} />
+          </div>}
+          {(mountedScreens.has("importProfiles") || activeScreen === "importProfiles") && <div hidden={activeScreen !== "importProfiles"}>
+            <LedgerImportProfiles calendarId={calendarId} calendarName={selectedCalendar?.name ?? ""} calendarControl={calendarControl} />
+          </div>}
         </div>
       </div>
       <ConfirmDialog
