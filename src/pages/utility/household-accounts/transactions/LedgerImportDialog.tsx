@@ -82,6 +82,12 @@ export default function LedgerImportDialog({ open, calendarId, accounts, onClose
   // Opening the dialog or changing the calendar starts a fresh in-memory import session.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, calendarId]);
+  useEffect(() => {
+    if (!open || accounts.some((account) => account.id === accountId)) return;
+    setAccountId(accounts[0]?.id ?? 0);
+    setFileName(""); setPendingRows([]); setEncrypted(null); setPassword("");
+    if (inputRef.current) inputRef.current.value = "";
+  }, [accountId, accounts, open]);
   if (!open) return null;
 
   async function applyWorkbook(data: ArrayBuffer | Uint8Array, name: string) {
@@ -205,8 +211,8 @@ export default function LedgerImportDialog({ open, calendarId, accounts, onClose
   return <section className={`${styles.ledgerImportDialog} ${styles.ledgerImportInline}`} aria-label="엑셀 거래 가져오기">
       <div className={styles.ledgerImportControls}>
         <label>가져오기 양식<select value={profileId} onChange={(e) => { setProfileId(Number(e.target.value)); clearSelectedFile(); }}>{profiles.map((item) => <option key={item.id} value={item.id}>{item.profile_name} · {item.institution_name}</option>)}</select></label>
-        <label>계정<select value={accountId} onChange={(e) => { setAccountId(Number(e.target.value)); clearSelectedFile(); }}>{accounts.map((item) => <option key={item.id} value={item.id}>{item.institution_name || "금융기관 없음"} · {item.account_name}</option>)}</select></label>
-        <div><input ref={inputRef} hidden type="file" accept=".xls,.xlsx" onChange={(e) => void readFile(e.target.files?.[0])} /><button className={styles.secondaryButton} type="button" disabled={!profile || loading} onClick={() => inputRef.current?.click()}>파일 선택</button><span title={fileName}>{fileName || "선택된 파일 없음"}</span><button className={styles.primaryButton} type="button" disabled={!pendingRows.length || loading} onClick={applySelectedFile}>파일 적용</button></div>
+        <label>계정<select value={accountId} disabled={!accounts.length} onChange={(e) => { setAccountId(Number(e.target.value)); clearSelectedFile(); }}>{!accounts.length && <option value={0}>선택 가능한 계정 없음</option>}{accounts.map((item) => <option key={item.id} value={item.id}>{item.institution_name || "금융기관 없음"} · {item.account_name}</option>)}</select></label>
+        <div><input ref={inputRef} hidden type="file" accept=".xls,.xlsx" onChange={(e) => void readFile(e.target.files?.[0])} /><button className={styles.secondaryButton} type="button" disabled={!profile || !accountId || loading} onClick={() => inputRef.current?.click()}>파일 선택</button><span title={fileName}>{fileName || "선택된 파일 없음"}</span><button className={styles.primaryButton} type="button" disabled={!pendingRows.length || loading} onClick={applySelectedFile}>파일 적용</button></div>
       </div>
       {encrypted && <div className={styles.ledgerImportPassword}><label>파일 비밀번호<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") void decrypt(); }} /></label><button type="button" className={styles.primaryButton} onClick={() => void decrypt()}>열기</button></div>}
     <LoadingOverlay active={loading} label="거래 가져오는 중" /><AlertDialog open={!!alert} title={alert?.title ?? ""} message={alert?.message ?? ""} onClose={() => setAlert(null)} />

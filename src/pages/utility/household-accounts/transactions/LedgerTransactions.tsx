@@ -62,6 +62,10 @@ export default function LedgerTransactions({ calendarId, calendarControl, onUnsa
   const [categoryWorkspaceLoaded, setCategoryWorkspaceLoaded] = useState(false);
   const [activeWorkspace, setActiveWorkspace] = useState<"transactions" | "categories">("transactions");
   const ledgerAccounts = useMemo(() => accounts.filter((item) => item.is_active && item.is_ledger_enabled), [accounts]);
+  const ownerLedgerAccounts = useMemo(
+    () => ledgerAccounts.filter((item) => item.owner_user_id === ownerId),
+    [ledgerAccounts, ownerId],
+  );
   const leaves = useMemo(() => categories.filter((item) => item.depth === 3 && item.is_active), [categories]);
   const path = useCallback((leaf: LedgerCategory) => {
     const middle = categories.find((item) => item.id === leaf.parent_id);
@@ -221,7 +225,7 @@ export default function LedgerTransactions({ calendarId, calendarControl, onUnsa
         <button type="button" className={styles.ledgerImportToggle} aria-expanded={importOpen} onClick={() => setImportOpen((value) => !value)}>
           <span>엑셀 가져오기</span><i className={importOpen ? styles.ledgerImportToggleOpen : ""} aria-hidden="true" />
         </button>
-        <LedgerImportDialog open={importOpen} calendarId={calendarId} accounts={ledgerAccounts} onClose={() => setImportOpen(false)} onParsed={(importRows) => setImportBatch({ id: Date.now(), rows: importRows })} />
+        <LedgerImportDialog open={importOpen} calendarId={calendarId} accounts={ownerLedgerAccounts} onClose={() => setImportOpen(false)} onParsed={(importRows) => setImportBatch({ id: Date.now(), rows: importRows })} />
       </div>}
       <LedgerTransactionSheet calendarId={calendarId} rows={transactions} accounts={ledgerAccounts} categories={categories} canManage={canManage} onReload={load} importBatch={importBatch} onImportApplied={() => setImportBatch(null)} startDate={dateRange.startDate} endDate={dateRange.endDate} onDateRangeChange={(startDate, endDate) => setDateRange({ startDate, endDate })} onUnsavedChangesChange={handleUnsavedChanges} />
       <div className={`${styles.managementGrid} ${styles.transactionMobile} ${form ? styles.managementGridEditing : ""}`}>
