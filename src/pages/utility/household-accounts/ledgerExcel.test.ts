@@ -1,6 +1,6 @@
 import * as XLSX from "xlsx";
 import { describe, expect, it } from "vitest";
-import { workbookToSheets, worksheetToRows } from "./ledgerExcel";
+import { detectHeaderRow, workbookToSheets, worksheetToRows } from "./ledgerExcel";
 
 describe("가계부 엑셀 행 변환", () => {
   it("축소된 XLS 사용 범위보다 아래에 있는 셀과 빈 행을 실제 행 번호대로 유지한다", () => {
@@ -32,5 +32,16 @@ describe("가계부 엑셀 행 변환", () => {
     expect(sheets).toHaveLength(1);
     expect(sheets[0].rows).toHaveLength(7);
     expect(sheets[0].rows[5]).toEqual(["No", "거래일시"]);
+  });
+
+  it("화면 행 번호가 달라도 IBK 거래 열 이름이 모인 실제 헤더를 찾는다", () => {
+    const rows = [
+      ["거래내역조회_입출식"],
+      ["계좌번호", "230-0000"],
+      ["No", "거래일시", "출금", "입금", "거래후 잔액", "거래내용", "상대은행", "거래구분"],
+      [1, "2026-08-30 19:19:02", 500000, 0, 6125175, "홍준성", "케이뱅크", "API이체"],
+    ];
+
+    expect(detectHeaderRow(rows)).toBe(3);
   });
 });

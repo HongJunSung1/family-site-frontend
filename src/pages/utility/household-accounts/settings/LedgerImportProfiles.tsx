@@ -11,7 +11,7 @@ import {
 } from "../../../../api/ledgerApi";
 import { AlertDialog } from "../../../../common/dialog";
 import { LoadingOverlay } from "../../../../common/loading";
-import { workbookToSheets } from "../ledgerExcel";
+import { detectHeaderRow, workbookToSheets } from "../ledgerExcel";
 import type { LedgerScreenProps } from "../types";
 import styles from "../HouseholdAccounts.module.css";
 
@@ -95,10 +95,9 @@ export default function LedgerImportProfiles({ calendarId, calendarControl }: Le
     : form ? [...new Set([...Object.values(form.mapping), form.rules.excludeColumn].filter((value): value is string => !!value))] : [],
   [form, headerCells, selectedSheet]);
   const recommendedProfile = useMemo(() => sampleName && selectedSheet
-    ? profiles.find((profile) => profile.is_active && headerMatches(
-      profile.header_signature,
-      (selectedSheet.rows[profile.header_row - 1] ?? []).map(cell),
-    )) : undefined, [profiles, sampleName, selectedSheet]);
+    ? profiles.find((profile) => profile.is_active && selectedSheet.rows.slice(0, 100)
+      .some((row) => headerMatches(profile.header_signature, row.map(cell))))
+    : undefined, [profiles, sampleName, selectedSheet]);
   const preview = useMemo(() => {
     if (!form || !selectedSheet || !headers.length) return [];
     const index = new Map(headerCells.map((name, column) => [name, column]));
@@ -138,7 +137,7 @@ export default function LedgerImportProfiles({ calendarId, calendarControl }: Le
     const workbook = XLSX.read(data, { type: "array", cellDates: false });
     const nextSheets = workbookToSheets(XLSX, workbook, data);
     setSheets(nextSheets); setSampleName(fileName);
-    setForm({ ...form, sheetName: nextSheets[0]?.name ?? "", headerRow: 1, mapping: {} });
+    setForm({ ...form, sheetName: nextSheets[0]?.name ?? "", headerRow: detectHeaderRow(nextSheets[0]?.rows ?? []), mapping: {} });
   }
 
   async function readSample(file?: File) {
@@ -231,10 +230,12 @@ export default function LedgerImportProfiles({ calendarId, calendarControl }: Le
           {recommendedProfile && <button type="button" className={styles.importRecommendation} onClick={() => setForm({
             id: recommendedProfile.id, profileName: recommendedProfile.profile_name,
             institutionName: recommendedProfile.institution_name, sheetName: selectedSheet?.name ?? recommendedProfile.sheet_name ?? "",
-            headerRow: recommendedProfile.header_row, mapping: recommendedProfile.mapping,
+            headerRow: Math.max(1, (selectedSheet?.rows.slice(0, 100)
+              .findIndex((row) => headerMatches(recommendedProfile.header_signature, row.map(cell))) ?? -1) + 1),
+            mapping: recommendedProfile.mapping,
             rules: recommendedProfile.rules, isActive: true,
           })}>추천 양식 적용: {recommendedProfile.profile_name}</button>}
-          {!!sheets.length && <><label>시트<select value={form.sheetName} onChange={(e) => setForm({ ...form, sheetName: e.target.value, mapping: {} })}>{sheets.map((sheet) => <option key={sheet.name}>{sheet.name}</option>)}</select></label>
+          {!!sheets.length && <><label>시트<select value={form.sheetName} onChange={(e) => { const sheet = sheets.find((item) => item.name === e.target.value); setForm({ ...form, sheetName: e.target.value, headerRow: detectHeaderRow(sheet?.rows ?? []), mapping: {} }); }}>{sheets.map((sheet) => <option key={sheet.name}>{sheet.name}</option>)}</select></label>
           <label>헤더 행<input type="number" min={1} max={Math.min(100, selectedSheet?.rows.length ?? 100)} value={form.headerRow} onChange={(e) => setForm({ ...form, headerRow: Math.max(1, Number(e.target.value)), mapping: {} })} /></label></>}
           <h3>기본 열 선택</h3><div className={styles.importMappingGrid}>
             {mappingSelect("거래일", "date", true)}{mappingSelect("거래시간(선택)", "time")}{mappingSelect("거래내용(적요)", "description", true)}

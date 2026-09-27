@@ -3,6 +3,31 @@ import type { WorkBook, WorkSheet } from "xlsx";
 type SheetJs = typeof import("xlsx");
 export type LedgerWorkbookSheet = { name: string; rows: unknown[][] };
 
+const HEADER_NAMES = new Set([
+  "no", "번호", "순번", "거래일", "거래일자", "거래일시", "거래시간", "일자", "날짜", "시간",
+  "출금", "출금액", "입금", "입금액", "거래금액", "금액", "거래후잔액", "잔액",
+  "거래내용", "적요", "내용", "송금메시지", "상대계좌번호", "상대은행", "거래구분",
+  "수표어음금액", "cms코드", "상대계좌예금주명", "예금주명", "메모",
+]);
+
+const normalizedHeader = (value: unknown) => String(value ?? "")
+  .trim()
+  .toLocaleLowerCase("ko")
+  .replace(/[\s_·()\-./]/g, "");
+
+export function detectHeaderRow(rows: unknown[][]) {
+  let bestIndex = -1;
+  let bestScore = 0;
+  rows.slice(0, 100).forEach((row, rowIndex) => {
+    const score = row.reduce<number>((total, value) => total + (HEADER_NAMES.has(normalizedHeader(value)) ? 1 : 0), 0);
+    if (score > bestScore) {
+      bestIndex = rowIndex;
+      bestScore = score;
+    }
+  });
+  return bestScore >= 2 ? bestIndex + 1 : 1;
+}
+
 /**
  * 구형 XLS의 잘못되거나 축소된 !ref 범위와 중간 빈 행에 영향을 받지 않고
  * 엑셀에 표시되는 실제 행 번호 그대로 2차원 배열을 만든다.
