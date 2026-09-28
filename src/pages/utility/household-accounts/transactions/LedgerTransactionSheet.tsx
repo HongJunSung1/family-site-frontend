@@ -25,7 +25,7 @@ import styles from "../HouseholdAccounts.module.css";
 
 type Draft = {
   key: string; id?: number; checked: boolean; dirty: boolean;
-  accountId: number; date: string; income: string; expense: string; transfer: string;
+  accountId: number; accountQuery: string; date: string; income: string; expense: string; transfer: string;
   categoryId: number; categoryQuery: string; description: string; counterparty: string; memo: string;
   isReversal: boolean; originalTransactionId: number | null;
   time: string | null;
@@ -65,10 +65,10 @@ const accountLabelWidth = (label: string) => Array.from(label).reduce(
   32,
 );
 
-function toDraft(row: LedgerTransaction, categoryName = row.category_name): Draft {
+function toDraft(row: LedgerTransaction, categoryName = row.category_name, accountName = row.account_name): Draft {
   return {
     key: `saved-${row.id}`, id: row.id, checked: false, dirty: false,
-    accountId: row.account_id, date: row.transaction_date,
+    accountId: row.account_id, accountQuery: accountName, date: row.transaction_date,
     income: row.transaction_kind === "INCOME" ? row.amount : "",
     expense: row.transaction_kind === "EXPENSE" ? row.amount : "",
     transfer: row.transaction_kind === "TRANSFER"
@@ -96,9 +96,16 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [categoryCandidates, setCategoryCandidates] = useState<LedgerCategory[]>([]);
   const [categoryTargetKey, setCategoryTargetKey] = useState("");
+  const [openAccountKey, setOpenAccountKey] = useState("");
+  const [showAllAccountKey, setShowAllAccountKey] = useState("");
+  const [accountAnchor, setAccountAnchor] = useState<HTMLElement | null>(null);
+  const [accountHighlightIndex, setAccountHighlightIndex] = useState(-1);
   const [openCategoryKey, setOpenCategoryKey] = useState("");
   const [showAllCategoryKey, setShowAllCategoryKey] = useState("");
   const [categoryAnchor, setCategoryAnchor] = useState<HTMLElement | null>(null);
+  const [categoryHighlightIndex, setCategoryHighlightIndex] = useState(-1);
+  const accountMenuRef = useRef<HTMLDivElement | null>(null);
+  const categoryMenuRef = useRef<HTMLDivElement | null>(null);
   const suppressCategoryFocus = useRef("");
   const draftsToRestoreAfterReload = useRef<Draft[] | null>(null);
   const [alert, setAlert] = useState<{ title: string; message: string } | null>(null);
@@ -115,16 +122,24 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
     const preserved = draftsToRestoreAfterReload.current;
     draftsToRestoreAfterReload.current = null;
     if (!preserved) {
-      setDrafts(rows.map((row) => toDraft(row)));
+      setDrafts(rows.map((row) => toDraft(
+        row,
+        row.category_name,
+        accountLabel(accounts.find((item) => item.id === row.account_id) ?? { account_name: row.account_name } as AssetAccount),
+      )));
       return;
     }
     const preservedById = new Map(preserved.filter((row) => row.id).map((row) => [row.id!, row]));
     const unsaved = preserved.filter((row) => !row.id);
     setDrafts([
       ...unsaved,
-      ...rows.map((row) => preservedById.get(row.id) ?? toDraft(row)),
+      ...rows.map((row) => preservedById.get(row.id) ?? toDraft(
+        row,
+        row.category_name,
+        accountLabel(accounts.find((item) => item.id === row.account_id) ?? { account_name: row.account_name } as AssetAccount),
+      )),
     ]);
-  }, [rows]);
+  }, [accounts, rows]);
   const hasUnsavedChanges = drafts.some((row) => !row.id || row.dirty);
   useEffect(() => {
     onUnsavedChangesChange?.(hasUnsavedChanges);
@@ -142,7 +157,9 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
     if (!importBatch?.rows.length) return;
     setDrafts((current) => [...importBatch.rows.map((row, index): Draft => ({
       key: `import-${importBatch.id}-${index}`, checked: false, dirty: row.duplicateStatus !== "EXACT",
-      accountId: row.accountId, date: row.transactionDate, time: row.transactionTime,
+      accountId: row.accountId,
+      accountQuery: accountLabel(accounts.find((item) => item.id === row.accountId) ?? { account_name: "" } as AssetAccount),
+      date: row.transactionDate, time: row.transactionTime,
       income: row.classification === "INCOME" || row.classification === "INCOME_REVERSAL" ? row.amount : "",
       expense: row.classification === "EXPENSE" || row.classification === "EXPENSE_REVERSAL" ? row.amount : "",
       transfer: row.classification === "TRANSFER" ? `${row.direction === "OUTFLOW" ? "-" : ""}${row.amount}` : "",
@@ -156,7 +173,25 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
       classificationSource: row.classificationSource,
     })), ...current]);
     onImportApplied?.();
-  }, [categories, importBatch, onImportApplied]);
+  }, [accounts, categories, importBatch, onImportApplied]);
+
+  useEffect(() => {
+    setDrafts((current) => current.map((row) => {
+      const selected = accounts.find((item) => item.id === row.accountId);
+      const label = selected ? accountLabel(selected) : "";
+      return label && row.accountQuery !== label ? { ...row, accountQuery: label } : row;
+    }));
+  }, [accounts]);
+
+  useEffect(() => {
+    accountMenuRef.current?.querySelector<HTMLElement>('[data-highlighted="true"]')
+      ?.scrollIntoView?.({ block: "nearest" });
+  }, [accountHighlightIndex, openAccountKey]);
+
+  useEffect(() => {
+    categoryMenuRef.current?.querySelector<HTMLElement>('[data-highlighted="true"]')
+      ?.scrollIntoView?.({ block: "nearest" });
+  }, [categoryHighlightIndex, openCategoryKey]);
 
   const roots = useMemo(() => new Map(categories.filter((item) => item.depth === 1).map((item) => [item.id, item])), [categories]);
   const middles = useMemo(() => new Map(categories.filter((item) => item.depth === 2).map((item) => [item.id, item])), [categories]);
@@ -300,6 +335,7 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
     }
     setDrafts((current) => [{
       key: `new-${nextKey}`, checked: false, dirty: true, accountId: accounts[0].id,
+      accountQuery: accountLabel(accounts[0]),
       date: new Date().toLocaleDateString("en-CA"), income: "", expense: "", transfer: "",
       categoryId: 0, categoryQuery: "",
       description: "", counterparty: "", memo: "", isReversal: false, originalTransactionId: null,
@@ -311,6 +347,34 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
     }, ...current]);
     setPage(1);
     setNextKey((value) => value + 1);
+  }
+
+  function matchingAccounts(query: string, showAll = false) {
+    const normalized = query.trim().toLocaleLowerCase("ko");
+    return accounts.filter((account) => showAll || !normalized
+      || accountLabel(account).toLocaleLowerCase("ko").includes(normalized));
+  }
+
+  function selectAccount(key: string, account: AssetAccount) {
+    change(key, { accountId: account.id, accountQuery: accountLabel(account) });
+    setOpenAccountKey("");
+    setShowAllAccountKey("");
+    setAccountAnchor(null);
+    setAccountHighlightIndex(-1);
+  }
+
+  function closeAccountSearch(key: string) {
+    const current = drafts.find((row) => row.key === key);
+    const selected = accounts.find((account) => account.id === current?.accountId);
+    if (current) {
+      setDrafts((items) => items.map((item) => item.key === key
+        ? { ...item, accountQuery: selected ? accountLabel(selected) : "" }
+        : item));
+    }
+    setOpenAccountKey("");
+    setShowAllAccountKey("");
+    setAccountAnchor(null);
+    setAccountHighlightIndex(-1);
   }
 
   function chooseLeafName(key: string, name: string) {
@@ -380,6 +444,7 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
     const original = new Map(rows.map((row) => [row.id, toDraft(
       row,
       categories.find((item) => item.id === row.category_id)?.category_name,
+      accountLabel(accounts.find((item) => item.id === row.account_id) ?? { account_name: row.account_name } as AssetAccount),
     )]));
     setDrafts((current) => current.flatMap((row) => {
       if (!row.checked) return [row];
@@ -597,7 +662,62 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
                 <td className={styles.duplicateStatusCell}>{hasIssue && <button type="button" className={styles.transactionIssueButton} aria-label={issueText} title={issueText} onClick={() => setExpandedKey((current) => current === row.key ? "" : row.key)}>!</button>}</td>
                 <td className={styles.transactionDateColumn}><input type="date" disabled={!canManage} value={row.date} onChange={(e) => change(row.key, { date: e.target.value })} /></td>
                 <td><input type="text" inputMode="numeric" maxLength={5} aria-label="거래 시간" placeholder="HH:mm" disabled={!canManage} value={row.time ?? ""} onChange={(e) => change(row.key, { time: time24(e.target.value) || null })} /></td>
-                <td className={styles.transactionAccountColumn} style={{ width: accountColumnWidth }}><select aria-label="계정" className={styles.transactionDropdownControl} disabled={!canManage} value={row.accountId} onChange={(e) => change(row.key, { accountId: Number(e.target.value) })}>{accounts.map((a) => <option key={a.id} value={a.id}>{accountLabel(a)}</option>)}</select></td>
+                <td className={styles.transactionAccountColumn} style={{ width: accountColumnWidth }}>
+                  <div className={styles.categoryCombo}>
+                    <input
+                      role="combobox"
+                      aria-label="계정"
+                      aria-expanded={openAccountKey === row.key}
+                      aria-autocomplete="list"
+                      className={styles.transactionDropdownControl}
+                      disabled={!canManage}
+                      value={row.accountQuery}
+                      onMouseDown={(event) => event.stopPropagation()}
+                      onFocus={(event) => {
+                        event.currentTarget.select();
+                        setAccountAnchor(event.currentTarget.parentElement);
+                        setOpenAccountKey(row.key);
+                        setShowAllAccountKey(row.key);
+                        setAccountHighlightIndex(accounts.findIndex((account) => account.id === row.accountId));
+                      }}
+                      onChange={(event) => {
+                        const accountQuery = event.target.value;
+                        setDrafts((items) => items.map((item) => item.key === row.key
+                          ? { ...item, accountQuery }
+                          : item));
+                        setAccountAnchor(event.currentTarget.parentElement);
+                        setOpenAccountKey(row.key);
+                        setShowAllAccountKey("");
+                        setAccountHighlightIndex(-1);
+                      }}
+                      onBlur={() => closeAccountSearch(row.key)}
+                      onKeyDown={(event) => {
+                        const matches = matchingAccounts(event.currentTarget.value, showAllAccountKey === row.key);
+                        if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+                          event.preventDefault();
+                          if (openAccountKey !== row.key) {
+                            setAccountAnchor(event.currentTarget.parentElement);
+                            setOpenAccountKey(row.key);
+                          }
+                          setAccountHighlightIndex((current) => {
+                            if (!matches.length) return -1;
+                            if (current < 0) return event.key === "ArrowDown" ? 0 : matches.length - 1;
+                            return event.key === "ArrowDown"
+                              ? (current + 1) % matches.length
+                              : (current - 1 + matches.length) % matches.length;
+                          });
+                        } else if (event.key === "Enter" && matches.length) {
+                          event.preventDefault();
+                          selectAccount(row.key, matches[Math.min(accountHighlightIndex, matches.length - 1)]);
+                        } else if (event.key === "Escape") {
+                          event.preventDefault();
+                          closeAccountSearch(row.key);
+                          event.currentTarget.blur();
+                        }
+                      }}
+                    />
+                  </div>
+                </td>
                 <td className={`${styles.categoryComboCell} ${styles.transactionCategoryColumn}`}>
                   <div className={styles.categoryCombo}>
                     <input
@@ -613,24 +733,48 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
                         }
                         setCategoryAnchor(event.currentTarget.parentElement);
                         setOpenCategoryKey(row.key);
+                        setShowAllCategoryKey(row.key);
+                        setCategoryHighlightIndex(leafNames.indexOf(row.categoryQuery));
                       }}
                       onChange={(event) => {
                         change(row.key, { categoryQuery: event.target.value });
                         setOpenCategoryKey(row.key);
                         setCategoryAnchor(event.currentTarget.parentElement);
                         setShowAllCategoryKey("");
+                        setCategoryHighlightIndex(-1);
                       }}
                       onBlur={() => closeCategorySearch(row.key)}
                       onKeyDown={(event) => {
-                        if (event.key === "Enter") {
+                        const matches = leafNames.filter((name) =>
+                          showAllCategoryKey === row.key
+                          || name.toLocaleLowerCase("ko").includes(
+                            event.currentTarget.value.trim().toLocaleLowerCase("ko"),
+                          ));
+                        if (event.key === "ArrowDown" || event.key === "ArrowUp") {
                           event.preventDefault();
-                          chooseLeafName(row.key, event.currentTarget.value);
+                          if (openCategoryKey !== row.key) {
+                            setCategoryAnchor(event.currentTarget.parentElement);
+                            setOpenCategoryKey(row.key);
+                          }
+                          setCategoryHighlightIndex((current) => {
+                            if (!matches.length) return -1;
+                            if (current < 0) return event.key === "ArrowDown" ? 0 : matches.length - 1;
+                            return event.key === "ArrowDown"
+                              ? (current + 1) % matches.length
+                              : (current - 1 + matches.length) % matches.length;
+                          });
+                        } else if (event.key === "Enter") {
+                          event.preventDefault();
+                          chooseLeafName(
+                            row.key,
+                            matches[Math.min(categoryHighlightIndex, matches.length - 1)] ?? event.currentTarget.value,
+                          );
                           setOpenCategoryKey("");
                           setCategoryAnchor(null);
-                        }
-                        if (event.key === "Escape") {
-                          setOpenCategoryKey("");
-                          setCategoryAnchor(null);
+                        } else if (event.key === "Escape") {
+                          event.preventDefault();
+                          closeCategorySearch(row.key);
+                          event.currentTarget.blur();
                         }
                       }}
                     />
@@ -678,6 +822,48 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
         />
       </div>
       <Popper
+        open={!!openAccountKey && !!accountAnchor}
+        anchorEl={accountAnchor}
+        placement="bottom-start"
+        sx={{ zIndex: 19000 }}
+      >
+        <ClickAwayListener
+          mouseEvent="onMouseDown"
+          touchEvent="onTouchStart"
+          onClickAway={() => {
+            if (openAccountKey) closeAccountSearch(openAccountKey);
+          }}
+        >
+          <Paper
+            ref={accountMenuRef}
+            className={styles.categoryComboMenu}
+            elevation={0}
+            sx={{
+              width: accountAnchor?.getBoundingClientRect().width ?? 180,
+              backgroundColor: "var(--color-surface)",
+              color: "var(--color-text)",
+            }}
+          >
+            {(() => {
+              const current = drafts.find((row) => row.key === openAccountKey);
+              if (!current) return null;
+              const matches = matchingAccounts(current.accountQuery, showAllAccountKey === current.key);
+              return matches.length ? matches.map((account, index) => (
+                <button
+                  key={account.id}
+                  type="button"
+                  data-highlighted={index === accountHighlightIndex}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => selectAccount(current.key, account)}
+                >
+                  {accountLabel(account)}
+                </button>
+              )) : <span>일치하는 계정이 없습니다.</span>;
+            })()}
+          </Paper>
+        </ClickAwayListener>
+      </Popper>
+      <Popper
         open={!!openCategoryKey && !!categoryAnchor}
         anchorEl={categoryAnchor}
         placement="bottom-start"
@@ -691,6 +877,7 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
           }}
         >
           <Paper
+            ref={categoryMenuRef}
             className={styles.categoryComboMenu}
             elevation={0}
             sx={{
@@ -707,10 +894,11 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
                 || name.toLocaleLowerCase("ko").includes(
                   current.categoryQuery.trim().toLocaleLowerCase("ko"),
                 ));
-              return matches.length ? matches.map((name) => (
+              return matches.length ? matches.map((name, index) => (
                 <button
                   key={name}
                   type="button"
+                  data-highlighted={index === categoryHighlightIndex}
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => {
                     chooseLeafName(current.key, name);

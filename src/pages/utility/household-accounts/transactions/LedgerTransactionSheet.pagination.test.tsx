@@ -50,7 +50,7 @@ describe("거래내역 페이지 이동", () => {
     expect(within(pageSize).getAllByRole("option").map((option) => option.textContent))
       .toEqual(["10개", "20개", "50개", "100개"]);
     expect(pageSize).toHaveValue("50");
-    expect(screen.getAllByRole("option", { name: "국민은행 · 생활비 통장" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("combobox", { name: "계정" })[0]).toHaveValue("국민은행 · 생활비 통장");
     expect(Number.parseInt(screen.getByRole("columnheader", { name: "계정" }).style.width, 10)).toBeGreaterThan(150);
 
     await waitFor(() => expect(screen.getByDisplayValue("거래 1")).toBeInTheDocument());
