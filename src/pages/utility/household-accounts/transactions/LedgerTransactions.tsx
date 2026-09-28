@@ -61,7 +61,7 @@ export default function LedgerTransactions({ calendarId, calendarControl, onUnsa
   const [importBatch, setImportBatch] = useState<{ id: number; rows: LedgerImportedRow[] } | null>(null);
   const [categoryWorkspaceLoaded, setCategoryWorkspaceLoaded] = useState(false);
   const [activeWorkspace, setActiveWorkspace] = useState<"transactions" | "categories">("transactions");
-  const ledgerAccounts = useMemo(() => accounts.filter((item) => item.is_active && item.is_ledger_enabled), [accounts]);
+  const ledgerAccounts = useMemo(() => accounts.filter((item) => item.is_ledger_enabled), [accounts]);
   const ownerLedgerAccounts = useMemo(
     () => ledgerAccounts.filter((item) => item.owner_user_id === ownerId),
     [ledgerAccounts, ownerId],
