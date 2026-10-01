@@ -7,6 +7,7 @@ import { ApiError } from "../../../../api/client";
 import type { AssetAccount } from "../../../../api/assetApi";
 import {
   createLedgerTransferLink,
+  checkLedgerTransactionDuplicates,
   classifyLedgerTransactions,
   deleteLedgerTransaction,
   deleteLedgerTransferLink,
@@ -477,7 +478,7 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
   }
 
   async function saveAll() {
-    const dirty = drafts.filter((row) => row.dirty && row.duplicateStatus !== "EXACT");
+    const dirty = drafts.filter((row) => row.dirty);
     if (!dirty.length) return;
     const inputs = dirty.map((row) => ({ row, payload: payload(row) }));
     if (inputs.some((item) => !item.payload)) {
@@ -486,15 +487,41 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
     setProcessingLabel("거래내역 저장 중");
     setSaving(true);
     try {
+      const newInputs = inputs.filter((item) => !item.row.id);
+      const duplicateResult = newInputs.length
+        ? await checkLedgerTransactionDuplicates(calendarId, newInputs.map((item) => item.payload!))
+        : { statuses: [] };
+      const statusByKey = new Map(newInputs.map((item, index) => [item.row.key, duplicateResult.statuses[index]]));
+      const checkedInputs = inputs.map((item) => ({
+        ...item,
+        duplicateStatus: item.row.id ? item.row.duplicateStatus : (statusByKey.get(item.row.key) ?? "NONE"),
+      }));
+      const savableInputs = checkedInputs.filter((item) => item.duplicateStatus !== "EXACT");
+      if (!savableInputs.length) {
+        setDrafts((current) => current.map((row) => statusByKey.get(row.key) === "EXACT"
+          ? { ...row, duplicateStatus: "EXACT", dirty: false }
+          : row));
+        setAlert({ title: "중복 거래", message: "이미 저장된 동일 거래는 저장되지 않았습니다." });
+        return;
+      }
       const savedIds = new Map<string, number>();
-      for (const item of inputs) {
-        const result = await saveLedgerTransaction(item.payload!, item.row.id);
+      for (const item of savableInputs) {
+        const result = await saveLedgerTransaction({
+          ...item.payload!,
+          allowDuplicate: item.duplicateStatus === "SUSPECTED",
+        }, item.row.id);
         const savedId = item.row.id ?? result.transactionId;
         if (savedId) savedIds.set(item.row.key, savedId);
       }
-      setDrafts((current) => current.flatMap((row) => {
+      const exactUnsaved = checkedInputs
+        .filter((item) => !item.row.id && item.duplicateStatus === "EXACT")
+        .map((item) => ({ ...item.row, duplicateStatus: "EXACT" as const, dirty: false }));
+      draftsToRestoreAfterReload.current = exactUnsaved;
+      setDrafts((current) => current.flatMap((row): Draft[] => {
         const savedId = savedIds.get(row.key);
-        if (!row.id && !savedId) return [];
+        if (!row.id && !savedId) return exactUnsaved.some((item) => item.key === row.key)
+          ? [{ ...row, duplicateStatus: "EXACT", dirty: false }]
+          : [];
         const id = savedId ?? row.id!;
         return [{
           ...row,
@@ -508,7 +535,12 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
       onUnsavedChangesChange?.(false);
       await onReload();
       onUnsavedChangesChange?.(false);
-      setAlert({ title: "저장 완료", message: "거래내역 저장이 완료되었습니다." });
+      setAlert({
+        title: "저장 완료",
+        message: exactUnsaved.length
+          ? `거래내역을 저장했습니다. 동일 거래 ${exactUnsaved.length}건은 제외되었습니다.`
+          : "거래내역 저장이 완료되었습니다.",
+      });
     } catch (error) {
       setAlert({ title: "저장 실패", message: error instanceof ApiError ? error.message : "거래를 저장하지 못했습니다." });
     } finally { setSaving(false); }
@@ -615,7 +647,7 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
         {canManage && <button type="button" className={styles.secondaryButton} disabled={classificationRefreshing || !drafts.some((row) => !row.id && row.entrySource === "EXCEL")} onClick={() => void refreshClassifications(drafts)}>전체 갱신</button>}
         <button type="button" className={styles.secondaryButton} disabled={!checked.length} onClick={cancelChecked}>취소</button>
         <button type="button" className={styles.deleteButton} disabled={!checked.length} onClick={() => setDeleteOpen(true)}>삭제</button>
-        <button type="button" className={styles.primaryButton} disabled={saving || !drafts.some((row) => row.dirty && row.duplicateStatus !== "EXACT")} onClick={() => void saveAll()}>저장</button>
+        <button type="button" className={styles.primaryButton} disabled={saving || !drafts.some((row) => row.dirty)} onClick={() => void saveAll()}>저장</button>
         </div>
       </div>
       <div className={`${styles.transactionSheet} ${styles.transactionDesktop}`}>
@@ -785,7 +817,7 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
                 <td><input disabled={!canManage} inputMode="decimal" placeholder="+입금 / -출금" value={formattedAmount(row.transfer)} onChange={(e) => requestAmountChange(row, "transfer", e.target.value)} /></td>
                 <td className={styles.transactionDescriptionColumn}><input disabled={!canManage} value={row.description} onChange={(e) => change(row.key, { description: e.target.value })} onBlur={() => void recommendCategory(row)} /></td>
                 <td><input disabled={!canManage} value={row.counterparty} onChange={(e) => change(row.key, { counterparty: e.target.value })} onBlur={() => void recommendCategory(row)} /></td>
-                <td><input disabled={!canManage} value={row.memo} onChange={(e) => change(row.key, { memo: e.target.value })} onBlur={() => void recommendCategory(row)} /></td>
+                <td><input aria-label="메모" disabled={!canManage} value={row.memo} onChange={(e) => change(row.key, { memo: e.target.value })} onBlur={() => void recommendCategory(row)} /></td>
                 <td className={styles.transactionDetailColumn}><button type="button" className={styles.transactionDetailButton} aria-expanded={expandedKey === row.key} onClick={() => setExpandedKey((current) => current === row.key ? "" : row.key)}>{expandedKey === row.key ? "접기" : "상세"}</button></td>
                 <td className={styles.transactionRefreshColumn}>{!row.id && row.entrySource === "EXCEL" && <button type="button" className={styles.transactionDetailButton} aria-label={`${row.description} 분류 갱신`} disabled={!canManage || classificationRefreshing} onClick={() => void refreshClassifications([row])}>갱신</button>}</td>
               </tr>

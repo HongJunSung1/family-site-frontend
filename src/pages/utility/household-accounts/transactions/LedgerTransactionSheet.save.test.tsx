@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { AssetAccount } from "../../../../api/assetApi";
 import * as ledgerApi from "../../../../api/ledgerApi";
 import type { LedgerCategory, LedgerTransaction } from "../../../../api/ledgerApi";
@@ -30,7 +30,60 @@ const row = {
   memo: "",
 } as LedgerTransaction;
 
+afterEach(() => vi.restoreAllMocks());
+
 describe("거래내역 저장 상태", () => {
+  it("엑셀 완전 중복 행의 메모를 바꾸면 저장 시 다시 검사하여 저장한다", async () => {
+    const duplicateCheck = vi.spyOn(ledgerApi, "checkLedgerTransactionDuplicates").mockResolvedValue({
+      ok: true,
+      statuses: ["SUSPECTED"],
+    });
+    const save = vi.spyOn(ledgerApi, "saveLedgerTransaction").mockResolvedValue({
+      ok: true,
+      transactionId: 9,
+    });
+    render(
+      <LedgerTransactionSheet
+        calendarId={10}
+        rows={[]}
+        accounts={[account]}
+        categories={categories}
+        canManage
+        onReload={vi.fn().mockResolvedValue(undefined)}
+        importBatch={{
+          id: 1,
+          rows: [{
+            accountId: 1,
+            transactionDate: "2026-09-27",
+            transactionTime: "12:30",
+            direction: "OUTFLOW",
+            amount: "5000",
+            description: "기존 거래",
+            counterparty: "",
+            memo: "",
+            classification: "EXPENSE",
+            categoryId: 3,
+            classificationSource: "MANUAL",
+            duplicateStatus: "EXACT",
+            classificationConflict: false,
+          }],
+        }}
+        startDate="2026-09-01"
+        endDate="2026-09-30"
+        onDateRangeChange={vi.fn()}
+      />,
+    );
+
+    fireEvent.change(await screen.findByRole("textbox", { name: "메모" }), { target: { value: "개인 사용" } });
+    fireEvent.click(screen.getByRole("button", { name: "저장" }));
+
+    await waitFor(() => expect(duplicateCheck).toHaveBeenCalledWith(10, [expect.objectContaining({ memo: "개인 사용" })]));
+    await waitFor(() => expect(save).toHaveBeenCalledWith(
+      expect.objectContaining({ memo: "개인 사용", allowDuplicate: true }),
+      undefined,
+    ));
+  });
+
   it("저장 중 로딩을 표시하고 완료 후 미저장 상태를 해제한다", async () => {
     let finishSave!: (value: { ok: boolean }) => void;
     vi.spyOn(ledgerApi, "saveLedgerTransaction").mockImplementation(() => new Promise((resolve) => {
