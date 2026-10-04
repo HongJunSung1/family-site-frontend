@@ -3,6 +3,7 @@ import { LineChart } from "@mui/x-charts/LineChart";
 import { ApiError } from "../../../../api/client";
 import {
   getLedgerOverview,
+  type LedgerOverviewAccount,
   type LedgerOverviewData,
   type LedgerOverviewRecent,
 } from "../../../../api/ledgerApi";
@@ -13,7 +14,9 @@ import type { LedgerScreenProps } from "../types";
 import styles from "../HouseholdAccounts.module.css";
 
 const currentMonth = () => new Date().toLocaleDateString("en-CA").slice(0, 7);
+const monthPattern = /^\d{4}-(0[1-9]|1[0-2])$/;
 const shiftMonth = (value: string, offset: number) => {
+  if (!monthPattern.test(value)) return "";
   const [year, month] = value.split("-").map(Number);
   const date = new Date(Date.UTC(year, month - 1 + offset, 1));
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
@@ -22,6 +25,7 @@ const money = (value: string) => `${BigInt(value).toLocaleString("ko-KR")}원`;
 const kindLabel = { INCOME: "수입", EXPENSE: "지출", TRANSFER: "이체" } as const;
 type SearchField = "rootName" | "middleName" | "leafName" | "description" | "counterparty";
 type CategoryLevel = "root" | "middle" | "leaf";
+type AggregateLevel = CategoryLevel | "account";
 type CategoryAggregate = {
   id: string; rootName: string; middleName?: string; leafName?: string;
   income: string; expense: string;
@@ -36,7 +40,7 @@ export default function LedgerOverview({ calendarId, calendarControl }: LedgerSc
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryKind, setCategoryKind] = useState<"income" | "expense">("expense");
   const [categoryLevel, setCategoryLevel] = useState<CategoryLevel>("middle");
-  const [aggregateLevel, setAggregateLevel] = useState<CategoryLevel>("root");
+  const [aggregateLevel, setAggregateLevel] = useState<AggregateLevel>("root");
   const [recentKind, setRecentKind] = useState<"ALL" | "INCOME" | "EXPENSE">("ALL");
   const [appliedSearch, setAppliedSearch] = useState<{ field: SearchField; query: string }>({
     field: "description", query: "",
@@ -45,7 +49,7 @@ export default function LedgerOverview({ calendarId, calendarControl }: LedgerSc
   const [alert, setAlert] = useState<{ title: string; message: string } | null>(null);
 
   const load = useCallback(async () => {
-    if (!calendarId) return;
+    if (!calendarId || !monthPattern.test(startMonth) || !monthPattern.test(endMonth) || startMonth > endMonth) return;
     setLoading(true);
     try {
       const result = await getLedgerOverview(calendarId, startMonth, endMonth, ownerId === 0 ? "all" : ownerId ?? undefined);
@@ -194,6 +198,17 @@ export default function LedgerOverview({ calendarId, calendarControl }: LedgerSc
     { key: "income", header: "수입", width: 105, className: styles.amountCell, render: (row) => money(row.income) },
     { key: "expense", header: "지출", width: 105, className: styles.amountCell, render: (row) => money(row.expense) },
   ];
+  const accountColumns: DataTableColumn<LedgerOverviewAccount>[] = [
+    {
+      key: "account",
+      header: "계좌",
+      render: (row) => <span className={styles.overviewEllipsis}>
+        {row.institutionName ? `${row.institutionName} · ${row.accountName}` : row.accountName}
+      </span>,
+    },
+    { key: "income", header: "수입", width: 120, className: styles.amountCell, render: (row) => money(row.income) },
+    { key: "expense", header: "지출", width: 120, className: styles.amountCell, render: (row) => money(row.expense) },
+  ];
 
   return (
     <section className={styles.screen}>
@@ -201,8 +216,12 @@ export default function LedgerOverview({ calendarId, calendarControl }: LedgerSc
         <h1>가계부 현황</h1>
         <div className={styles.screenHeaderActions}>
           {calendarControl}
-          <label className={styles.monthRangeControl}>시작 월<input className={styles.filterControl} aria-label="시작 월" type="month" value={startMonth} min={shiftMonth(endMonth, -23)} max={endMonth} onChange={(event) => setStartMonth(event.target.value)} /></label>
-          <label className={styles.monthRangeControl}>종료 월<input className={styles.filterControl} aria-label="종료 월" type="month" value={endMonth} min={startMonth} max={shiftMonth(startMonth, 23)} onChange={(event) => setEndMonth(event.target.value)} /></label>
+          <label className={styles.monthRangeControl}>시작 월<input className={styles.filterControl} aria-label="시작 월" type="month" value={startMonth} min={shiftMonth(endMonth, -23)} max={endMonth} onChange={(event) => {
+            if (monthPattern.test(event.target.value)) setStartMonth(event.target.value);
+          }} /></label>
+          <label className={styles.monthRangeControl}>종료 월<input className={styles.filterControl} aria-label="종료 월" type="month" value={endMonth} min={startMonth} max={shiftMonth(startMonth, 23)} onChange={(event) => {
+            if (monthPattern.test(event.target.value)) setEndMonth(event.target.value);
+          }} /></label>
           <select className={styles.filterControl} aria-label="소유자" value={ownerId ?? ""} onChange={(event) => setOwnerId(Number(event.target.value))}>
             {ownerId === null && <option value="">불러오는 중</option>}
             <option value={0}>전체 구성원</option>
@@ -253,6 +272,7 @@ export default function LedgerOverview({ calendarId, calendarControl }: LedgerSc
                 <button type="button" role="tab" aria-selected={aggregateLevel === "root"} onClick={() => setAggregateLevel("root")}>대분류</button>
                 <button type="button" role="tab" aria-selected={aggregateLevel === "middle"} onClick={() => setAggregateLevel("middle")}>중분류</button>
                 <button type="button" role="tab" aria-selected={aggregateLevel === "leaf"} onClick={() => setAggregateLevel("leaf")}>소분류</button>
+                <button type="button" role="tab" aria-selected={aggregateLevel === "account"} onClick={() => setAggregateLevel("account")}>계좌별</button>
               </div>
               <div className={styles.aggregateTotals}>
                 <span>수입 <strong>{money(data?.totals.income ?? "0")}</strong></span>
@@ -260,14 +280,21 @@ export default function LedgerOverview({ calendarId, calendarControl }: LedgerSc
               </div>
             </div>
           </div>
-          <DataTable
+          {aggregateLevel === "account" ? <DataTable
+            className={styles.overviewAggregateTable}
+            ariaLabel="계좌별 집계"
+            columns={accountColumns}
+            rows={data?.accounts ?? []}
+            getRowKey={(row) => row.accountId}
+            emptyMessage="조회된 계좌별 거래가 없습니다."
+          /> : <DataTable
             className={styles.overviewAggregateTable}
             ariaLabel={`${aggregateLevel === "root" ? "대분류" : aggregateLevel === "middle" ? "중분류" : "소분류"}별 집계`}
             columns={aggregateLevel === "root" ? rootColumns : aggregateLevel === "middle" ? middleColumns : leafColumns}
             rows={aggregateLevel === "root" ? rootAggregates : aggregateLevel === "middle" ? middleAggregates : leafAggregates}
             getRowKey={(row) => row.id}
             emptyMessage="조회된 분류별 거래가 없습니다."
-          />
+          />}
         </section>
       </div>
 

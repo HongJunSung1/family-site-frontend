@@ -129,6 +129,10 @@ export type LedgerOverviewCategory = {
   income: string; expense: string;
 };
 export type LedgerOverviewLeafCategory = LedgerOverviewCategory & { leafId: number; leafName: string };
+export type LedgerOverviewAccount = {
+  accountId: number; institutionName: string; accountName: string;
+  income: string; expense: string;
+};
 export type LedgerOverviewRecent = {
   id: number; transactionDate: string; transactionKind: LedgerTransaction["transaction_kind"];
   amount: string; description: string; counterparty: string; ownerName: string;
@@ -140,6 +144,7 @@ export type LedgerOverviewData = {
   members: Array<{ user_id: number; name: string }>;
   totals: { income: string; expense: string; balance: string; transferInflow: string; transferOutflow: string; netCashFlow: string };
   categories: LedgerOverviewCategory[]; leafCategories: LedgerOverviewLeafCategory[];
+  accounts: LedgerOverviewAccount[];
   history: Array<{ month: string; income: string; expense: string; balance: string }>;
   recent: LedgerOverviewRecent[];
 };

@@ -32,6 +32,10 @@ beforeEach(() => {
       { rootId: 10, rootName: "생활", middleId: 13, middleName: "교통비", leafId: 14, leafName: "대중교통", income: "0", expense: "5000" },
       { rootId: 20, rootName: "소득", middleId: 21, middleName: "근로", leafId: 22, leafName: "급여", income: "9007199254740993", expense: "0" },
     ],
+    accounts: [{
+      accountId: 1, institutionName: "케이뱅크", accountName: "생활비 통장",
+      income: "9007199254740993", expense: "20000",
+    }],
     history: [{ month: "2026-08", income: "9007199254740993", expense: "15000", balance: "9007199254725993" }],
     recent: [{
       id: 20, transactionDate: "2026-08-01", transactionKind: "EXPENSE", amount: "15000",
@@ -61,6 +65,10 @@ describe("가계부 월별 현황", () => {
     expect(within(leafTable).getByRole("columnheader", { name: "대분류" })).toBeInTheDocument();
     expect(within(leafTable).getByRole("columnheader", { name: "중분류" })).toBeInTheDocument();
     expect(within(leafTable).getByRole("columnheader", { name: "소분류" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("tab", { name: "계좌별" }));
+    const accountTable = screen.getByRole("table", { name: "계좌별 집계" });
+    expect(within(accountTable).getByText("케이뱅크 · 생활비 통장")).toBeInTheDocument();
+    expect(within(accountTable).getByText("20,000원")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "최근 12개월 수입 지출 차액 그래프" })).toBeInTheDocument();
     expect(screen.getByText("저녁 식사")).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "소유자" })).toHaveValue("1");
@@ -78,5 +86,21 @@ describe("가계부 월별 현황", () => {
     expect(screen.getByText("저녁 식사")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "최근 거래 검색" }));
     expect(screen.getByText("검색 결과가 없습니다.")).toBeInTheDocument();
+  });
+
+  it("월을 입력하는 도중의 불완전한 값으로 조회하지 않는다", async () => {
+    render(<LedgerOverview calendarId={10} calendarName="가족" calendarControl={<span>가족 캘린더</span>} />);
+    await waitFor(() => expect(mockedGetOverview).toHaveBeenLastCalledWith(
+      10,
+      expect.any(String),
+      expect.any(String),
+      1,
+    ));
+    const callCount = mockedGetOverview.mock.calls.length;
+
+    fireEvent.change(screen.getByLabelText("시작 월"), { target: { value: "" } });
+
+    expect(mockedGetOverview).toHaveBeenCalledTimes(callCount);
+    expect(screen.queryByText("캘린더와 조회 기간을 확인해주세요.")).not.toBeInTheDocument();
   });
 });
