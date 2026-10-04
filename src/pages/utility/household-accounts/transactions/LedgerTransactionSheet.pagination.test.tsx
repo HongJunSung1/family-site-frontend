@@ -52,6 +52,15 @@ describe("거래내역 페이지 이동", () => {
     expect(pageSize).toHaveValue("50");
     expect(screen.getAllByRole("combobox", { name: "계정" })[0]).toHaveValue("국민은행 · 생활비 통장");
     expect(Number.parseInt(screen.getByRole("columnheader", { name: "계정" }).style.width, 10)).toBeGreaterThan(150);
+    expect(screen.getByLabelText("조회합계")).toHaveTextContent("수입 0원");
+    expect(screen.getByLabelText("조회합계")).toHaveTextContent("지출 105,000원");
+    expect(screen.getByLabelText("조회합계")).toHaveTextContent("이체 입금 0원");
+    expect(screen.getByLabelText("조회합계")).toHaveTextContent("이체 출금 0원");
+
+    const search = screen.getByLabelText("거래내역 검색");
+    fireEvent.change(search, { target: { value: "거래 21" } });
+    expect(screen.getByLabelText("조회합계")).toHaveTextContent("지출 5,000원");
+    fireEvent.change(search, { target: { value: "" } });
 
     await waitFor(() => expect(screen.getByDisplayValue("거래 1")).toBeInTheDocument());
     fireEvent.change(pageSize, { target: { value: "20" } });

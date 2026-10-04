@@ -226,6 +226,22 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
       row.description, row.counterparty, row.memo, row.income, row.expense, row.transfer]
       .some((value) => value.toLocaleLowerCase("ko").includes(query));
   });
+  const queryTotals = filteredDrafts.reduce((totals, row) => {
+    if (row.income) {
+      const value = BigInt(digits(row.income) || "0");
+      totals.income += row.isReversal ? -value : value;
+    }
+    if (row.expense) {
+      const value = BigInt(digits(row.expense) || "0");
+      totals.expense += row.isReversal ? -value : value;
+    }
+    if (row.transfer && row.transfer !== "-") {
+      const value = BigInt(digits(row.transfer) || "0");
+      if (row.transfer.startsWith("-")) totals.transferOutflow += value;
+      else totals.transferInflow += value;
+    }
+    return totals;
+  }, { income: 0n, expense: 0n, transferInflow: 0n, transferOutflow: 0n });
   const totalPages = Math.max(1, Math.ceil(filteredDrafts.length / pageSize));
   const currentPage = Math.min(page, totalPages);
   const pagedDrafts = filteredDrafts.slice((currentPage - 1) * pageSize, currentPage * pageSize);
@@ -650,6 +666,13 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
         <button type="button" className={styles.primaryButton} disabled={saving || !drafts.some((row) => row.dirty)} onClick={() => void saveAll()}>저장</button>
         </div>
       </div>
+      <section className={styles.transactionQueryTotals} aria-label="조회합계">
+        <strong>조회합계</strong>
+        <span>수입 <b>{queryTotals.income.toLocaleString("ko-KR")}원</b></span>
+        <span>지출 <b>{queryTotals.expense.toLocaleString("ko-KR")}원</b></span>
+        <span>이체 입금 <b>{queryTotals.transferInflow.toLocaleString("ko-KR")}원</b></span>
+        <span>이체 출금 <b>{queryTotals.transferOutflow.toLocaleString("ko-KR")}원</b></span>
+      </section>
       <div className={`${styles.transactionSheet} ${styles.transactionDesktop}`}>
         <table style={{ minWidth: transactionTableMinWidth }}>
           <thead>
