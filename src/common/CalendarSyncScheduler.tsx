@@ -18,7 +18,8 @@ export default function CalendarSyncScheduler() {
           const result=await tickCalendarSync(force);
           if(result.pendingCount)delay=1500;
           if(!cancelled)window.dispatchEvent(new Event("calendar-sync-status"));
-          if(!cancelled&&result.changed)window.dispatchEvent(new Event("calendar-sync-updated"));
+          // Cron 또는 다른 브라우저가 먼저 반영했으면 이번 요청의 changed는 0이어도 목록은 달라져 있다.
+          if(!cancelled)window.dispatchEvent(new Event("calendar-sync-updated"));
         }
       }catch{/* 연결 상태와 오류는 캘린더 환경설정에서 확인 */}
       finally{running=false;if(!cancelled)timer=setTimeout(()=>{void tick();},forceNeeded?100:delay);}

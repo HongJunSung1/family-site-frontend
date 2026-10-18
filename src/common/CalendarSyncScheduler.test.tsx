@@ -3,6 +3,19 @@ import { afterEach, expect, it, vi } from "vitest";
 import CalendarSyncScheduler from "./CalendarSyncScheduler";
 import { tickCalendarSync } from "../api/calendarSyncApi";
 vi.mock("../api/calendarSyncApi",()=>({tickCalendarSync:vi.fn()}));
+it("refreshes calendar data when the server already applied changes before the browser tick",async()=>{
+  vi.useFakeTimers();
+  vi.mocked(tickCalendarSync).mockResolvedValue({ok:true,changed:0});
+  const refresh=vi.fn();
+  window.addEventListener("calendar-sync-updated",refresh);
+  try {
+    render(<CalendarSyncScheduler/>);
+    await act(async()=>{await vi.advanceTimersByTimeAsync(3000);});
+    expect(refresh).toHaveBeenCalledTimes(1);
+    await act(async()=>{await vi.advanceTimersByTimeAsync(60000);});
+    expect(refresh).toHaveBeenCalledTimes(2);
+  } finally { window.removeEventListener("calendar-sync-updated",refresh); }
+});
 afterEach(()=>{cleanup();vi.useRealTimers();vi.resetAllMocks();});
 it("coalesces site changes and queues changes made during an active sync",async()=>{
   vi.useFakeTimers();
