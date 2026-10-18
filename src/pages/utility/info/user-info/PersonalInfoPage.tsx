@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { logoutAndClearSession } from "../../../../api/authApi";
 import { useMobileHeader } from "../../../../common/mobile-header";
 import AlarmList from "../AlarmList/AlarmList";
@@ -24,9 +24,10 @@ const MENU_LABELS: Record<MenuKey, string> = {
 // 개인정보 하위 메뉴와 로그아웃 처리 화면
 export default function PersonalInfoPage({ onLogout }: Props) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { setConfig: setMobileHeaderConfig, resetConfig: resetMobileHeaderConfig } = useMobileHeader();
-  const [selectedMenu, setSelectedMenu] = useState<MenuKey>("basic");
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [selectedMenu, setSelectedMenu] = useState<MenuKey>(() => searchParams.get("menu") === "calendarSettings" ? "calendarSettings" : "basic");
+  const [isCalendarOpen, setIsCalendarOpen] = useState(() => searchParams.get("menu") === "calendarSettings");
 
   // PC 사이드바 캘린더 그룹 열기/닫기
   const onClickCalendarGroup = () => {

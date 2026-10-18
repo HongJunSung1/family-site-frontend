@@ -167,6 +167,7 @@ type ServerCalendarEvent = {
   repeat_range_start?: string | null;
   repeat_range_end?: string | null;
   repeat_anchor_dom?: number | null;
+  repeat_month_policy?: string;
 };
 
 type ServerCalendarException = {
@@ -229,26 +230,29 @@ export async function getCalendarEvents(calendarId: number) {
 
 // 새 일정 생성 요청
 export async function createCalendarEvent(payload: CalendarEventPayload) {
-  return apiFetch<CalendarMutationResponse>("/api/calendar/events", {
+  const result=await apiFetch<CalendarMutationResponse>("/api/calendar/events", {
     method: "POST",
     body: JSON.stringify(payload),
   });
+  window.dispatchEvent(new Event("calendar-sync-request"));return result;
 }
 
 // 기존 일정 수정 요청
 export async function updateCalendarEvent(eventId: number, payload: UpdateCalendarEventPayload) {
-  return apiFetch<CalendarMutationResponse>(`/api/calendar/events/${eventId}`, {
+  const result=await apiFetch<CalendarMutationResponse>(`/api/calendar/events/${eventId}`, {
     method: "PUT",
     body: JSON.stringify(payload),
   });
+  window.dispatchEvent(new Event("calendar-sync-request"));return result;
 }
 
 // 기존 일정 삭제 요청
 export async function deleteCalendarEvent(eventId: number, payload: DeleteCalendarEventPayload) {
-  return apiFetch<CalendarMutationResponse>(`/api/calendar/events/${eventId}`, {
+  const result=await apiFetch<CalendarMutationResponse>(`/api/calendar/events/${eventId}`, {
     method: "DELETE",
     body: JSON.stringify(payload),
   });
+  window.dispatchEvent(new Event("calendar-sync-request"));return result;
 }
 
 // 개인정보 화면의 캘린더 목록 정보 조회
@@ -350,6 +354,7 @@ function toCalendarEvents(data: CalendarEventsResponse): CalEvent[] {
     repeatRangeStart: event.repeat_range_start ?? "",
     repeatRangeEnd: event.repeat_range_end ?? "",
     repeatAnchorDom: event.repeat_anchor_dom ?? null,
+    repeatMonthPolicy: event.repeat_month_policy === "skip" ? "skip" : "clamp",
     repeatExceptions: exceptionsById[event.id] ?? [],
     repeatOverrides: Object.fromEntries(
       (overridesById[event.id] ?? []).map((override) => [

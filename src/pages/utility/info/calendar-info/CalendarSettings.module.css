@@ -38,6 +38,224 @@
   display: flex;
   gap: 8px;
   flex-shrink: 0;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+
+.settingsSection {
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  margin-top: 16px;
+  overflow: hidden;
+}
+
+section.settingsSection {
+  padding: 16px;
+}
+
+.sectionToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.sectionToggle::-webkit-details-marker {
+  display: none;
+}
+
+.sectionToggle:hover {
+  background: var(--color-surface-muted);
+}
+
+.sectionToggle:focus-visible,
+.addressInput:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.subsectionTitle {
+  display: block;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.sectionDescription {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+}
+
+.chevron {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}
+
+.settingsSection[open] > .sectionToggle .chevron {
+  transform: rotate(180deg);
+}
+
+.sectionBody {
+  padding: 0 16px 16px;
+}
+
+.connectionHeader {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.statusBadge {
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.connectionFields {
+  margin: 20px 0;
+}
+
+.addressRow,
+.connectionActions {
+  display: flex;
+  gap: 8px;
+}
+
+.connectionActions {
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.addressRow > button {
+  flex-shrink: 0;
+  height: auto;
+}
+
+.selectionLabel {
+  margin-top: 16px;
+}
+
+
+.mappingTableWrap {
+  width: 100%;
+  overflow-x: auto;
+  margin: 12px 0;
+}
+
+.mappingTable {
+  width: 100%;
+  min-width: 420px;
+  border-collapse: collapse;
+  color: var(--color-text);
+  font-size: 13px;
+}
+
+.mappingTable th,
+.mappingTable td {
+  text-align: left;
+  padding: 12px 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.mappingTable thead {
+  background: var(--color-surface-muted);
+}
+
+.mappingTable th:first-child { width: 36%; }
+.mappingTable td:last-child { min-width: 185px; }
+
+.syncPanel {
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 12px;
+  background: var(--color-surface-muted);
+}
+.syncImport {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 0;
+  color: var(--color-text);
+  font-size: 13px;
+}
+.syncConflict {
+  padding: 12px;
+  margin: 12px 0;
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+}
+
+.mappingStatus {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+
+
+
+.connectedEmail {
+  color: var(--color-text);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.connectionError {
+  color: var(--color-danger);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.fieldLabel {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.addressInput {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 9px;
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.addressInput::placeholder {
+  color: var(--color-text-muted);
+}
+
+.fieldHelp {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.dangerButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .primaryButton,
@@ -75,6 +293,7 @@
 
 .table {
   width: 100%;
+  min-width: 320px;
   border-collapse: collapse;
   table-layout: fixed;
 }

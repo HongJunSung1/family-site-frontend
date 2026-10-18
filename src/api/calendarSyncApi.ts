@@ -1,0 +1,22 @@
+import { apiFetch } from "./client";
+export type SyncEvent = { id: string; title: string; start: string; reason: string; data: {
+  title: string; memo: string; location: string; start: string; end: string; allDay: boolean;
+  repeat: string; interval: number; until: string; anchor: number | null; monthPolicy: string;
+} | null };
+export type SyncPreview = { ok: true; previewHash: string; site: SyncEvent[]; google: SyncEvent[];
+  blocked?: {id:string;title:string;reason:string}[];
+  conflicts: { linkId: string; site: SyncEvent | null; google: SyncEvent | null; reason: string }[];
+  candidates: { siteId: number; googleId: string }[];
+  state: { enabled: boolean; initialized: boolean; lastSyncedAt: string | null; lastError: string | null } };
+export type SyncDecision = { siteId: number | null; googleId: string | null; source: "site" | "google" | "hold"; linkId?: string };
+const post = <T>(action: string, body: unknown) => apiFetch<T>(`/api/google-calendar/sync/${action}`, { method: "POST",body: JSON.stringify(body),signal: AbortSignal.timeout(120000) });
+export const previewCalendarSync = (siteCalendarId: number) => post<SyncPreview>("preview",{siteCalendarId});
+export const startCalendarSync = (siteCalendarId: number,previewHash: string,decisions: SyncDecision[]) => post<{ok:true;changed:number;reviewCount?:number}>("start",{siteCalendarId,previewHash,decisions});
+export const runCalendarSync = (siteCalendarId: number) => post<{ok:true;changed:number;reviewCount?:number}>("run",{siteCalendarId});
+export const pauseCalendarSync = (siteCalendarId: number) => post<{ok:true}>("pause",{siteCalendarId});
+export const startFutureCalendarSync = (siteCalendarId: number) => post<{ok:true;changed:number}>("future",{siteCalendarId});
+export const tickCalendarSync = (force=false) => post<{ok:true;changed:number;pendingCount?:number}>("tick",{force});
+export type PendingSync = SyncPreview & {pending:{linkId:string;siteId:number|null;googleId:string|null;site:SyncEvent|null;google:SyncEvent|null;reason:string}[]};
+export type PendingDecision = Omit<SyncDecision,"source"> & {source:SyncDecision["source"]|"ignore"};
+export const getPendingCalendarSync = (siteCalendarId:number) => post<PendingSync>("pending",{siteCalendarId});
+export const resolveCalendarSync = (siteCalendarId:number,previewHash:string,decisions:PendingDecision[]) => post<{ok:true;changed:number;reviewCount?:number}>("resolve",{siteCalendarId,previewHash,decisions});

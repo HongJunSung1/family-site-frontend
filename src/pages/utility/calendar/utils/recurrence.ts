@@ -95,6 +95,10 @@ export const expandRecurringEvents = (items: CalEvent[], viewStart: Dayjs, viewE
       while (created < MAX_OCCURRENCES) {
         const occStart = addMonthsEomSticky(anchorStart, k * interval, anchorDOM);
         if (!occStart.isBefore(genEnd)) break;
+        if (master.repeatMonthPolicy === "skip" && occStart.date() !== anchorDOM) {
+          k++;
+          continue;
+        }
 
         const occEnd = occStart.add(durationMin, "minute");
         const occKey = formatISO(occStart);

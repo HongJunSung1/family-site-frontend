@@ -87,6 +87,17 @@ test("keeps monthly repeats sticky to the anchor day at month end", () => {
   ]);
 });
 
+test("Google monthly 30th skips February while site month-end policy retains it", () => {
+  const base = event({start:"2026-01-30T09:00",end:"2026-01-30T10:00",repeat:"monthly",repeatAnchorDom:30,
+    repeatRangeStart:"2026-01-30",repeatRangeEnd:"2026-03-30"});
+  assert.deepEqual(starts(expand({...base,repeatMonthPolicy:"skip"},"2026-01-01","2026-04-01")),[
+    "2026-01-30T09:00","2026-03-30T09:00",
+  ]);
+  assert.deepEqual(starts(expand({...base,repeatMonthPolicy:"clamp"},"2026-01-01","2026-04-01")),[
+    "2026-01-30T09:00","2026-02-28T09:00","2026-03-30T09:00",
+  ]);
+});
+
 test("applies occurrence exceptions and overrides", () => {
   const items = expand(
     event({

@@ -9,6 +9,7 @@ import {
 import { AlertDialog, ConfirmDialog } from "../../../../common/dialog";
 import { TableInput } from "../../../../common/input";
 import { FamilyLoader } from "../../../../common/loading";
+import GoogleCalendarConnection from "./GoogleCalendarConnection";
 import styles from "./CalendarSettings.module.css";
 
 type FavoriteColorRow = {
@@ -31,7 +32,7 @@ const createEmptyRow = (): FavoriteColorRow => ({
   title: "",
 });
 
-// 캘린더 자주 쓰는 색상 목록 관리 화면
+// 캘린더 색상 설정 및 개인 구글 캘린더 연결 화면
 export default function CalendarSettings() {
   const [colors, setColors] = useState<FavoriteColorRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -214,96 +215,115 @@ export default function CalendarSettings() {
         <div>
           <h3 className={styles.sectionTitle}>캘린더 환경설정</h3>
           <p className={styles.description}>
-            캘린더 입력 시 자주 사용하는 색상을 미리 등록합니다.
+            자주 쓰는 색상과 내 캘린더 연결을 관리합니다.
           </p>
         </div>
-
-        <div className={styles.buttonGroup}>
-          <button
-            type="button"
-            className={styles.secondaryButton}
-            onClick={handleAddColor}
-            disabled={saving}
-          >
-            색상 추가
-          </button>
-
-          <button
-            type="button"
-            className={styles.primaryButton}
-            onClick={handleSave}
-            disabled={saving}
-          >
-            {saving ? "저장 중..." : "저장"}
-          </button>
-        </div>
       </div>
 
-      <div className={styles.tableWrap}>
-        <table className={styles.table}>
-          <colgroup>
-            <col style={{ width: "18%" }} />
-            <col style={{ width: "67%" }} />
-            <col style={{ width: "15%" }} />
-          </colgroup>
+      <details className={styles.settingsSection}>
+        <summary className={styles.sectionToggle}>
+          <span>
+            <span className={styles.subsectionTitle}>자주 쓰는 색상</span>
+            <span className={styles.sectionDescription}>
+              캘린더 입력 시 사용할 색상과 제목을 미리 등록합니다.
+            </span>
+          </span>
+          <svg className={styles.chevron} viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </summary>
 
-          <thead>
-            <tr>
-              <th>색상</th>
-              <th>색상 제목</th>
-              <th>삭제</th>
-            </tr>
-          </thead>
+        <div className={styles.sectionBody}>
 
-          <tbody>
-            {colors.length === 0 ? (
-              <tr>
-                <td colSpan={3} className={styles.emptyCell}>
-                  등록된 색상이 없습니다.
-                </td>
-              </tr>
-            ) : (
-              colors.map((row) => (
-                <tr key={row.tempId}>
-                  <td>
-                    <div className={styles.colorCell}>
-                      <input
-                        type="color"
-                        value={row.color}
-                        className={styles.colorInput}
-                        onChange={(e) => handleChangeColor(row.tempId, "color", e.target.value)}
-                        disabled={saving}
-                      />
-                      <span className={styles.colorText}>{row.color}</span>
-                    </div>
-                  </td>
+          <div className={styles.buttonGroup}>
+            <button
+              type="button"
+              className={styles.secondaryButton}
+              onClick={handleAddColor}
+              disabled={saving}
+            >
+              색상 추가
+            </button>
 
-                  <td>
-                    <TableInput
-                      type="text"
-                      value={row.title}
-                      placeholder="예: 가족 일정, 병원, 회사"
-                      onChange={(e) => handleChangeColor(row.tempId, "title", e.target.value)}
-                      disabled={saving}
-                    />
-                  </td>
+            <button
+              type="button"
+              className={styles.primaryButton}
+              onClick={handleSave}
+              disabled={saving}
+            >
+              {saving ? "저장 중..." : "저장"}
+            </button>
+          </div>
 
-                  <td>
-                    <button
-                      type="button"
-                      className={styles.dangerButton}
-                      onClick={() => handleDeleteColor(row)}
-                      disabled={saving}
-                    >
-                      삭제
-                    </button>
-                  </td>
+          <div className={styles.tableWrap}>
+            <table className={styles.table}>
+              <colgroup>
+                <col style={{ width: "18%" }} />
+                <col style={{ width: "67%" }} />
+                <col style={{ width: "15%" }} />
+              </colgroup>
+
+              <thead>
+                <tr>
+                  <th>색상</th>
+                  <th>색상 제목</th>
+                  <th>삭제</th>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              </thead>
+
+              <tbody>
+                {colors.length === 0 ? (
+                  <tr>
+                    <td colSpan={3} className={styles.emptyCell}>
+                      등록된 색상이 없습니다.
+                    </td>
+                  </tr>
+                ) : (
+                  colors.map((row) => (
+                    <tr key={row.tempId}>
+                      <td>
+                        <div className={styles.colorCell}>
+                          <input
+                            type="color"
+                            value={row.color}
+                            className={styles.colorInput}
+                            onChange={(e) => handleChangeColor(row.tempId, "color", e.target.value)}
+                            disabled={saving}
+                          />
+                          <span className={styles.colorText}>{row.color}</span>
+                        </div>
+                      </td>
+
+                      <td>
+                        <TableInput
+                          type="text"
+                          value={row.title}
+                          placeholder="예: 가족 일정, 병원, 회사"
+                          onChange={(e) => handleChangeColor(row.tempId, "title", e.target.value)}
+                          disabled={saving}
+                        />
+                      </td>
+
+                      <td>
+                        <button
+                          type="button"
+                          className={styles.dangerButton}
+                          onClick={() => handleDeleteColor(row)}
+                          disabled={saving}
+                        >
+                          삭제
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </details>
+
+      <GoogleCalendarConnection />
 
       {dialogs}
     </div>

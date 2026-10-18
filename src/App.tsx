@@ -18,6 +18,7 @@ import styles from "./App.module.css";
 
 const Home = lazy(() => import("./pages/home/Home"));
 const PersonalInfoPage = lazy(() => import("./pages/utility/info/user-info/PersonalInfoPage"));
+import CalendarSyncScheduler from "./common/CalendarSyncScheduler";
 const HouseholdAccounts = lazy(
   () => import("./pages/utility/household-accounts/HouseholdAccounts"),
 );
@@ -506,6 +507,7 @@ export default function App() {
     <BrowserRouter>
       <MobileHeaderProvider>
         {isLoggedIn && <RoutedTopNav theme={theme} onToggleTheme={toggleTheme} />}
+        {isLoggedIn && <CalendarSyncScheduler />}
 
         <Suspense fallback={<PageLoading label="화면 불러오는 중" />}>
           <Routes>

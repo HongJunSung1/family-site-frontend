@@ -108,6 +108,12 @@ export function useCalendarData({ setFormError }: UseCalendarDataParams) {
   }, [calendarId, loadEventsByCalendarId]);
 
   useEffect(() => {
+    const onSynced = () => { void loadEvents(); };
+    window.addEventListener("calendar-sync-updated", onSynced);
+    return () => window.removeEventListener("calendar-sync-updated", onSynced);
+  }, [loadEvents]);
+
+  useEffect(() => {
     if (!calendarId) return;
 
     const timeoutId = window.setTimeout(() => {

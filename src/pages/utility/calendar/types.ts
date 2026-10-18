@@ -38,6 +38,7 @@ export type CalEvent = {
   repeatRangeEnd?: string;
 
   repeatAnchorDom?: number | null;
+  repeatMonthPolicy?: "skip" | "clamp";
 
   repeatExceptions?: OccKey[];
   repeatOverrides?: Record<OccKey, Partial<CalEvent>>;
