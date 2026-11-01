@@ -832,9 +832,9 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
               if (row.summaryKind) return <Fragment key={row.key}>
                 <tr>
                   <td className={styles.sheetCheckboxCell}><input type="checkbox" aria-label="거래 선택" disabled checked={false} readOnly /></td>
-                  <td /><td /><td /><td /><td>{path.leaf}</td>
-                  <td>{formattedAmount(row.income)}</td><td>{formattedAmount(row.expense)}</td><td>{formattedAmount(row.transfer)}</td>
-                  <td className={styles.transactionDescriptionColumn}>{row.description}</td><td /><td />
+                  <td /><td /><td /><td /><td className={styles.transactionCategoryColumn}><span className={styles.transactionSummaryValue}>{path.leaf}</span></td>
+                  {[row.income, row.expense, row.transfer].map((amount, index) => <td key={index}><span className={`${styles.transactionSummaryValue} ${styles.transactionSummaryAmount}`}>{formattedAmount(amount)}</span></td>)}
+                  <td className={styles.transactionDescriptionColumn}><span className={styles.transactionSummaryValue}>{row.description}</span></td><td /><td />
                   <td className={styles.transactionDetailColumn}><button type="button" className={styles.transactionDetailButton} aria-expanded={expandedKey === row.key} onClick={() => setExpandedKey((current) => current === row.key ? "" : row.key)}>{expandedKey === row.key ? "접기" : "상세"}</button></td><td />
                 </tr>
                 <tr className={`${styles.transactionDetailRow} ${expandedKey === row.key ? styles.transactionDetailRowOpen : ""}`} aria-hidden={expandedKey !== row.key}>

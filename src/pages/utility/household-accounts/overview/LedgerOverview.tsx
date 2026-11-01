@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { LineChart } from "@mui/x-charts/LineChart";
 import { ApiError } from "../../../../api/client";
 import {
@@ -48,23 +48,33 @@ export default function LedgerOverview({ calendarId, calendarControl }: LedgerSc
   const [loading, setLoading] = useState(true);
   const [alert, setAlert] = useState<{ title: string; message: string } | null>(null);
 
-  const load = useCallback(async () => {
-    if (!calendarId || !monthPattern.test(startMonth) || !monthPattern.test(endMonth) || startMonth > endMonth) return;
-    setLoading(true);
-    try {
-      const result = await getLedgerOverview(calendarId, startMonth, endMonth, ownerId === 0 ? "all" : ownerId ?? undefined);
-      setData(result);
-      if (ownerId === null) setOwnerId(result.currentUserId);
-    } catch (error) {
-      setAlert({
-        title: "조회 실패",
-        message: error instanceof ApiError ? error.message : "가계부 현황을 불러오지 못했습니다.",
-      });
-    } finally {
+  useEffect(() => {
+    let cancelled = false;
+    if (!calendarId || !monthPattern.test(startMonth) || !monthPattern.test(endMonth) || startMonth > endMonth) {
+      setData(null);
       setLoading(false);
+      return;
     }
+    async function load() {
+      setLoading(true);
+      try {
+        const result = await getLedgerOverview(calendarId, startMonth, endMonth, ownerId === 0 ? "all" : ownerId ?? undefined);
+        if (cancelled) return;
+        setData(result);
+        if (ownerId === null) setOwnerId(result.currentUserId);
+      } catch (error) {
+        if (cancelled) return;
+        setAlert({
+          title: "조회 실패",
+          message: error instanceof ApiError ? error.message : "가계부 현황을 불러오지 못했습니다.",
+        });
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    void load();
+    return () => { cancelled = true; };
   }, [calendarId, endMonth, ownerId, startMonth]);
-  useEffect(() => { void load(); }, [load]);
 
   const rootAggregates = useMemo(() => {
     const totals = new Map<number, CategoryAggregate>();

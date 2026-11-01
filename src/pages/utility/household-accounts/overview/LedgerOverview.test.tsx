@@ -1,5 +1,5 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getLedgerOverview } from "../../../../api/ledgerApi";
 import LedgerOverview from "./LedgerOverview";
 
@@ -8,6 +8,7 @@ vi.mock("@mui/x-charts/LineChart", () => ({
   LineChart: () => <div role="img" aria-label="최근 12개월 수입 지출 차액 그래프" />,
 }));
 const mockedGetOverview = vi.mocked(getLedgerOverview);
+afterEach(() => vi.useRealTimers());
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -46,6 +47,38 @@ beforeEach(() => {
 });
 
 describe("가계부 월별 현황", () => {
+  it("먼저 요청한 월 범위 응답이 늦게 도착해도 최신 조회 금액을 덮어쓰지 않는다", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-01T12:00:00+09:00"));
+    const base = await getLedgerOverview(10, "2026-10", "2026-10", 1);
+    mockedGetOverview.mockClear();
+    render(<LedgerOverview calendarId={10} calendarName="가족" calendarControl={null} />);
+    await waitFor(() => expect(screen.getByLabelText("소유자")).toHaveValue("1"));
+    await waitFor(() => expect(mockedGetOverview).toHaveBeenLastCalledWith(10, expect.any(String), expect.any(String), 1));
+    let resolveOld!: (value: typeof base) => void;
+    mockedGetOverview.mockImplementationOnce(() => new Promise((resolve) => { resolveOld = resolve; }));
+    fireEvent.change(screen.getByLabelText("시작 월"), { target: { value: "2026-09" } });
+    await waitFor(() => expect(resolveOld).toBeTypeOf("function"));
+    mockedGetOverview.mockResolvedValueOnce({ ...base, totals: { ...base.totals, income: "123456" } });
+    fireEvent.change(screen.getByLabelText("종료 월"), { target: { value: "2026-10" } });
+    await waitFor(() => expect(screen.getAllByText("123,456원").length).toBeGreaterThan(0));
+    await act(async () => { resolveOld({ ...base, totals: { ...base.totals, income: "654321" } }); });
+    expect(screen.queryAllByText("654,321원")).toHaveLength(0);
+    expect(screen.getAllByText("123,456원").length).toBeGreaterThan(0);
+  });
+
+  it("시작 월이 종료 월보다 늦으면 이전 금액을 지우고 조회하지 않는다", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-01T12:00:00+09:00"));
+    render(<LedgerOverview calendarId={10} calendarName="가족" calendarControl={null} />);
+    await waitFor(() => expect(mockedGetOverview).toHaveBeenLastCalledWith(10, "2026-11", "2026-11", 1));
+    const calls = mockedGetOverview.mock.calls.length;
+    fireEvent.change(screen.getByLabelText("시작 월"), { target: { value: "2026-12" } });
+    expect(mockedGetOverview).toHaveBeenCalledTimes(calls);
+    expect(screen.queryAllByText("9,007,199,254,740,993원")).toHaveLength(0);
+    expect(screen.getByText("조회된 거래가 없습니다.")).toBeInTheDocument();
+  });
+
   it("큰 금액 합계와 분류·최근 거래를 표시하고 전체 구성원 조회를 지원한다", async () => {
     render(<LedgerOverview calendarId={10} calendarName="가족" calendarControl={<span>가족 캘린더</span>} />);
 
