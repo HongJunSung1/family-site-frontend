@@ -741,6 +741,18 @@ input.filterControl[type="month"]::-webkit-calendar-picker-indicator {
   gap: 8px;
 }
 
+.transactionDetailSearch {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+}
+
+.transactionDetailSearch > .ledgerImportToggle,
+.transactionDetailSearch > .transactionViewFilters {
+  margin-bottom: 0;
+}
+
 .transactionViewFilters {
   display: flex;
   align-items: center;

@@ -759,6 +759,7 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
         <button type="button" className={styles.primaryButton} disabled={saving || !drafts.some((row) => row.dirty)} onClick={() => void saveAll()}>저장</button>
         </div>
       </div>
+      <div className={styles.transactionDetailSearch}>
       <button type="button" className={styles.ledgerImportToggle} aria-expanded={detailSearchOpen} aria-controls="ledger-detail-search" onClick={() => setDetailSearchOpen((open) => !open)}>
         <span>상세조회</span><i className={detailSearchOpen ? styles.ledgerImportToggleOpen : ""} aria-hidden="true" />
       </button>
@@ -771,6 +772,7 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
           <option value="sum">이벤트수익 합산</option>
         </select>
       </div>}
+      </div>
       <section className={styles.transactionQueryTotals} aria-label="조회합계">
         <strong>조회합계</strong>
         <span>수입 <b>{queryTotals.income.toLocaleString("ko-KR")}원</b></span>
