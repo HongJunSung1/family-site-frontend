@@ -25,7 +25,7 @@ import type { LedgerImportedRow } from "./LedgerImportDialog";
 import styles from "../HouseholdAccounts.module.css";
 
 type Draft = {
-  isEventSummary?: boolean;
+  summaryKind?: "event" | "transfer";
   key: string; id?: number; checked: boolean; dirty: boolean;
   accountId: number; accountQuery: string; date: string; income: string; expense: string; transfer: string;
   categoryId: number; categoryQuery: string; description: string; counterparty: string; memo: string;
@@ -95,6 +95,7 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
   const [unlinkedOnly, setUnlinkedOnly] = useState(false);
   const [detailSearchOpen, setDetailSearchOpen] = useState(false);
   const [eventIncomeMode, setEventIncomeMode] = useState("all");
+  const [transferMode, setTransferMode] = useState("all");
   const [dateInputs, setDateInputs] = useState({ startDate, endDate });
   useEffect(() => { setDateInputs({ startDate, endDate }); }, [startDate, endDate]);
   const [pageSize, setPageSize] = useState(50);
@@ -225,6 +226,7 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
     if (!startDate || !endDate || startDate > endDate) return false;
     if (unlinkedOnly && (!row.transfer || rows.find((item) => item.id === row.id)?.transfer_link_id)) return false;
     if (eventIncomeMode === "exclude" && categoryPath(row.categoryId).leaf === "이벤트수익") return false;
+    if (transferMode === "exclude" && row.transfer) return false;
     if (row.key.startsWith("new-")) return true;
     const query = searchQuery.trim().toLocaleLowerCase("ko");
     if (!query) return true;
@@ -237,27 +239,30 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
   });
   // Keep summaries separate from editable drafts so they cannot be saved or deleted.
   const filteredDrafts: Draft[] = [];
-  const eventSummaries = new Map<string, Draft>();
+  const summaries = new Map<string, Draft>();
   for (const row of matchingDrafts) {
-    if (eventIncomeMode !== "sum" || categoryPath(row.categoryId).leaf !== "이벤트수익") {
+    const summaryKind = transferMode === "sum" && row.transfer ? "transfer"
+      : eventIncomeMode === "sum" && categoryPath(row.categoryId).leaf === "이벤트수익" ? "event" : undefined;
+    if (!summaryKind) {
       filteredDrafts.push(row);
       continue;
     }
-    const group = String(categories.find((item) => item.id === row.categoryId)?.parent_id ?? row.categoryId);
-    let summary = eventSummaries.get(group);
+    const group = `${summaryKind}-${summaryKind === "transfer" ? row.categoryId : categories.find((item) => item.id === row.categoryId)?.parent_id ?? row.categoryId}`;
+    let summary = summaries.get(group);
     if (!summary) {
-      summary = { ...row, key: `event-summary-${group}`, id: undefined, isEventSummary: true,
-        checked: false, dirty: false, date: "", time: null, accountQuery: "", income: "0", expense: "",
-        transfer: "", description: "수익 합산", counterparty: "", memo: "", isReversal: false,
+      summary = { ...row, key: `summary-${group}`, id: undefined, summaryKind,
+        checked: false, dirty: false, date: "", time: null, accountQuery: "", income: summaryKind === "event" ? "0" : "", expense: "",
+        transfer: summaryKind === "transfer" ? "0" : "", description: summaryKind === "transfer" ? "이체 합산" : "수익 합산", counterparty: "", memo: "", isReversal: false,
         originalTransactionId: null };
-      eventSummaries.set(group, summary);
+      summaries.set(group, summary);
       filteredDrafts.push(summary);
     }
     const sign = row.isReversal ? -1n : 1n;
-    summary.income = (BigInt(summary.income || "0") + sign * BigInt(row.income || "0")).toString();
+    if (row.income) summary.income = (BigInt(summary.income || "0") + sign * BigInt(row.income)).toString();
     if (row.expense) summary.expense = (BigInt(summary.expense || "0") + sign * BigInt(row.expense)).toString();
+    if (row.transfer && row.transfer !== "-") summary.transfer = (BigInt(summary.transfer || "0") + BigInt(row.transfer)).toString();
   }
-  const queryTotals = filteredDrafts.reduce((totals, row) => {
+  const queryTotals = matchingDrafts.reduce((totals, row) => {
     if (row.income) {
       const value = BigInt(row.income || "0");
       totals.income += row.isReversal ? -value : value;
@@ -276,7 +281,7 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
   const totalPages = Math.max(1, Math.ceil(filteredDrafts.length / pageSize));
   const currentPage = Math.min(page, totalPages);
   const pagedDrafts = filteredDrafts.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-  const selectableDrafts = pagedDrafts.filter((row) => !row.isEventSummary);
+  const selectableDrafts = pagedDrafts.filter((row) => !row.summaryKind);
 
   function resetFilters() {
     clearCheckedRows();
@@ -771,6 +776,11 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
           <option value="exclude">이벤트수익 제외</option>
           <option value="sum">이벤트수익 합산</option>
         </select>
+        <select className={styles.filterControl} aria-label="계좌이체 표시" value={transferMode} onChange={(event) => { setTransferMode(event.target.value); resetFilters(); }}>
+          <option value="all">계좌이체 개별보기</option>
+          <option value="sum">계좌이체 합산</option>
+          <option value="exclude">계좌이체 제외</option>
+        </select>
       </div>}
       </div>
       <section className={styles.transactionQueryTotals} aria-label="조회합계">
@@ -819,12 +829,12 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
                 : row.classificationConflict ? "여러 자동분류 문구가 서로 다른 소분류와 일치합니다."
                   : row.duplicateStatus === "SUSPECTED" ? "기존 거래와 유사하여 확인이 필요합니다." : "이상 없음";
               const saved = row.id ? rows.find((item) => item.id === row.id) : undefined;
-              if (row.isEventSummary) return <Fragment key={row.key}>
+              if (row.summaryKind) return <Fragment key={row.key}>
                 <tr>
                   <td className={styles.sheetCheckboxCell}><input type="checkbox" aria-label="거래 선택" disabled checked={false} readOnly /></td>
                   <td /><td /><td /><td /><td>{path.leaf}</td>
-                  <td>{formattedAmount(row.income)}</td><td>{formattedAmount(row.expense)}</td><td />
-                  <td className={styles.transactionDescriptionColumn}>수익 합산</td><td /><td />
+                  <td>{formattedAmount(row.income)}</td><td>{formattedAmount(row.expense)}</td><td>{formattedAmount(row.transfer)}</td>
+                  <td className={styles.transactionDescriptionColumn}>{row.description}</td><td /><td />
                   <td className={styles.transactionDetailColumn}><button type="button" className={styles.transactionDetailButton} aria-expanded={expandedKey === row.key} onClick={() => setExpandedKey((current) => current === row.key ? "" : row.key)}>{expandedKey === row.key ? "접기" : "상세"}</button></td><td />
                 </tr>
                 <tr className={`${styles.transactionDetailRow} ${expandedKey === row.key ? styles.transactionDetailRowOpen : ""}`} aria-hidden={expandedKey !== row.key}>

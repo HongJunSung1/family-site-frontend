@@ -94,6 +94,60 @@ describe("거래내역 페이지 이동", () => {
     expect(screen.getByDisplayValue("거래 3")).toBeInTheDocument();
   });
 
+  it("계좌이체를 합산·제외·개별보기로 전환하고 이벤트수익 옵션과 함께 적용한다", () => {
+    renderSheet([
+      transaction(1),
+      { ...transaction(2), transaction_kind: "TRANSFER", direction: "OUTFLOW", amount: "5000" },
+      { ...transaction(3), transaction_kind: "TRANSFER", direction: "INFLOW", amount: "8000" },
+      { ...transaction(4), category_id: 4, category_name: "이벤트수익", transaction_kind: "INCOME", amount: "12000" },
+    ]);
+    fireEvent.click(screen.getByRole("button", { name: "상세조회" }));
+    const transferFilter = screen.getByLabelText("계좌이체 표시");
+    expect(within(transferFilter).getAllByRole("option").map((item) => item.textContent))
+      .toEqual(["계좌이체 개별보기", "계좌이체 합산", "계좌이체 제외"]);
+    fireEvent.change(transferFilter, { target: { value: "sum" } });
+    fireEvent.change(screen.getByLabelText("이벤트수익 표시"), { target: { value: "sum" } });
+    const summaryRow = screen.getByText("이체 합산").closest("tr")!;
+    expect(summaryRow).toHaveTextContent("3,000");
+    expect(screen.getByText("수익 합산")).toBeInTheDocument();
+    expect(screen.queryByDisplayValue("거래 2")).not.toBeInTheDocument();
+    expect(screen.queryByDisplayValue("거래 3")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("조회합계")).toHaveTextContent("이체 입금 8,000원");
+    expect(screen.getByLabelText("조회합계")).toHaveTextContent("이체 출금 5,000원");
+    expect(within(summaryRow).getByLabelText("거래 선택")).toBeDisabled();
+    fireEvent.click(within(summaryRow).getByRole("button", { name: "상세" }));
+    const detail = summaryRow.nextElementSibling as HTMLElement;
+    expect(within(detail).getByLabelText("취소 거래")).toBeDisabled();
+    for (const label of ["원거래", "이체 연결", "입력 경로", "분류 방식"]) {
+      expect(within(detail).getByText(label).nextElementSibling).toBeEmptyDOMElement();
+    }
+    fireEvent.change(transferFilter, { target: { value: "exclude" } });
+    expect(screen.queryByText("이체 합산")).not.toBeInTheDocument();
+    expect(screen.getByDisplayValue("거래 1")).toBeInTheDocument();
+    expect(screen.getByText("수익 합산")).toBeInTheDocument();
+    expect(screen.getByLabelText("조회합계")).toHaveTextContent("이체 입금 0원");
+    expect(screen.getByLabelText("조회합계")).toHaveTextContent("이체 출금 0원");
+    fireEvent.change(transferFilter, { target: { value: "all" } });
+    expect(screen.getByDisplayValue("거래 2")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("거래 3")).toBeInTheDocument();
+  });
+
+  it("계좌이체 합산은 소분류를 구분하고 출금 합계를 음수로 표시한다", () => {
+    renderSheet([
+      { ...transaction(1), transaction_kind: "TRANSFER", direction: "OUTFLOW", amount: "5000" },
+      { ...transaction(2), transaction_kind: "TRANSFER", direction: "OUTFLOW", amount: "3000" },
+      { ...transaction(3), category_id: 4, category_name: "이벤트수익", transaction_kind: "TRANSFER", direction: "INFLOW", amount: "1000" },
+    ]);
+    fireEvent.click(screen.getByRole("button", { name: "상세조회" }));
+    fireEvent.change(screen.getByLabelText("계좌이체 표시"), { target: { value: "sum" } });
+    const summaries = screen.getAllByText("이체 합산").map((item) => item.closest("tr")!);
+    expect(summaries).toHaveLength(2);
+    expect(summaries[0]).toHaveTextContent("-8,000");
+    expect(summaries[1]).toHaveTextContent("1,000");
+    fireEvent.click(screen.getByLabelText("거래 전체 선택"));
+    expect(screen.getByRole("button", { name: "삭제" })).toBeDisabled();
+  });
+
   it("10·20·50·100건 단위를 선택하고 다음 페이지의 거래를 조회한다", async () => {
     render(
       <LedgerTransactionSheet
