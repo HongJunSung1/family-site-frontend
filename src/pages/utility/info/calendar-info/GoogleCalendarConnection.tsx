@@ -226,7 +226,7 @@ export default function GoogleCalendarConnection() {
       <Dialog open={!!confirmSyncCalendar} onClose={()=>setConfirmSyncCalendar(null)} fullWidth maxWidth="sm" sx={{zIndex:20000}}>
         <DialogTitle>캘린더 동기화</DialogTitle>
         <DialogContent>
-          <div><span style={{fontWeight:800, color:'red'}}>앞으로 저장되는 일정</span>만 동기화가 진행됩니다.</div>
+          <div style={{fontWeight:800, color:'red'}}>앞으로 저장되는 일정만 동기화가 진행됩니다.</div>
           <div>· 동기화 전에 저장된 일정 : 그대로 유지</div>
           <div>· 동기화 이후 새로 저장되는 일정 : 공유캘린더, 핸드폰 양방향으로 자동 반영</div>
           {status?.mappings.find(m=>m.site_calendar_id===confirmSyncCalendar?.calendarId)?.sync_mode === "future" && <p>이미 동기화한 캘린더는 처음 설정한 기준 시점을 유지합니다.</p>}

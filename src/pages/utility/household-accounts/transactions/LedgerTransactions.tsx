@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiError } from "../../../../api/client";
 import { getAssetAccounts, type AssetAccount, type AssetMember } from "../../../../api/assetApi";
 import {
@@ -50,6 +50,7 @@ export default function LedgerTransactions({ calendarId, calendarControl, onUnsa
   const [members, setMembers] = useState<AssetMember[]>([]);
   const [categories, setCategories] = useState<LedgerCategory[]>([]);
   const [dateRange, setDateRange] = useState(currentMonthRange);
+  const loadSequence = useRef(0);
   const [ownerId, setOwnerId] = useState(0);
   const [canManage, setCanManage] = useState(false); const [form, setForm] = useState<Form | null>(null);
   const [loading, setLoading] = useState(true); const [saving, setSaving] = useState(false);
@@ -74,22 +75,31 @@ export default function LedgerTransactions({ calendarId, calendarControl, onUnsa
   }, [categories]);
 
   const load = useCallback(async () => {
+    const sequence = ++loadSequence.current;
     if (!calendarId) return;
+    if (!dateRange.startDate || !dateRange.endDate || dateRange.startDate > dateRange.endDate) {
+      setTransactions([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const accountData = await getAssetAccounts(calendarId);
+      if (sequence !== loadSequence.current) return;
       const selectedOwnerId = accountData.members.some((member) => member.user_id === ownerId)
         ? ownerId : accountData.currentUserId;
       const [transactionData, categoryData] = await Promise.all([
         getLedgerTransactions(calendarId, dateRange.startDate, dateRange.endDate, selectedOwnerId),
         getLedgerCategories(calendarId),
       ]);
+      if (sequence !== loadSequence.current) return;
       setTransactions(transactionData.transactions); setCanManage(transactionData.canManage);
       setAccounts(accountData.accounts); setMembers(accountData.members); setCategories(categoryData.categories);
       if (selectedOwnerId !== ownerId) setOwnerId(selectedOwnerId);
     } catch (error) {
+      if (sequence !== loadSequence.current) return;
       setAlert({ title: "조회 실패", message: error instanceof ApiError ? error.message : "거래내역을 불러오지 못했습니다." });
-    } finally { setLoading(false); }
+    } finally { if (sequence === loadSequence.current) setLoading(false); }
   }, [calendarId, dateRange.endDate, dateRange.startDate, ownerId]);
   useEffect(() => { setForm(null); void load(); }, [load]);
 

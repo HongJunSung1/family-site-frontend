@@ -25,6 +25,7 @@ import type { LedgerImportedRow } from "./LedgerImportDialog";
 import styles from "../HouseholdAccounts.module.css";
 
 type Draft = {
+  isEventSummary?: boolean;
   key: string; id?: number; checked: boolean; dirty: boolean;
   accountId: number; accountQuery: string; date: string; income: string; expense: string; transfer: string;
   categoryId: number; categoryQuery: string; description: string; counterparty: string; memo: string;
@@ -91,6 +92,10 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
   const [saving, setSaving] = useState(false);
   const [processingLabel, setProcessingLabel] = useState("거래내역 저장 중");
   const [searchQuery, setSearchQuery] = useState("");
+  const [unlinkedOnly, setUnlinkedOnly] = useState(false);
+  const [eventIncomeMode, setEventIncomeMode] = useState("all");
+  const [dateInputs, setDateInputs] = useState({ startDate, endDate });
+  useEffect(() => { setDateInputs({ startDate, endDate }); }, [startDate, endDate]);
   const [pageSize, setPageSize] = useState(50);
   const [page, setPage] = useState(1);
   const [expandedKey, setExpandedKey] = useState("");
@@ -215,7 +220,10 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
     classificationConflict: values.categoryId !== undefined ? false : row.classificationConflict,
   } : row));
   const checked = drafts.filter((row) => row.checked);
-  const filteredDrafts = drafts.filter((row) => {
+  const matchingDrafts = drafts.filter((row) => {
+    if (!startDate || !endDate || startDate > endDate) return false;
+    if (unlinkedOnly && (!row.transfer || rows.find((item) => item.id === row.id)?.transfer_link_id)) return false;
+    if (eventIncomeMode === "exclude" && categoryPath(row.categoryId).leaf === "이벤트수익") return false;
     if (row.key.startsWith("new-")) return true;
     const query = searchQuery.trim().toLocaleLowerCase("ko");
     if (!query) return true;
@@ -226,13 +234,35 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
       row.description, row.counterparty, row.memo, row.income, row.expense, row.transfer]
       .some((value) => value.toLocaleLowerCase("ko").includes(query));
   });
+  // Keep summaries separate from editable drafts so they cannot be saved or deleted.
+  const filteredDrafts: Draft[] = [];
+  const eventSummaries = new Map<string, Draft>();
+  for (const row of matchingDrafts) {
+    if (eventIncomeMode !== "sum" || categoryPath(row.categoryId).leaf !== "이벤트수익") {
+      filteredDrafts.push(row);
+      continue;
+    }
+    const group = String(categories.find((item) => item.id === row.categoryId)?.parent_id ?? row.categoryId);
+    let summary = eventSummaries.get(group);
+    if (!summary) {
+      summary = { ...row, key: `event-summary-${group}`, id: undefined, isEventSummary: true,
+        checked: false, dirty: false, date: "", time: null, accountQuery: "", income: "0", expense: "",
+        transfer: "", description: "수익 합산", counterparty: "", memo: "", isReversal: false,
+        originalTransactionId: null };
+      eventSummaries.set(group, summary);
+      filteredDrafts.push(summary);
+    }
+    const sign = row.isReversal ? -1n : 1n;
+    summary.income = (BigInt(summary.income || "0") + sign * BigInt(row.income || "0")).toString();
+    if (row.expense) summary.expense = (BigInt(summary.expense || "0") + sign * BigInt(row.expense)).toString();
+  }
   const queryTotals = filteredDrafts.reduce((totals, row) => {
     if (row.income) {
-      const value = BigInt(digits(row.income) || "0");
+      const value = BigInt(row.income || "0");
       totals.income += row.isReversal ? -value : value;
     }
     if (row.expense) {
-      const value = BigInt(digits(row.expense) || "0");
+      const value = BigInt(row.expense || "0");
       totals.expense += row.isReversal ? -value : value;
     }
     if (row.transfer && row.transfer !== "-") {
@@ -245,6 +275,20 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
   const totalPages = Math.max(1, Math.ceil(filteredDrafts.length / pageSize));
   const currentPage = Math.min(page, totalPages);
   const pagedDrafts = filteredDrafts.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const selectableDrafts = pagedDrafts.filter((row) => !row.isEventSummary);
+
+  function resetFilters() {
+    clearCheckedRows();
+    setExpandedKey("");
+    setPage(1);
+  }
+
+  function commitDateRange() {
+    if (dateInputs.startDate !== startDate || dateInputs.endDate !== endDate) {
+      resetFilters();
+      onDateRangeChange(dateInputs.startDate, dateInputs.endDate);
+    }
+  }
 
   function clearCheckedRows() {
     setDrafts((current) => current.map((row) => row.checked ? { ...row, checked: false } : row));
@@ -625,9 +669,9 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
       <div className={styles.transactionSheetToolbar}>
         <div className={styles.transactionSheetFilters}>
         <div className={styles.transactionDateRange}>
-          <label><span></span><input aria-label="거래 시작일" type="date" value={startDate} max={endDate} onChange={(event) => event.target.value && onDateRangeChange(event.target.value, endDate)} /></label>
+          <label><span></span><input aria-label="거래 시작일" type="date" value={dateInputs.startDate} onChange={(event) => setDateInputs((current) => ({ ...current, startDate: event.target.value }))} onBlur={commitDateRange} /></label>
           <i>~</i>
-          <label><span></span><input aria-label="거래 종료일" type="date" value={endDate} min={startDate} onChange={(event) => event.target.value && onDateRangeChange(startDate, event.target.value)} /></label>
+          <label><span></span><input aria-label="거래 종료일" type="date" value={dateInputs.endDate} onChange={(event) => setDateInputs((current) => ({ ...current, endDate: event.target.value }))} onBlur={commitDateRange} /></label>
         </div>
         <div className={styles.transactionSheetSearch}>
           <input
@@ -673,6 +717,14 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
         <span>이체 입금 <b>{queryTotals.transferInflow.toLocaleString("ko-KR")}원</b></span>
         <span>이체 출금 <b>{queryTotals.transferOutflow.toLocaleString("ko-KR")}원</b></span>
       </section>
+      <div className={styles.transactionViewFilters}>
+        <label><input type="checkbox" checked={unlinkedOnly} onChange={(event) => { setUnlinkedOnly(event.target.checked); resetFilters(); }} />미연결 계좌이체내역 보기</label>
+        <select className={styles.filterControl} aria-label="이벤트수익 표시" value={eventIncomeMode} onChange={(event) => { setEventIncomeMode(event.target.value); resetFilters(); }}>
+          <option value="all">이벤트수익 개별 보기</option>
+          <option value="exclude">이벤트수익 제외</option>
+          <option value="sum">이벤트수익 합산</option>
+        </select>
+      </div>
       <div className={`${styles.transactionSheet} ${styles.transactionDesktop}`}>
         <table style={{ minWidth: transactionTableMinWidth }}>
           <thead>
@@ -681,8 +733,8 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
                 <input
                   type="checkbox"
                   aria-label="거래 전체 선택"
-                  disabled={!canManage || !pagedDrafts.length}
-                  checked={pagedDrafts.length > 0 && pagedDrafts.every((row) => row.checked)}
+                  disabled={!canManage || !selectableDrafts.length}
+                  checked={selectableDrafts.length > 0 && selectableDrafts.every((row) => row.checked)}
                   onChange={(event) => {
                     const visibleKeys = new Set(pagedDrafts.map((row) => row.key));
                     setDrafts((current) => current.map((row) => visibleKeys.has(row.key) ? { ...row, checked: event.target.checked } : row));
@@ -712,6 +764,24 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
                 : row.classificationConflict ? "여러 자동분류 문구가 서로 다른 소분류와 일치합니다."
                   : row.duplicateStatus === "SUSPECTED" ? "기존 거래와 유사하여 확인이 필요합니다." : "이상 없음";
               const saved = row.id ? rows.find((item) => item.id === row.id) : undefined;
+              if (row.isEventSummary) return <Fragment key={row.key}>
+                <tr>
+                  <td className={styles.sheetCheckboxCell}><input type="checkbox" aria-label="거래 선택" disabled checked={false} readOnly /></td>
+                  <td /><td /><td /><td /><td>{path.leaf}</td>
+                  <td>{formattedAmount(row.income)}</td><td>{formattedAmount(row.expense)}</td><td />
+                  <td className={styles.transactionDescriptionColumn}>수익 합산</td><td /><td />
+                  <td className={styles.transactionDetailColumn}><button type="button" className={styles.transactionDetailButton} aria-expanded={expandedKey === row.key} onClick={() => setExpandedKey((current) => current === row.key ? "" : row.key)}>{expandedKey === row.key ? "접기" : "상세"}</button></td><td />
+                </tr>
+                <tr className={`${styles.transactionDetailRow} ${expandedKey === row.key ? styles.transactionDetailRowOpen : ""}`} aria-hidden={expandedKey !== row.key}>
+                  <td colSpan={14}><div className={styles.transactionDetailCollapse}><div className={styles.transactionDetailContent}><div className={styles.transactionDetailGrid}>
+                    <div><span>상태</span><strong>이상 없음</strong></div>
+                    <div><span>대분류</span><strong>{path.root}</strong></div>
+                    <div><span>중분류</span><strong>{path.middle}</strong></div>
+                    <label className={styles.transactionDetailCheck}><span>취소</span><input type="checkbox" aria-label="취소 거래" disabled checked={false} readOnly /></label>
+                    {["원거래", "이체 연결", "입력 경로", "분류 방식"].map((label) => <div key={label}><span>{label}</span><strong /></div>)}
+                  </div></div></div></td>
+                </tr>
+              </Fragment>;
               return <Fragment key={row.key}><tr className={row.duplicateStatus === "EXACT" ? styles.sheetExactDuplicateRow : row.dirty ? styles.sheetDirtyRow : ""}>
                 <td className={styles.sheetCheckboxCell}><input type="checkbox" aria-label="거래 선택" disabled={!canManage} checked={row.checked} onChange={(event) => setDrafts((current) => current.map((item) => item.key === row.key ? { ...item, checked: event.target.checked } : item))} /></td>
                 <td className={styles.duplicateStatusCell}>{hasIssue && <button type="button" className={styles.transactionIssueButton} aria-label={issueText} title={issueText} onClick={() => setExpandedKey((current) => current === row.key ? "" : row.key)}>!</button>}</td>
