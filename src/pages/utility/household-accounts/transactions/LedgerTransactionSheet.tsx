@@ -93,6 +93,7 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
   const [processingLabel, setProcessingLabel] = useState("거래내역 저장 중");
   const [searchQuery, setSearchQuery] = useState("");
   const [unlinkedOnly, setUnlinkedOnly] = useState(false);
+  const [detailSearchOpen, setDetailSearchOpen] = useState(false);
   const [eventIncomeMode, setEventIncomeMode] = useState("all");
   const [dateInputs, setDateInputs] = useState({ startDate, endDate });
   useEffect(() => { setDateInputs({ startDate, endDate }); }, [startDate, endDate]);
@@ -664,6 +665,54 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
     } finally { setTransferLoading(false); }
   }
 
+  const unlinkedTransfers = rows.filter((row) => row.transaction_kind === "TRANSFER" && !row.transfer_link_id);
+
+  async function autoLinkTransfers() {
+    if (!canManage || saving || transferLoading) return;
+    const dirtyIds = new Set(drafts.filter((row) => row.id && row.dirty).map((row) => row.id!));
+    const targets = unlinkedTransfers.filter((row) => !dirtyIds.has(row.id));
+    if (!targets.length) return;
+    setProcessingLabel("계좌 자동 연결 중");
+    setSaving(true);
+    let linkedCount = 0;
+    let failure = "";
+    try {
+      // Determine ambiguity before linking: removing a matched pair must not turn
+      // an originally ambiguous transaction into an automatic match in this run.
+      const matches: { transactionId: number; candidateId: number }[] = [];
+      for (const row of targets) {
+        const { candidates } = await getLedgerTransferCandidates(row.id);
+        if (candidates.length === 1 && !dirtyIds.has(candidates[0].id)) {
+          matches.push({ transactionId: row.id, candidateId: candidates[0].id });
+        }
+      }
+      const linkedIds = new Set<number>();
+      for (const { transactionId, candidateId } of matches) {
+        if (linkedIds.has(transactionId) || linkedIds.has(candidateId)) continue;
+        await createLedgerTransferLink(transactionId, candidateId);
+        linkedIds.add(transactionId);
+        linkedIds.add(candidateId);
+        linkedCount += 1;
+      }
+    } catch (error) {
+      failure = error instanceof ApiError ? error.message : "계좌를 자동으로 연결하지 못했습니다.";
+    } finally {
+      if (linkedCount) {
+        draftsToRestoreAfterReload.current = drafts.filter((row) => !row.id || row.dirty);
+        try { await onReload(); }
+        catch { failure ||= "연결된 내역을 새로고침하지 못했습니다. 다시 조회해주세요."; }
+      }
+      setSaving(false);
+      setAlert({
+        title: failure ? "계좌 자동 연결 중단" : "계좌 자동 연결",
+        message: failure
+          ? `${linkedCount}쌍 연결 후 중단했습니다. ${failure}`
+          : linkedCount ? `${linkedCount}쌍의 계좌이체를 자동으로 연결했습니다.`
+            : "자동으로 연결할 계좌이체가 없습니다. 날짜가 3일 이내이고 금액이 같은 반대 방향 이체가 정확히 한 건인 경우만 연결합니다.",
+      });
+    }
+  }
+
   return (
     <>
       <div className={styles.transactionSheetToolbar}>
@@ -710,6 +759,18 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
         <button type="button" className={styles.primaryButton} disabled={saving || !drafts.some((row) => row.dirty)} onClick={() => void saveAll()}>저장</button>
         </div>
       </div>
+      <button type="button" className={styles.ledgerImportToggle} aria-expanded={detailSearchOpen} aria-controls="ledger-detail-search" onClick={() => setDetailSearchOpen((open) => !open)}>
+        <span>상세조회</span><i className={detailSearchOpen ? styles.ledgerImportToggleOpen : ""} aria-hidden="true" />
+      </button>
+      {detailSearchOpen && <div id="ledger-detail-search" className={styles.transactionViewFilters}>
+        <label><input type="checkbox" checked={unlinkedOnly} onChange={(event) => { setUnlinkedOnly(event.target.checked); resetFilters(); }} />미연결 계좌이체내역 보기</label>
+        <button type="button" className={styles.secondaryButton} disabled={!canManage || saving || transferLoading || !unlinkedTransfers.some((row) => !drafts.some((draft) => draft.id === row.id && draft.dirty))} onClick={() => void autoLinkTransfers()}>계좌 자동 연결</button>
+        <select className={styles.filterControl} aria-label="이벤트수익 표시" value={eventIncomeMode} onChange={(event) => { setEventIncomeMode(event.target.value); resetFilters(); }}>
+          <option value="all">이벤트수익 개별 보기</option>
+          <option value="exclude">이벤트수익 제외</option>
+          <option value="sum">이벤트수익 합산</option>
+        </select>
+      </div>}
       <section className={styles.transactionQueryTotals} aria-label="조회합계">
         <strong>조회합계</strong>
         <span>수입 <b>{queryTotals.income.toLocaleString("ko-KR")}원</b></span>
@@ -717,14 +778,6 @@ export default function LedgerTransactionSheet({ calendarId, rows, accounts, cat
         <span>이체 입금 <b>{queryTotals.transferInflow.toLocaleString("ko-KR")}원</b></span>
         <span>이체 출금 <b>{queryTotals.transferOutflow.toLocaleString("ko-KR")}원</b></span>
       </section>
-      <div className={styles.transactionViewFilters}>
-        <label><input type="checkbox" checked={unlinkedOnly} onChange={(event) => { setUnlinkedOnly(event.target.checked); resetFilters(); }} />미연결 계좌이체내역 보기</label>
-        <select className={styles.filterControl} aria-label="이벤트수익 표시" value={eventIncomeMode} onChange={(event) => { setEventIncomeMode(event.target.value); resetFilters(); }}>
-          <option value="all">이벤트수익 개별 보기</option>
-          <option value="exclude">이벤트수익 제외</option>
-          <option value="sum">이벤트수익 합산</option>
-        </select>
-      </div>
       <div className={`${styles.transactionSheet} ${styles.transactionDesktop}`}>
         <table style={{ minWidth: transactionTableMinWidth }}>
           <thead>

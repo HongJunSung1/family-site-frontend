@@ -54,6 +54,7 @@ describe("거래내역 페이지 이동", () => {
       { ...transaction(2), transaction_kind: "TRANSFER" },
       { ...transaction(3), transaction_kind: "TRANSFER", transfer_link_id: 10 },
     ]);
+    fireEvent.click(screen.getByRole("button", { name: "상세조회" }));
     fireEvent.click(screen.getByLabelText("미연결 계좌이체내역 보기"));
     expect(screen.getByDisplayValue("거래 2")).toBeInTheDocument();
     expect(screen.queryByDisplayValue("거래 1")).not.toBeInTheDocument();
@@ -70,6 +71,7 @@ describe("거래내역 페이지 이동", () => {
       { ...transaction(2), category_id: 4, category_name: "이벤트수익", transaction_kind: "INCOME", amount: "12000" },
       { ...transaction(3), category_id: 4, category_name: "이벤트수익", transaction_kind: "INCOME", amount: "2000", is_reversal: 1 },
     ]);
+    fireEvent.click(screen.getByRole("button", { name: "상세조회" }));
     const filter = screen.getByLabelText("이벤트수익 표시");
     fireEvent.change(filter, { target: { value: "exclude" } });
     expect(screen.queryByDisplayValue("거래 2")).not.toBeInTheDocument();
